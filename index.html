@@ -72,5 +72,59 @@
     <button id="parse-btn">파싱 실행</button>
     
     <div id="result-container"></div>
+
+    <script>
+        /**
+         * XML 규격 문자열을 파싱하여 객체 배열로 반환
+         * @param {string} xmlString - 파싱할 XML 문자열
+         * @returns {Array|null} - 파싱된 규격 배열 또는 실패 시 null
+         */
+        function parseXMLSpec(xmlString) {
+            try {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+
+                // 파싱 에러 체크
+                const parseError = xmlDoc.querySelector("parsererror");
+                if (parseError) {
+                    console.error("XML 파싱 오류:", parseError.textContent);
+                    return null;
+                }
+
+                const cols = xmlDoc.querySelectorAll("col");
+                const specs = [];
+
+                cols.forEach((col, index) => {
+                    const id = col.getAttribute("id");
+                    const type = col.getAttribute("type");
+                    const sizeStr = col.getAttribute("size");
+
+                    // 필수 속성 체크
+                    if (!id || !type || !sizeStr) {
+                        console.warn(`[경고] ${index + 1}번째 col 요소에 필수 속성(id, type, size)이 누락되었습니다.`, col);
+                        return; // 현재 요소 건너뛰기
+                    }
+
+                    const size = parseInt(sizeStr, 10);
+                    if (isNaN(size)) {
+                         console.warn(`[경고] ${index + 1}번째 col 요소의 size 속성이 유효한 숫자가 아닙니다: ${sizeStr}`, col);
+                         return;
+                    }
+
+                    specs.push({
+                        id: id,
+                        type: type,
+                        size: size
+                    });
+                });
+
+                return specs;
+
+            } catch (e) {
+                console.error("XML 처리 중 예외 발생:", e);
+                return null;
+            }
+        }
+    </script>
 </body>
 </html>
