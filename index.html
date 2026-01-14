@@ -168,6 +168,54 @@
 
             return result;
         }
+
+        /**
+         * 고정길이 통전문 문자열을 XML 규격에 따라 파싱
+         * @param {string} telegramString - 고정길이 문자열
+         * @param {Array} xmlSpec - parseXMLSpec의 결과 배열
+         * @returns {Array} - 파싱 결과 배열
+         */
+        function parseTelegram(telegramString, xmlSpec) {
+            // 현재 위치 초기화
+            let currentPos = 0;
+
+            // 빈 결과 배열 생성
+            const result = [];
+
+            // xmlSpec 배열 순회
+            for (let i = 0; i < xmlSpec.length; i++) {
+                const spec = xmlSpec[i];
+
+                // 시작/종료 위치 계산
+                const startPos = currentPos;
+                const endPos = currentPos + spec.size;
+
+                // substring으로 값 추출 (인덱스 범위 초과해도 오류 없이 처리됨)
+                const value = telegramString.substring(startPos, endPos);
+
+                // 결과 배열에 추가
+                result.push({
+                    id: spec.id,
+                    type: spec.type,
+                    size: spec.size,
+                    value: value,
+                    startPos: startPos,
+                    endPos: endPos
+                });
+
+                // 현재 위치 이동
+                currentPos += spec.size;
+            }
+
+            // 통전문 전체 길이와 예상 길이 비교
+            if (telegramString.length !== currentPos) {
+                console.warn(
+                    `parseTelegram: 통전문 길이(${telegramString.length})와 예상 길이(${currentPos})가 일치하지 않습니다.`
+                );
+            }
+
+            return result;
+        }
     </script>
 </body>
 </html>
