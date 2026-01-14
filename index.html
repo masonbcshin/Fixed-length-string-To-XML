@@ -72,5 +72,78 @@
     <button id="parse-btn">파싱 실행</button>
     
     <div id="result-container"></div>
+
+    <script>
+        /**
+         * XML 규격 문자열을 파싱해 col 스펙 배열로 변환합니다.
+         * @param {string} xmlString - XML 문자열
+         * @returns {{id: string, type: string, size: number}[] | null}
+         */
+        function parseXMLSpec(xmlString) {
+            try {
+                if (typeof xmlString !== "string") {
+                    console.warn("XML 규격이 문자열이 아닙니다. 입력을 건너뜁니다.", { xmlString });
+                    return null;
+                }
+
+                const trimmed = xmlString.trim();
+                if (!trimmed) {
+                    console.warn("XML 규격이 비어 있습니다. 입력을 건너뜁니다.");
+                    return null;
+                }
+
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(trimmed, "application/xml");
+
+                // DOMParser는 예외 대신 <parsererror> 문서를 반환하는 경우가 많습니다.
+                const parserErrorNode = doc.querySelector("parsererror");
+                if (parserErrorNode) {
+                    console.error("XML 파싱 오류");
+                    return null;
+                }
+
+                const cols = doc.querySelectorAll("col");
+                const results = [];
+
+                cols.forEach((col, index) => {
+                    // 속성 추출 (필수)
+                    const idRaw = col.getAttribute("id");
+                    const typeRaw = col.getAttribute("type");
+                    const sizeRaw = col.getAttribute("size");
+
+                    const id = typeof idRaw === "string" ? idRaw.trim() : "";
+                    const type = typeof typeRaw === "string" ? typeRaw.trim() : "";
+                    const sizeStr = typeof sizeRaw === "string" ? sizeRaw.trim() : "";
+
+                    const size = Number.parseInt(sizeStr, 10);
+
+                    const missing =
+                        !id ||
+                        !type ||
+                        !sizeStr ||
+                        !Number.isFinite(size) ||
+                        !Number.isInteger(size) ||
+                        size <= 0;
+
+                    if (missing) {
+                        console.warn("col 요소에 필수 속성이 없거나 유효하지 않아 건너뜁니다.", {
+                            index,
+                            id: idRaw,
+                            type: typeRaw,
+                            size: sizeRaw,
+                        });
+                        return;
+                    }
+
+                    results.push({ id, type, size });
+                });
+
+                return results;
+            } catch (err) {
+                console.error("XML 파싱 오류");
+                return null;
+            }
+        }
+    </script>
 </body>
 </html>
