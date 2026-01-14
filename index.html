@@ -72,5 +72,90 @@
     <button id="parse-btn">파싱 실행</button>
     
     <div id="result-container"></div>
+
+    <script>
+        /**
+         * XML 규격 문자열을 파싱하여 col 요소들의 정보를 배열로 반환
+         * @param {string} xmlString - XML 문자열
+         * @returns {Array|null} - col 정보 배열 또는 null (파싱 실패 시)
+         */
+        function parseXMLSpec(xmlString) {
+            // 입력값 유효성 검사
+            if (typeof xmlString !== 'string' || xmlString.trim() === '') {
+                console.error("XML 파싱 오류: 입력이 비어있거나 문자열이 아닙니다.");
+                return null;
+            }
+
+            // DOMParser로 XML 문서 파싱
+            const parser = new DOMParser();
+            let xmlDoc;
+
+            try {
+                xmlDoc = parser.parseFromString(xmlString, "application/xml");
+            } catch (error) {
+                console.error("XML 파싱 오류:", error.message);
+                return null;
+            }
+
+            // parsererror 체크
+            const parseError = xmlDoc.querySelector("parsererror");
+            if (parseError) {
+                console.error("XML 파싱 오류:", parseError.textContent);
+                return null;
+            }
+
+            // 모든 col 요소 선택
+            const colElements = xmlDoc.querySelectorAll("col");
+
+            if (colElements.length === 0) {
+                console.warn("경고: col 요소가 없습니다.");
+                return [];
+            }
+
+            // 결과 배열
+            const result = [];
+
+            // 각 col 요소 처리
+            colElements.forEach((col, index) => {
+                const id = col.getAttribute("id");
+                const type = col.getAttribute("type");
+                const sizeStr = col.getAttribute("size");
+
+                // 필수 속성 검증
+                const missingAttrs = [];
+                if (!id) missingAttrs.push("id");
+                if (!type) missingAttrs.push("type");
+                if (!sizeStr) missingAttrs.push("size");
+
+                if (missingAttrs.length > 0) {
+                    console.warn(
+                        `경고: ${index + 1}번째 col 요소에 필수 속성이 없습니다. ` +
+                        `누락된 속성: ${missingAttrs.join(", ")}`
+                    );
+                    return; // 해당 요소 건너뛰기
+                }
+
+                // size를 정수로 변환
+                const size = parseInt(sizeStr, 10);
+
+                if (isNaN(size)) {
+                    console.warn(
+                        `경고: ${index + 1}번째 col 요소의 size 값이 유효한 정수가 아닙니다. ` +
+                        `(id: "${id}", size: "${sizeStr}")`
+                    );
+                    return; // 해당 요소 건너뛰기
+                }
+
+                // 유효한 col 정보 추가
+                result.push({
+                    id: id,
+                    type: type,
+                    size: size
+                });
+            });
+
+            return result;
+        }
+    </script>
 </body>
 </html>
