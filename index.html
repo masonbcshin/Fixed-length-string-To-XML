@@ -216,6 +216,77 @@
 
             return result;
         }
+
+        /**
+         * 파싱된 데이터를 테이블로 표시
+         * @param {Array} parsedData - parseTelegram의 결과 배열
+         */
+        function displayResults(parsedData) {
+            // 1. result-container 요소 가져오기
+            const container = document.getElementById('result-container');
+
+            // 2. innerHTML 초기화
+            container.innerHTML = '';
+
+            // 3. table 요소 생성
+            const table = document.createElement('table');
+            table.id = 'result-table';
+
+            // 4. thead 생성 후 tr 추가, th 7개
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            const headers = ['순번', '필드명', '타입', '크기', '시작', '종료', '값'];
+
+            headers.forEach(function(headerText) {
+                const th = document.createElement('th');
+                th.textContent = headerText;
+                headerRow.appendChild(th);
+            });
+
+            thead.appendChild(headerRow);
+
+            // 5. tbody 생성
+            const tbody = document.createElement('tbody');
+
+            // 6. parsedData 배열 순회
+            parsedData.forEach(function(item, index) {
+                // tr 생성
+                const tr = document.createElement('tr');
+
+                // td 7개 생성
+                const values = [
+                    index + 1,
+                    item.id,
+                    item.type,
+                    item.size,
+                    item.startPos,
+                    item.endPos,
+                    item.value
+                ];
+
+                values.forEach(function(value, tdIndex) {
+                    const td = document.createElement('td');
+                    td.textContent = value;
+
+                    // value가 공백만 있으면 class="empty-value" 추가 (마지막 td, 즉 value 컬럼)
+                    if (tdIndex === 6 && typeof value === 'string' && value.trim() === '') {
+                        td.classList.add('empty-value');
+                    }
+
+                    tr.appendChild(td);
+                });
+
+                // tbody에 tr 추가
+                tbody.appendChild(tr);
+            });
+
+            // 7. table에 thead, tbody 추가
+            table.appendChild(thead);
+            table.appendChild(tbody);
+
+            // 8. result-container에 table 추가
+            container.appendChild(table);
+        }
     </script>
 </body>
 </html>
