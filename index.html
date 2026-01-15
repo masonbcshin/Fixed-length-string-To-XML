@@ -399,6 +399,75 @@
             return result;
         }
 
+        // 데이터 라인에 매칭되는 구조체 찾기
+        function findMatchingStruct(line, structDefs) {
+            // 입력값 유효성 검사
+            if (!line || !Array.isArray(structDefs) || structDefs.length === 0) {
+                console.warn('findMatchingStruct: 유효하지 않은 입력입니다.');
+                return null;
+            }
+
+            // 1. 구조체가 1개만 있으면 그것 반환
+            if (structDefs.length === 1) {
+                return structDefs[0];
+            }
+
+            // 2. 여러 개일 경우 매칭 로직
+            const lineFirstChar = line.charAt(0);
+
+            for (let i = 0; i < structDefs.length; i++) {
+                const structDef = structDefs[i];
+
+                // 필드가 없으면 건너뛰기
+                if (!structDef.fields || structDef.fields.length === 0) {
+                    continue;
+                }
+
+                // 첫 번째 필드의 size만큼 line에서 추출
+                const firstField = structDef.fields[0];
+                const extractedValue = line.substring(0, firstField.size).trim();
+
+                // 구조체명에서 구분 패턴 추출
+                // 예: DHF_H → 'H', DHF_D → 'D', ST_HEADER_1 → '1'
+                const structName = structDef.name;
+                
+                // 구조체명 마지막 부분 추출 (언더스코어 뒤 또는 마지막 문자/숫자)
+                let structIdentifier = '';
+                
+                // 언더스코어로 분리하여 마지막 부분 추출
+                const parts = structName.split('_');
+                const lastPart = parts[parts.length - 1];
+                
+                // 마지막 부분이 단일 문자 또는 숫자인 경우
+                if (lastPart.length === 1) {
+                    structIdentifier = lastPart;
+                } else {
+                    // 마지막 부분에서 숫자 추출 시도
+                    const numMatch = lastPart.match(/(\d+)$/);
+                    if (numMatch) {
+                        structIdentifier = numMatch[1];
+                    } else {
+                        // 마지막 문자 사용
+                        structIdentifier = lastPart.charAt(lastPart.length - 1);
+                    }
+                }
+
+                // 구조체명 마지막 문자/숫자와 line 첫 문자 비교
+                if (lineFirstChar === structIdentifier) {
+                    return structDef;
+                }
+
+                // 첫 필드 값과 구조체 식별자 비교
+                if (extractedValue === structIdentifier) {
+                    return structDef;
+                }
+            }
+
+            // 3. 매칭 실패 시 null 반환, 콘솔에 경고
+            console.warn('findMatchingStruct: 라인 "' + line.substring(0, 20) + '..."에 매칭되는 구조체를 찾을 수 없습니다.');
+            return null;
+        }
+
         // 통 데이터를 구조체 정의에 맞게 파싱
         function parseStructData(dataText, structDefs) {
             // 입력값 유효성 검사
@@ -424,86 +493,10 @@
             lines.forEach(function(line, lineIndex) {
                 const lineNumber = lineIndex + 1;
 
-                // a. 구분값 추출을 위한 매칭 로직
-                // 각 구조체의 첫 번째 필드 size만큼 추출하여 비교
-                let matchedStruct = null;
-                let matchedValue = null;
+                // findMatchingStruct 헬퍼 함수를 사용하여 매칭되는 구조체 찾기
+                const matchedStruct = findMatchingStruct(line, structDefs);
 
-                for (let i = 0; i < structDefs.length; i++) {
-                    const structDef = structDefs[i];
-                    
-                    // 필드가 없으면 건너뛰기
-                    if (!structDef.fields || structDef.fields.length === 0) {
-                        continue;
-                    }
-
-                    // 첫 번째 필드의 size만큼 추출
-                    const firstField = structDef.fields[0];
-                    const extractedValue = line.substring(0, firstField.size);
-
-                    // 구조체 이름에서 구분값 추출 시도
-                    // 예: ST_TYPE_1 -> "1", ST_HEADER -> 첫 글자로 비교
-                    // 간단 구현: 첫 글자(구분값)로 비교
-                    const firstChar = line.charAt(0);
-
-                    // 구조체명에서 마지막 문자/숫자 추출하여 비교
-                    const structNameMatch = structDef.name.match(/[_]?(\d+|[A-Z])$/i);
-                    if (structNameMatch) {
-                        const structIdentifier = structNameMatch[1];
-                        if (firstChar === structIdentifier || extractedValue.trim() === structIdentifier) {
-                            matchedStruct = structDef;
-                            matchedValue = extractedValue;
-                            break;
-                        }
-                    }
-
-                    // 첫 글자로 직접 비교 (첫 번째 필드가 구분값 필드인 경우)
-                    // 첫 번째 필드명이 record_kubun, type, gubun 등 구분 관련이면 해당 값으로 매칭
-                    const firstFieldName = firstField.name.toLowerCase();
-                    if (firstFieldName.includes('kubun') || 
-                        firstFieldName.includes('type') || 
-                        firstFieldName.includes('gubun') ||
-                        firstFieldName.includes('구분')) {
-                        // 이 구조체의 식별자를 추출 (구조체명 마지막 부분)
-                        const lastPart = structDef.name.replace(/.*[_]/, '');
-                        if (extractedValue.trim() === lastPart || firstChar === lastPart.charAt(0)) {
-                            matchedStruct = structDef;
-                            matchedValue = extractedValue;
-                            break;
-                        }
-                    }
-                }
-
-                // 위에서 매칭되지 않은 경우: 첫 글자 기반 단순 매칭
-                if (!matchedStruct) {
-                    const firstChar = line.charAt(0);
-                    
-                    for (let i = 0; i < structDefs.length; i++) {
-                        const structDef = structDefs[i];
-                        
-                        // 구조체명에서 숫자나 식별자 추출
-                        const nameMatch = structDef.name.match(/(\d+)$/);
-                        if (nameMatch && firstChar === nameMatch[1]) {
-                            matchedStruct = structDef;
-                            break;
-                        }
-                        
-                        // 구조체명 마지막 단어로 비교
-                        const parts = structDef.name.split('_');
-                        const lastPart = parts[parts.length - 1];
-                        if (firstChar === lastPart.charAt(0)) {
-                            matchedStruct = structDef;
-                            break;
-                        }
-                    }
-                }
-
-                // 여전히 매칭되지 않으면 첫 번째 구조체 사용 (fallback)
-                if (!matchedStruct && structDefs.length === 1) {
-                    matchedStruct = structDefs[0];
-                }
-
-                // c. 매칭 실패 시 에러 객체 추가
+                // 매칭 실패 시 에러 객체 추가
                 if (!matchedStruct) {
                     result.push({
                         error: true,
