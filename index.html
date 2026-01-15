@@ -152,11 +152,7 @@
     <div id="result-container"></div>
 
     <script>
-        /**
-         * XML 규격 문자열을 파싱하여 컬럼 정보 배열로 변환
-         * @param {string} xmlString - XML 규격 문자열
-         * @returns {Array|null} - 컬럼 정보 배열 또는 파싱 실패 시 null
-         */
+        // XML 규격 문자열을 파싱하여 배열로 변환
         function parseXMLSpec(xmlString) {
             // 입력값 유효성 검사
             if (typeof xmlString !== 'string') {
@@ -247,12 +243,7 @@
             return result;
         }
 
-        /**
-         * 고정길이 통전문 문자열을 XML 규격에 따라 파싱
-         * @param {string} telegramString - 고정길이 문자열
-         * @param {Array} xmlSpec - parseXMLSpec의 결과 배열
-         * @returns {Array} - 파싱 결과 배열
-         */
+        // 통전문을 XML 규격에 맞게 파싱
         function parseTelegram(telegramString, xmlSpec) {
             // 현재 위치 초기화
             let currentPos = 0;
@@ -295,10 +286,7 @@
             return result;
         }
 
-        /**
-         * 에러 메시지를 화면에 표시
-         * @param {string} message - 에러 메시지 문자열
-         */
+        // 에러 메시지 표시
         function displayError(message) {
             // 1. result-container 가져오기
             const container = document.getElementById('result-container');
@@ -307,10 +295,7 @@
             container.innerHTML = `<div class="error-message">⚠️ ${message}</div>`;
         }
 
-        /**
-         * 파싱된 데이터를 테이블로 표시
-         * @param {Array} parsedData - parseTelegram의 결과 배열
-         */
+        // 파싱 결과를 테이블로 표시
         function displayResults(parsedData) {
             // 1. result-container 요소 가져오기
             const container = document.getElementById('result-container');
