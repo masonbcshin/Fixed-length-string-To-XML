@@ -857,35 +857,33 @@
 
             // 구조체 샘플 로드 버튼 클릭 이벤트
             document.getElementById('struct-sample-btn').addEventListener('click', function() {
-                // C 구조체 정의 샘플 (여러 구조체)
-                const sampleStructDef = `typedef struct {
-    char record_kubun[1];    /* 레코드 구분 (1: 헤더) */
-    char send_date[8];       /* 전송일자 */
-    char send_time[6];       /* 전송시간 */
-    char total_count[5];     /* 총 건수 */
-    char filler[10];         /* 예비 */
-} ST_HEADER_1;
+                // C 구조체 정의 샘플 (DHF_H, DHF_D, DHF_T)
+                const sampleStructDef = `typedef struct{
+  char record_kubun[1];
+  char bank_cd[2];
+  char cust_id[7];
+} DHF_H;
 
-typedef struct {
-    char record_kubun[1];    /* 레코드 구분 (2: 데이터) */
-    char seq_no[5];          /* 순번 */
-    char account_no[12];     /* 계좌번호 */
-    char amount[15];         /* 금액 */
-    char name[20];           /* 성명 */
-} ST_DATA_2;
+typedef struct{
+  char record_kubun[1];
+  char acno[16];
+  char amt[20];
+} DHF_D;
 
-typedef struct {
-    char record_kubun[1];    /* 레코드 구분 (3: 트레일러) */
-    char total_count[5];     /* 총 건수 */
-    char total_amount[18];   /* 총 금액 */
-    char filler[6];          /* 예비 */
-} ST_TRAILER_3;`;
+typedef struct{
+  char record_kubun[1];
+  char tot_cnt[10];
+  char tot_amt[20];
+} DHF_T;`;
 
-                // 통 데이터 샘플 (각 라인이 구분값으로 시작)
-                const sampleData = `12024010512300000050          
-2000011234567890120000000001000홍길동                
-2000021234567890130000000002500김철수                
-30000500000000000003500      `;
+                // 통 데이터 샘플 (구조체 길이에 맞게 조정)
+                // DHF_H: 1+2+7 = 10자
+                // DHF_D: 1+16+20 = 37자
+                // DHF_T: 1+10+20 = 31자
+                const sampleData = `H881234567
+D123456789012345600000000000000100000
+D987654321098765400000000000000200000
+T000000000200000000000000300000`;
 
                 document.getElementById('struct-definitions').value = sampleStructDef;
                 document.getElementById('struct-data').value = sampleData;
