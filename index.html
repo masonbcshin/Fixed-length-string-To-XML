@@ -399,6 +399,159 @@
             return result;
         }
 
+        // 통 데이터를 구조체 정의에 맞게 파싱
+        function parseStructData(dataText, structDefs) {
+            // 입력값 유효성 검사
+            if (typeof dataText !== 'string' || dataText.trim() === '') {
+                console.error('parseStructData: 데이터 텍스트가 유효하지 않습니다.');
+                return [];
+            }
+
+            if (!Array.isArray(structDefs) || structDefs.length === 0) {
+                console.error('parseStructData: 구조체 정의가 유효하지 않습니다.');
+                return [];
+            }
+
+            // 1. dataText를 줄바꿈으로 split, 빈 줄 제거
+            const lines = dataText.split('\n').filter(function(line) {
+                return line.trim() !== '';
+            });
+
+            // 2. 결과 배열 초기화
+            const result = [];
+
+            // 3. 각 라인마다 처리
+            lines.forEach(function(line, lineIndex) {
+                const lineNumber = lineIndex + 1;
+
+                // a. 구분값 추출을 위한 매칭 로직
+                // 각 구조체의 첫 번째 필드 size만큼 추출하여 비교
+                let matchedStruct = null;
+                let matchedValue = null;
+
+                for (let i = 0; i < structDefs.length; i++) {
+                    const structDef = structDefs[i];
+                    
+                    // 필드가 없으면 건너뛰기
+                    if (!structDef.fields || structDef.fields.length === 0) {
+                        continue;
+                    }
+
+                    // 첫 번째 필드의 size만큼 추출
+                    const firstField = structDef.fields[0];
+                    const extractedValue = line.substring(0, firstField.size);
+
+                    // 구조체 이름에서 구분값 추출 시도
+                    // 예: ST_TYPE_1 -> "1", ST_HEADER -> 첫 글자로 비교
+                    // 간단 구현: 첫 글자(구분값)로 비교
+                    const firstChar = line.charAt(0);
+
+                    // 구조체명에서 마지막 문자/숫자 추출하여 비교
+                    const structNameMatch = structDef.name.match(/[_]?(\d+|[A-Z])$/i);
+                    if (structNameMatch) {
+                        const structIdentifier = structNameMatch[1];
+                        if (firstChar === structIdentifier || extractedValue.trim() === structIdentifier) {
+                            matchedStruct = structDef;
+                            matchedValue = extractedValue;
+                            break;
+                        }
+                    }
+
+                    // 첫 글자로 직접 비교 (첫 번째 필드가 구분값 필드인 경우)
+                    // 첫 번째 필드명이 record_kubun, type, gubun 등 구분 관련이면 해당 값으로 매칭
+                    const firstFieldName = firstField.name.toLowerCase();
+                    if (firstFieldName.includes('kubun') || 
+                        firstFieldName.includes('type') || 
+                        firstFieldName.includes('gubun') ||
+                        firstFieldName.includes('구분')) {
+                        // 이 구조체의 식별자를 추출 (구조체명 마지막 부분)
+                        const lastPart = structDef.name.replace(/.*[_]/, '');
+                        if (extractedValue.trim() === lastPart || firstChar === lastPart.charAt(0)) {
+                            matchedStruct = structDef;
+                            matchedValue = extractedValue;
+                            break;
+                        }
+                    }
+                }
+
+                // 위에서 매칭되지 않은 경우: 첫 글자 기반 단순 매칭
+                if (!matchedStruct) {
+                    const firstChar = line.charAt(0);
+                    
+                    for (let i = 0; i < structDefs.length; i++) {
+                        const structDef = structDefs[i];
+                        
+                        // 구조체명에서 숫자나 식별자 추출
+                        const nameMatch = structDef.name.match(/(\d+)$/);
+                        if (nameMatch && firstChar === nameMatch[1]) {
+                            matchedStruct = structDef;
+                            break;
+                        }
+                        
+                        // 구조체명 마지막 단어로 비교
+                        const parts = structDef.name.split('_');
+                        const lastPart = parts[parts.length - 1];
+                        if (firstChar === lastPart.charAt(0)) {
+                            matchedStruct = structDef;
+                            break;
+                        }
+                    }
+                }
+
+                // 여전히 매칭되지 않으면 첫 번째 구조체 사용 (fallback)
+                if (!matchedStruct && structDefs.length === 1) {
+                    matchedStruct = structDefs[0];
+                }
+
+                // c. 매칭 실패 시 에러 객체 추가
+                if (!matchedStruct) {
+                    result.push({
+                        error: true,
+                        lineNumber: lineNumber,
+                        message: '매칭되는 구조체를 찾을 수 없습니다.',
+                        rawLine: line
+                    });
+                    return; // 다음 라인으로 continue
+                }
+
+                // d. 매칭된 구조체 fields를 순회하며 파싱
+                let currentPos = 0;
+                matchedStruct.fields.forEach(function(field) {
+                    const startPos = currentPos;
+                    const endPos = currentPos + field.size;
+                    const value = line.substring(startPos, endPos);
+
+                    result.push({
+                        structName: matchedStruct.name,
+                        fieldName: field.name,
+                        fieldSize: field.size,
+                        value: value,
+                        lineNumber: lineNumber,
+                        startPos: startPos,
+                        endPos: endPos
+                    });
+
+                    currentPos += field.size;
+                });
+
+                // 라인 길이 검증 경고
+                const expectedLength = matchedStruct.fields.reduce(function(sum, f) {
+                    return sum + f.size;
+                }, 0);
+                
+                if (line.length !== expectedLength) {
+                    console.warn(
+                        'parseStructData: 라인 ' + lineNumber + '의 길이(' + line.length + ')가 ' +
+                        '구조체 ' + matchedStruct.name + '의 예상 길이(' + expectedLength + ')와 다릅니다.'
+                    );
+                }
+            });
+
+            // 4. 결과 배열 반환
+            console.log('parseStructData: ' + result.length + '개의 필드가 파싱되었습니다.');
+            return result;
+        }
+
         // 에러 메시지 표시
         function displayError(message) {
             // 1. result-container 가져오기
@@ -481,6 +634,105 @@
             container.appendChild(wrapper);
         }
 
+        // 구조체 파싱 에러 메시지 표시
+        function displayStructError(message) {
+            const container = document.getElementById('struct-result-container');
+            container.innerHTML = `<div class="error-message">⚠️ ${message}</div>`;
+        }
+
+        // 구조체 파싱 결과를 테이블로 표시
+        function displayStructResults(parsedData) {
+            const container = document.getElementById('struct-result-container');
+            container.innerHTML = '';
+
+            // 에러가 있는지 확인
+            const errors = parsedData.filter(function(item) {
+                return item.error === true;
+            });
+
+            // 에러 메시지 표시
+            if (errors.length > 0) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.innerHTML = '⚠️ ' + errors.length + '개의 라인에서 매칭 실패:<br>' +
+                    errors.map(function(e) {
+                        return '라인 ' + e.lineNumber + ': ' + e.message;
+                    }).join('<br>');
+                container.appendChild(errorDiv);
+            }
+
+            // 정상 파싱 결과만 필터링
+            const validData = parsedData.filter(function(item) {
+                return item.error !== true;
+            });
+
+            if (validData.length === 0) {
+                if (errors.length === 0) {
+                    container.innerHTML = '<div class="error-message">⚠️ 파싱 결과가 없습니다.</div>';
+                }
+                return;
+            }
+
+            // 테이블 생성
+            const table = document.createElement('table');
+            table.id = 'result-table';
+
+            // thead 생성
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            const headers = ['라인', '구조체명', '필드명', '크기', '시작', '종료', '값'];
+
+            headers.forEach(function(headerText) {
+                const th = document.createElement('th');
+                th.textContent = headerText;
+                headerRow.appendChild(th);
+            });
+
+            thead.appendChild(headerRow);
+
+            // tbody 생성
+            const tbody = document.createElement('tbody');
+
+            // 데이터 행 추가
+            validData.forEach(function(item) {
+                const tr = document.createElement('tr');
+
+                const values = [
+                    item.lineNumber,
+                    item.structName,
+                    item.fieldName,
+                    item.fieldSize,
+                    item.startPos,
+                    item.endPos,
+                    item.value
+                ];
+
+                values.forEach(function(value, tdIndex) {
+                    const td = document.createElement('td');
+                    td.textContent = value;
+
+                    // value가 공백만 있으면 class="empty-value" 추가
+                    if (tdIndex === 6 && typeof value === 'string' && value.trim() === '') {
+                        td.classList.add('empty-value');
+                    }
+
+                    tr.appendChild(td);
+                });
+
+                tbody.appendChild(tr);
+            });
+
+            table.appendChild(thead);
+            table.appendChild(tbody);
+
+            // 반응형 wrapper
+            const wrapper = document.createElement('div');
+            wrapper.className = 'table-wrapper';
+            wrapper.appendChild(table);
+
+            container.appendChild(wrapper);
+        }
+
         // DOMContentLoaded 이벤트
         document.addEventListener('DOMContentLoaded', function() {
             // 탭 전환 이벤트
@@ -556,6 +808,75 @@
                 document.getElementById('xml-input').value = '';
                 document.getElementById('telegram-input').value = '';
                 document.getElementById('result-container').innerHTML = '';
+            });
+
+            // 구조체 샘플 로드 버튼 클릭 이벤트
+            document.getElementById('struct-sample-btn').addEventListener('click', function() {
+                // C 구조체 정의 샘플 (여러 구조체)
+                const sampleStructDef = `typedef struct {
+    char record_kubun[1];    /* 레코드 구분 (1: 헤더) */
+    char send_date[8];       /* 전송일자 */
+    char send_time[6];       /* 전송시간 */
+    char total_count[5];     /* 총 건수 */
+    char filler[10];         /* 예비 */
+} ST_HEADER_1;
+
+typedef struct {
+    char record_kubun[1];    /* 레코드 구분 (2: 데이터) */
+    char seq_no[5];          /* 순번 */
+    char account_no[12];     /* 계좌번호 */
+    char amount[15];         /* 금액 */
+    char name[20];           /* 성명 */
+} ST_DATA_2;
+
+typedef struct {
+    char record_kubun[1];    /* 레코드 구분 (3: 트레일러) */
+    char total_count[5];     /* 총 건수 */
+    char total_amount[18];   /* 총 금액 */
+    char filler[6];          /* 예비 */
+} ST_TRAILER_3;`;
+
+                // 통 데이터 샘플 (각 라인이 구분값으로 시작)
+                const sampleData = `12024010512300000050          
+2000011234567890120000000001000홍길동                
+2000021234567890130000000002500김철수                
+30000500000000000003500      `;
+
+                document.getElementById('struct-definitions').value = sampleStructDef;
+                document.getElementById('struct-data').value = sampleData;
+            });
+
+            // 구조체 파싱 실행 버튼 클릭 이벤트
+            document.getElementById('struct-parse-btn').addEventListener('click', function() {
+                // 입력값 가져오기
+                const structDefInput = document.getElementById('struct-definitions').value;
+                const dataInput = document.getElementById('struct-data').value;
+
+                // 유효성 검사
+                if (structDefInput.trim() === '' || dataInput.trim() === '') {
+                    displayStructError('구조체 정의와 데이터를 모두 입력하세요.');
+                    return;
+                }
+
+                // 구조체 정의 파싱
+                const structDefs = parseStructDefinitions(structDefInput);
+                if (structDefs === null) {
+                    displayStructError('구조체 정의 파싱 실패: 형식을 확인하세요.');
+                    return;
+                }
+
+                // 데이터 파싱
+                const parsedData = parseStructData(dataInput, structDefs);
+
+                // 결과 표시
+                displayStructResults(parsedData);
+            });
+
+            // 구조체 초기화 버튼 클릭 이벤트
+            document.getElementById('struct-clear-btn').addEventListener('click', function() {
+                document.getElementById('struct-definitions').value = '';
+                document.getElementById('struct-data').value = '';
+                document.getElementById('struct-result-container').innerHTML = '';
             });
         });
     </script>
