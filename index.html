@@ -183,6 +183,33 @@
             margin-top: 20px;
         }
 
+        /* 구조체 요약 정보 스타일 */
+        .struct-summary {
+            background: #f0f8ff;
+            padding: 15px;
+            border: 1px solid #b3d9ff;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .struct-summary h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+
+        .struct-summary p {
+            margin: 5px 0;
+        }
+
+        .struct-summary ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .struct-summary li {
+            margin: 3px 0;
+        }
+
         /* 모바일 대응 */
         @media (max-width: 600px) {
             body {
@@ -653,7 +680,7 @@
         }
 
         // 구조체 파싱 결과를 테이블로 표시
-        function displayStructResults(parsedData) {
+        function displayStructResults(parsedData, structDefs) {
             // 1. struct-result-container 초기화
             const container = document.getElementById('struct-result-container');
             container.innerHTML = '';
@@ -681,6 +708,48 @@
                     container.innerHTML = '<div class="error-message">⚠️ 파싱 결과가 없습니다.</div>';
                 }
                 return;
+            }
+
+            // 구조체 요약 정보 표시
+            if (structDefs && structDefs.length > 0) {
+                const summaryDiv = document.createElement('div');
+                summaryDiv.className = 'struct-summary';
+
+                // 제목
+                const title = document.createElement('h3');
+                title.textContent = '📋 파싱 정보';
+                summaryDiv.appendChild(title);
+
+                // 구조체 수
+                const structCountP = document.createElement('p');
+                structCountP.textContent = '구조체 수: ' + structDefs.length + '개';
+                summaryDiv.appendChild(structCountP);
+
+                // 각 구조체명과 총 크기 목록
+                const structList = document.createElement('ul');
+                structDefs.forEach(function(structDef) {
+                    const li = document.createElement('li');
+                    // 구조체의 총 크기 계산 (모든 필드 size 합산)
+                    const totalSize = structDef.fields.reduce(function(sum, field) {
+                        return sum + field.size;
+                    }, 0);
+                    li.textContent = structDef.name + ': ' + totalSize + ' bytes';
+                    structList.appendChild(li);
+                });
+                summaryDiv.appendChild(structList);
+
+                // 처리된 데이터 라인 수 계산 (unique lineNumber 개수)
+                const uniqueLines = {};
+                validData.forEach(function(item) {
+                    uniqueLines[item.lineNumber] = true;
+                });
+                const lineCount = Object.keys(uniqueLines).length;
+
+                const lineCountP = document.createElement('p');
+                lineCountP.textContent = '데이터 라인: ' + lineCount + '개';
+                summaryDiv.appendChild(lineCountP);
+
+                container.appendChild(summaryDiv);
             }
 
             // 2. 라인별로 그룹화
@@ -914,8 +983,8 @@ T000000000200000000000000300000`;
                 // 6. parseStructData 호출
                 const parsedData = parseStructData(dataInput, structDefs);
 
-                // 7. displayStructResults 호출
-                displayStructResults(parsedData);
+                // 7. displayStructResults 호출 (structDefs 전달)
+                displayStructResults(parsedData, structDefs);
             });
 
             // 구조체 초기화 버튼 클릭 이벤트
