@@ -106,6 +106,14 @@
             background: #1e7e34;
         }
 
+        #clear-btn {
+            background: #6c757d;
+        }
+
+        #clear-btn:hover {
+            background: #5a6268;
+        }
+
         /* 에러 메시지 스타일 */
         .error-message {
             background: #ffebee;
@@ -138,6 +146,7 @@
     <div class="button-group">
         <button id="sample-btn">샘플 로드</button>
         <button id="parse-btn">파싱 실행</button>
+        <button id="clear-btn">초기화</button>
     </div>
     
     <div id="result-container"></div>
@@ -418,6 +427,13 @@
 
                 // 5. displayResults 호출
                 displayResults(parsedData);
+            });
+
+            // 초기화 버튼 클릭 이벤트
+            document.getElementById('clear-btn').addEventListener('click', function() {
+                document.getElementById('xml-input').value = '';
+                document.getElementById('telegram-input').value = '';
+                document.getElementById('result-container').innerHTML = '';
             });
         });
     </script>
