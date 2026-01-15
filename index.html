@@ -332,6 +332,34 @@
             // 9. result-container에 wrapper 추가
             container.appendChild(wrapper);
         }
+
+        // DOMContentLoaded 이벤트
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('parse-btn').addEventListener('click', function() {
+                // 1. xml-input과 telegram-input 값 가져오기
+                const xmlInput = document.getElementById('xml-input').value;
+                const telegramInput = document.getElementById('telegram-input').value;
+
+                // 2. 둘 다 trim()해서 빈 문자열이면 alert("입력값을 확인하세요") 후 return
+                if (xmlInput.trim() === '' || telegramInput.trim() === '') {
+                    alert("입력값을 확인하세요");
+                    return;
+                }
+
+                // 3. parseXMLSpec 호출, 결과가 null이면 alert("XML 파싱 실패") 후 return
+                const xmlSpec = parseXMLSpec(xmlInput);
+                if (xmlSpec === null) {
+                    alert("XML 파싱 실패");
+                    return;
+                }
+
+                // 4. parseTelegram 호출
+                const parsedData = parseTelegram(telegramInput, xmlSpec);
+
+                // 5. displayResults 호출
+                displayResults(parsedData);
+            });
+        });
     </script>
 </body>
 </html>
