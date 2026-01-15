@@ -2198,14 +2198,26 @@ T9710249709001234567890123456789012XX`;
 
             // 구조체 초기화 버튼 클릭 이벤트
             document.getElementById('struct-clear-btn').addEventListener('click', function() {
-                // 모든 카드 삭제 후 새 카드 하나 추가
-                structContainer.innerHTML = '';
-                structCardIndex = 0;
-                structContainer.appendChild(createStructCard(0));
-                structCardIndex = 1;
+                // 확인 대화상자
+                if (!confirm('모든 입력을 초기화하시겠습니까?')) {
+                    return;
+                }
                 
+                // 1. struct-definitions-container innerHTML = ''
+                structContainer.innerHTML = '';
+                
+                // 2. struct-data value = ''
                 document.getElementById('struct-data').value = '';
+                
+                // 3. struct-result-container innerHTML = ''
                 document.getElementById('struct-result-container').innerHTML = '';
+                
+                // 4. structCardIndex = 0
+                structCardIndex = 0;
+                
+                // 5. 첫 번째 빈 카드 자동 추가
+                structContainer.appendChild(createStructCard(structCardIndex));
+                structCardIndex++;
             });
 
             // 테스트 실행 버튼 클릭 이벤트 (버튼이 존재할 경우에만)
