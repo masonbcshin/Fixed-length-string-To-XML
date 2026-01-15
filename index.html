@@ -1256,18 +1256,18 @@
          * =====================================================
          * @param {string} dataText - 데이터 텍스트 (줄바꿈으로 구분)
          * @param {Array} structDefs - 구조체 정의 배열
-         * @returns {Array} 파싱 결과 배열
+         * @returns {Object} { records: [...], stats: {...} } 형식의 파싱 결과
          */
         function parseStructData(dataText, structDefs) {
             // 입력값 유효성 검사
             if (typeof dataText !== 'string' || dataText.trim() === '') {
                 console.error('parseStructData: 데이터 텍스트가 유효하지 않습니다.');
-                return [];
+                return { records: [], stats: { totalBytes: 0, parsedBytes: 0, recordCount: 0, errorBytes: 0 } };
             }
 
             if (!Array.isArray(structDefs) || structDefs.length === 0) {
                 console.error('parseStructData: 구조체 정의가 유효하지 않습니다.');
-                return [];
+                return { records: [], stats: { totalBytes: 0, parsedBytes: 0, recordCount: 0, errorBytes: 0 } };
             }
 
             // 1. dataText를 줄바꿈으로 split, 빈 줄 제거
@@ -1275,45 +1275,58 @@
                 return line.trim() !== '';
             });
 
-            // 2. 결과 배열 초기화
-            const result = [];
+            // 2. 통계 초기화
+            const totalBytes = dataText.replace(/\n/g, '').length;
+            let parsedBytes = 0;
+            let errorBytes = 0;
 
-            // 3. 각 라인마다 처리
+            // 3. 레코드 배열 초기화
+            const records = [];
+
+            // 4. 각 라인마다 처리
             lines.forEach(function(line, lineIndex) {
-                const lineNumber = lineIndex + 1;
+                const recordIndex = lineIndex;
 
-                // findMatchingStruct 헬퍼 함수를 사용하여 매칭되는 구조체 찾기
-                const matchedStruct = findMatchingStruct(line, structDefs);
-
-                // 매칭 실패 시 에러 객체 추가
+                // findStructByKubun 함수를 먼저 시도, 실패 시 findMatchingStruct 사용
+                let matchedStruct = findStructByKubun(line, structDefs);
                 if (!matchedStruct) {
-                    result.push({
-                        error: true,
-                        lineNumber: lineNumber,
-                        line: line,
-                        message: '매칭되는 구조체 없음'
-                    });
+                    matchedStruct = findMatchingStruct(line, structDefs);
+                }
+
+                // 매칭 실패 시 에러 바이트 누적
+                if (!matchedStruct) {
+                    errorBytes += line.length;
+                    console.warn('라인 ' + (lineIndex + 1) + ': 매칭되는 구조체 없음');
                     return; // 다음 라인으로 continue
                 }
 
-                // d. 매칭된 구조체 fields를 순회하며 파싱
+                // 필드 배열 생성
+                const fields = [];
                 let currentPos = 0;
+
                 matchedStruct.fields.forEach(function(field) {
                     const startPos = currentPos;
                     const endPos = currentPos + field.size;
                     const value = line.substring(startPos, endPos);
 
-                    result.push({
-                        structName: matchedStruct.name,
+                    fields.push({
                         fieldName: field.name,
                         fieldSize: field.size,
-                        value: value,
-                        lineNumber: lineNumber,
                         startPos: startPos,
-                        endPos: endPos
+                        endPos: endPos,
+                        value: value
                     });
 
+                    parsedBytes += field.size;
                     currentPos += field.size;
+                });
+
+                // 레코드 객체 추가
+                records.push({
+                    recordIndex: recordIndex,
+                    structName: matchedStruct.name,
+                    kubun: matchedStruct.kubun || null,
+                    fields: fields
                 });
 
                 // 라인 길이 검증 경고
@@ -1322,13 +1335,21 @@
                 }, 0);
                 
                 if (line.length !== expectedLength) {
-                    console.warn('라인 ' + lineNumber + ': 예상 길이 ' + expectedLength + ', 실제 길이 ' + line.length);
+                    console.warn('라인 ' + (lineIndex + 1) + ': 예상 길이 ' + expectedLength + ', 실제 길이 ' + line.length);
                 }
             });
 
-            // 4. 결과 배열 반환
-            console.log('parseStructData: ' + result.length + '개의 필드가 파싱되었습니다.');
-            return result;
+            // 5. 결과 반환
+            console.log('parseStructData: ' + records.length + '개의 레코드가 파싱되었습니다.');
+            return {
+                records: records,
+                stats: {
+                    totalBytes: totalBytes,
+                    parsedBytes: parsedBytes,
+                    recordCount: records.length,
+                    errorBytes: errorBytes
+                }
+            };
         }
 
         /**
@@ -1639,10 +1660,11 @@
                 const defs = parseStructDefinitions(structDef);
                 if (!defs || defs.length !== 1) return '구조체 파싱 실패';
                 
-                const parsed = parseStructData(data, defs);
-                if (parsed.length !== 2) return '필드 파싱 실패';
-                if (parsed[0].value !== 'HELLO') return '첫 번째 필드 값 불일치';
-                if (parsed[1].value !== '1234567890') return '두 번째 필드 값 불일치';
+                const result = parseStructData(data, defs);
+                if (result.records.length !== 1) return '레코드 파싱 실패';
+                if (result.records[0].fields.length !== 2) return '필드 파싱 실패';
+                if (result.records[0].fields[0].value !== 'HELLO') return '첫 번째 필드 값 불일치';
+                if (result.records[0].fields[1].value !== '1234567890') return '두 번째 필드 값 불일치';
                 
                 return true;
             });
@@ -1664,9 +1686,9 @@
                 const defs = parseStructDefinitions(structDef);
                 if (!defs || defs.length !== 5) return '구조체 개수 불일치: ' + (defs ? defs.length : 0);
                 
-                const parsed = parseStructData(data, defs);
-                // 5줄 × 2필드 = 10개 필드
-                if (parsed.length !== 10) return '필드 파싱 개수 불일치: ' + parsed.length;
+                const result = parseStructData(data, defs);
+                // 5줄 = 5개 레코드
+                if (result.records.length !== 5) return '레코드 파싱 개수 불일치: ' + result.records.length;
                 
                 return true;
             });
@@ -1688,13 +1710,13 @@
                 const defs = parseStructDefinitions(structDef);
                 if (!defs) return '구조체 파싱 실패';
                 
-                const parsed = parseStructData(data, defs);
-                // 100줄 × 2필드 = 200개 필드
-                if (parsed.length !== 200) return '필드 파싱 개수 불일치: ' + parsed.length;
+                const result = parseStructData(data, defs);
+                // 100줄 = 100개 레코드
+                if (result.records.length !== 100) return '레코드 파싱 개수 불일치: ' + result.records.length;
                 
-                // 첫 번째와 마지막 라인 검증
-                if (parsed[0].value !== '0000') return '첫 라인 첫 필드 불일치';
-                if (parsed[198].value !== '0099') return '마지막 라인 첫 필드 불일치';
+                // 첫 번째와 마지막 레코드 검증
+                if (result.records[0].fields[0].value !== '0000') return '첫 레코드 첫 필드 불일치';
+                if (result.records[99].fields[0].value !== '0099') return '마지막 레코드 첫 필드 불일치';
                 
                 return true;
             });
@@ -1707,12 +1729,13 @@
                 const data = 'SHORTDATA'; // 9자 (예상: 20자)
                 
                 const defs = parseStructDefinitions(structDef);
-                const parsed = parseStructData(data, defs);
+                const result = parseStructData(data, defs);
                 
                 // 파싱은 성공해야 함 (부족한 부분은 빈 문자열)
-                if (parsed.length !== 2) return '필드 파싱 실패';
-                if (parsed[0].value !== 'SHORTDATA') return '첫 번째 필드 값 불일치';
-                if (parsed[1].value !== '') return '두 번째 필드가 빈 문자열이어야 함';
+                if (result.records.length !== 1) return '레코드 파싱 실패';
+                if (result.records[0].fields.length !== 2) return '필드 파싱 실패';
+                if (result.records[0].fields[0].value !== 'SHORTDATA') return '첫 번째 필드 값 불일치';
+                if (result.records[0].fields[1].value !== '') return '두 번째 필드가 빈 문자열이어야 함';
                 
                 return true;
             });
@@ -1722,11 +1745,11 @@
                 const data = 'EXTRALONG_DATA_HERE'; // 예상보다 긴 데이터
                 
                 const defs = parseStructDefinitions(structDef);
-                const parsed = parseStructData(data, defs);
+                const result = parseStructData(data, defs);
                 
                 // 정의된 필드까지만 파싱
-                if (parsed.length !== 1) return '필드 파싱 개수 불일치';
-                if (parsed[0].value !== 'EXTRA') return '값 불일치: ' + parsed[0].value;
+                if (result.records.length !== 1) return '레코드 파싱 개수 불일치';
+                if (result.records[0].fields[0].value !== 'EXTRA') return '값 불일치: ' + result.records[0].fields[0].value;
                 
                 return true;
             });
@@ -1784,9 +1807,9 @@
             test('빈 입력 - 데이터', function() {
                 const structDef = `typedef struct { char field[5]; } TestStruct;`;
                 const defs = parseStructDefinitions(structDef);
-                const parsed = parseStructData('', defs);
+                const result = parseStructData('', defs);
                 
-                if (parsed.length !== 0) return '빈 데이터인데 결과 있음';
+                if (result.records.length !== 0) return '빈 데이터인데 결과 있음';
                 return true;
             });
 
@@ -1840,15 +1863,15 @@
                 const data = 'H1234\nD123456789';
                 
                 const defs = parseStructDefinitions(structDef);
-                const parsed = parseStructData(data, defs);
+                const result = parseStructData(data, defs);
                 
-                // H 라인: 2필드, D 라인: 2필드 = 4개
-                if (parsed.length !== 4) return '필드 파싱 개수 불일치: ' + parsed.length;
+                // H 라인: 1레코드, D 라인: 1레코드 = 2개 레코드
+                if (result.records.length !== 2) return '레코드 파싱 개수 불일치: ' + result.records.length;
                 
                 // 첫 라인은 Record_H
-                if (parsed[0].structName !== 'Record_H') return '첫 라인 구조체 매칭 실패';
+                if (result.records[0].structName !== 'Record_H') return '첫 라인 구조체 매칭 실패';
                 // 두 번째 라인은 Record_D
-                if (parsed[2].structName !== 'Record_D') return '두 번째 라인 구조체 매칭 실패';
+                if (result.records[1].structName !== 'Record_D') return '두 번째 라인 구조체 매칭 실패';
                 
                 return true;
             });
@@ -2142,119 +2165,35 @@ T9710249709001234567890123456789012XX`;
 
             // 구조체 파싱 실행 버튼 클릭 이벤트
             document.getElementById('struct-parse-btn').addEventListener('click', function() {
-                // 1. 모든 카드에서 구조체 정의 수집
-                const cards = structContainer.querySelectorAll('.struct-card');
+                // 1. collectStructDefinitions() 호출
+                const structDefs = collectStructDefinitions();
                 
-                if (cards.length === 0) {
-                    displayError('구조체 카드가 없습니다.', 'struct-result-container');
-                    return;
-                }
-
-                // 카드별로 구조체 정의와 kubun 값을 수집
-                const structInfos = [];
-                cards.forEach(function(card, idx) {
-                    const definition = card.querySelector('.struct-definition').value.trim();
-                    const kubun = card.querySelector('.struct-kubun').value.trim();
-                    const name = card.querySelector('.struct-name').value.trim();
-                    if (definition) {
-                        structInfos.push({ definition, kubun: kubun || null, name: name || ('구조체' + (idx + 1)) });
-                    }
-                });
-
-                // 모든 카드의 구조체 정의를 합침
-                const combinedStructDefs = structInfos.map(function(info) {
-                    return info.definition;
-                }).join('\n');
-
-                const structDefInput = combinedStructDefs.trim();
-                
-                // 2. struct-data 값 가져오기, trim
-                const dataInput = document.getElementById('struct-data').value.trim();
-
-                // 3. 둘 다 비어있으면 displayError 호출
-                if (structDefInput === '' || dataInput === '') {
-                    displayError('입력값을 확인하세요', 'struct-result-container');
-                    return;
-                }
-
-                // 4. parseStructDefinitions 호출, null이면 displayError
-                const structDefs = parseStructDefinitions(structDefInput);
+                // null이면 중단 (에러는 함수 내부에서 표시)
                 if (structDefs === null) {
-                    displayError('구조체 파싱 실패', 'struct-result-container');
                     return;
                 }
 
-                // 구조체 정의에 kubun 정보 매핑
-                structDefs.forEach(function(structDef, idx) {
-                    const matchingInfo = structInfos.find(function(info) {
-                        return info.definition.indexOf(structDef.name) !== -1;
-                    });
-                    if (matchingInfo) {
-                        structDef.kubun = matchingInfo.kubun;
-                    }
-                });
-
-                // 5. 파싱된 구조체 개수 콘솔 출력
-                console.log('파싱된 구조체 개수: ' + structDefs.length);
-
-                // 6. parseStructData 호출
-                const parsedData = parseStructData(dataInput, structDefs);
-
-                // 7. parsedData를 { records, stats } 형식으로 변환
-                const totalBytes = dataInput.replace(/\n/g, '').length;
-                let parsedBytes = 0;
-                let errorBytes = 0;
-
-                // 레코드별로 그룹화 (lineNumber를 recordIndex로 사용)
-                const recordMap = new Map();
+                // 2. struct-data 값 가져오기, trim
+                const data = document.getElementById('struct-data').value.trim();
                 
-                parsedData.forEach(function(item) {
-                    if (item.error) {
-                        errorBytes += item.line ? item.line.length : 0;
-                        return;
-                    }
+                // 비어있으면 displayError("데이터를 입력하세요")
+                if (data === '') {
+                    displayError('데이터를 입력하세요', 'struct-result-container');
+                    return;
+                }
 
-                    const recordIndex = item.lineNumber - 1; // 0-based index
-                    
-                    if (!recordMap.has(recordIndex)) {
-                        // 해당 구조체의 kubun 찾기
-                        const matchedStruct = structDefs.find(function(s) {
-                            return s.name === item.structName;
-                        });
-                        
-                        recordMap.set(recordIndex, {
-                            recordIndex: recordIndex,
-                            structName: item.structName,
-                            kubun: matchedStruct ? matchedStruct.kubun : null,
-                            fields: []
-                        });
-                    }
+                // 3. parseStructData(data, structDefs) 호출
+                const result = parseStructData(data, structDefs);
 
-                    recordMap.get(recordIndex).fields.push({
-                        fieldName: item.fieldName,
-                        fieldSize: item.fieldSize,
-                        startPos: item.startPos,
-                        endPos: item.endPos,
-                        value: item.value
-                    });
+                // 4. displayStructResults(result) 호출
+                displayStructResults(result);
 
-                    parsedBytes += item.fieldSize;
-                });
-
-                const records = Array.from(recordMap.values());
-
-                const parseResult = {
-                    records: records,
-                    stats: {
-                        totalBytes: totalBytes,
-                        parsedBytes: parsedBytes,
-                        recordCount: records.length,
-                        errorBytes: errorBytes
-                    }
-                };
-
-                // 8. displayStructResults 호출
-                displayStructResults(parseResult);
+                // 5. 성공 시 콘솔에 로그
+                const count = result.stats.recordCount;
+                const percent = result.stats.totalBytes > 0 
+                    ? ((result.stats.parsedBytes / result.stats.totalBytes) * 100).toFixed(1)
+                    : 0;
+                console.log('파싱 완료: 레코드 ' + count + '개, 성공률 ' + percent + '%');
             });
 
             // 구조체 초기화 버튼 클릭 이벤트
