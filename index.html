@@ -902,9 +902,10 @@
          * =====================================================
          * 단일 C 구조체 정의 파싱 함수
          * 하나의 구조체 정의 문자열을 파싱하여 필드 배열로 변환
+         * char 타입만 지원 (unsigned char도 char로 처리)
          * =====================================================
          * @param {string} structText - 단일 C 구조체 정의 문자열
-         * @returns {Object|null} { fields: [...] } 또는 null (에러 시)
+         * @returns {Object|null} { fields: [...], totalSize: number } 또는 null (에러 시)
          */
         function parseStructDefinition(structText) {
             // 입력값 유효성 검사
@@ -913,75 +914,43 @@
                 return null;
             }
 
-            // 1. 주석 제거 처리 - 캐시된 정규식 사용
-            let cleanedText = structText.replace(getRegex('singleLineComment'), '');
-            cleanedText = cleanedText.replace(getRegex('blockComment'), '');
+            // 1. 주석 제거
+            // // 주석 제거
+            let cleanedText = structText.replace(/\/\/.*$/gm, '');
+            // /* */ 주석 제거
+            cleanedText = cleanedText.replace(/\/\*[\s\S]*?\*\//g, '');
 
-            // 2. typedef struct 블록 추출 - 캐시된 정규식 사용
-            const structPattern = getRegex('structPattern');
+            // 2. 필드 추출 정규식
+            // char 또는 unsigned char 타입의 배열 필드 매칭
+            // unsigned char도 char로 처리
+            const fieldPattern = /char\s+(\w+)\s*\[\s*(\d+)\s*\]/g;
 
-            // 타입별 크기 정의 (바이트)
-            const typeSizes = {
-                'char': 1,
-                'unsigned char': 1,
-                'short': 2,
-                'unsigned short': 2,
-                'int': 4,
-                'unsigned int': 4,
-                'long': 4,
-                'unsigned long': 4
-            };
-
-            // typedef struct 블록 추출 (단일 구조체만)
-            const structMatch = structPattern.exec(cleanedText);
-            
-            if (!structMatch) {
-                console.error('parseStructDefinition: typedef struct 구문을 찾을 수 없습니다.');
-                return null;
-            }
-
-            const fieldsContent = structMatch[2]; // 중괄호 안의 내용
-
-            // 필드 배열
+            // 3. matchAll로 모든 매칭 결과 순회
+            const matches = cleanedText.matchAll(fieldPattern);
             const fields = [];
 
-            // 필드들 추출 - 새로운 정규식 인스턴스 사용
-            const fieldPattern = getRegex('fieldPattern');
-            let fieldMatch;
-            while ((fieldMatch = fieldPattern.exec(fieldsContent)) !== null) {
-                const unsignedPrefix = fieldMatch[1] ? fieldMatch[1].trim() : '';
-                const baseType = fieldMatch[2];
-                const fieldName = fieldMatch[3];
-                const arraySize = parseInt(fieldMatch[4], 10);
+            for (const match of matches) {
+                const fieldName = match[1];
+                const size = parseInt(match[2], 10);
 
-                // 전체 타입명 구성
-                const fullType = unsignedPrefix ? unsignedPrefix + ' ' + baseType : baseType;
-
-                // 타입별 크기 계산
-                let typeSize = typeSizes[fullType] || typeSizes[baseType] || 1;
-
-                // char 외의 타입은 경고 출력 (하지만 char 기준으로 처리)
-                if (baseType !== 'char') {
-                    console.warn('parseStructDefinition: 필드 "' + fieldName + '"의 타입 "' + fullType + '"은 char로 처리됩니다. 크기 계산이 정확하지 않을 수 있습니다.');
-                    // char 기준으로 처리 (배열 크기만 사용)
-                    typeSize = 1;
-                }
-
+                // 필드 정보를 fields 배열에 추가
                 fields.push({
                     name: fieldName,
-                    type: fullType,
-                    size: arraySize * typeSize
+                    size: size
                 });
             }
 
-            // 빈 구조체 검증 - fields가 0개인 경우 null 반환
+            // 4. fields가 비어있으면 null 반환
             if (fields.length === 0) {
                 console.error('parseStructDefinition: 유효한 필드가 없습니다.');
                 return null;
             }
 
-            // 결과 반환
-            return { fields: fields };
+            // 5. 총 크기 계산
+            const totalSize = fields.reduce((sum, f) => sum + f.size, 0);
+
+            // 6. 결과 반환
+            return { fields, totalSize };
         }
 
         /**
@@ -1027,7 +996,8 @@
                     structDefs.push({
                         name: structName || ('구조체' + (index + 1)),
                         kubun: kubunValue || null,
-                        fields: parsed.fields
+                        fields: parsed.fields,
+                        totalSize: parsed.totalSize
                     });
                 } else {
                     // g. 파싱 실패 시 에러 표시 후 null 반환
@@ -1394,8 +1364,8 @@
                 const structList = document.createElement('ul');
                 structDefs.forEach(function(structDef) {
                     const li = document.createElement('li');
-                    // 구조체의 총 크기 계산 (모든 필드 size 합산)
-                    const totalSize = structDef.fields.reduce(function(sum, field) {
+                    // 구조체의 총 크기 사용 (totalSize가 있으면 사용, 없으면 계산)
+                    const totalSize = structDef.totalSize || structDef.fields.reduce(function(sum, field) {
                         return sum + field.size;
                     }, 0);
                     li.textContent = structDef.name + ': ' + totalSize + ' bytes';
