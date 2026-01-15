@@ -392,6 +392,66 @@
             gap: 15px;
         }
 
+        /* 구조체 카드 스타일 */
+        .struct-card {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .struct-card-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 10px;
+        }
+
+        .struct-number {
+            font-weight: bold;
+            color: #495057;
+            font-size: 16px;
+        }
+
+        .remove-struct-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .remove-struct-btn:hover {
+            background: #c82333;
+        }
+
+        .input-row {
+            margin-bottom: 12px;
+        }
+
+        .input-row label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .input-row input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .input-row small {
+            color: #6c757d;
+            font-size: 12px;
+            margin-top: 5px;
+            display: block;
+        }
+
         /* 모바일 대응 */
         @media (max-width: 600px) {
             body {
@@ -531,6 +591,50 @@
         function getRegex(name) {
             const original = REGEX_CACHE[name];
             return new RegExp(original.source, original.flags);
+        }
+
+        /**
+         * =====================================================
+         * 구조체 카드 생성 함수
+         * 구조체 입력을 위한 카드 UI 요소 생성
+         * =====================================================
+         * @param {number} index - 구조체 인덱스 번호
+         * @returns {HTMLElement} DOM 요소 (div.struct-card)
+         */
+        function createStructCard(index) {
+            // 1. div 생성, class="struct-card", data-index="${index}"
+            const card = document.createElement('div');
+            card.className = 'struct-card';
+            card.setAttribute('data-index', index);
+
+            // 2. 내부 HTML 설정
+            card.innerHTML = `
+                <div class="struct-card-header">
+                    <span class="struct-number">구조체 #${index + 1}</span>
+                    <button class="remove-struct-btn" data-index="${index}">✕ 삭제</button>
+                </div>
+                
+                <div class="struct-card-body">
+                    <div class="input-row">
+                        <label>구조체명 (선택)</label>
+                        <input type="text" class="struct-name" placeholder="예: DHF_H, HeaderRecord" />
+                    </div>
+                    
+                    <div class="input-row">
+                        <label>구분값 (선택)</label>
+                        <input type="text" class="struct-kubun" maxlength="5" placeholder="예: H, 01, HEADER" />
+                        <small>여러 구조체 사용 시 필수. 데이터 첫 글자로 구조체 식별</small>
+                    </div>
+                    
+                    <div class="input-row">
+                        <label>구조체 정의</label>
+                        <textarea class="struct-definition" rows="8" placeholder="typedef struct { ... } 구조체명;"></textarea>
+                    </div>
+                </div>
+            `;
+
+            // 3. 요소 반환
+            return card;
         }
 
         /**
