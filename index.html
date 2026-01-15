@@ -50,6 +50,46 @@
             margin-top: 30px;
         }
 
+        /* 테이블 스타일 */
+        #result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        #result-table th, #result-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        #result-table th {
+            background: #f0f0f0;
+            font-weight: bold;
+        }
+
+        #result-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        #result-table tr:hover {
+            background: #f0f8ff;
+        }
+
+        #result-table td:nth-child(7) {
+            font-family: 'Courier New', monospace;
+            background: #fafafa;
+        }
+
+        .empty-value {
+            background: #ffe6e6;
+        }
+
+        /* 반응형 테이블 래퍼 */
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
         /* 모바일 대응 */
         @media (max-width: 600px) {
             body {
@@ -284,8 +324,13 @@
             table.appendChild(thead);
             table.appendChild(tbody);
 
-            // 8. result-container에 table 추가
-            container.appendChild(table);
+            // 8. 반응형을 위한 wrapper div 생성
+            const wrapper = document.createElement('div');
+            wrapper.className = 'table-wrapper';
+            wrapper.appendChild(table);
+
+            // 9. result-container에 wrapper 추가
+            container.appendChild(wrapper);
         }
     </script>
 </body>
