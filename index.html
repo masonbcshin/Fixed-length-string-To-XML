@@ -2231,12 +2231,15 @@ T9710249709001234567890123456789012XX`;
 
             // 복사 버튼 클릭 이벤트 (이벤트 위임 사용)
             document.getElementById('struct-result-container').addEventListener('click', function(e) {
-                // 클릭된 요소가 복사 버튼인지 확인 (copy-result-btn 또는 copy-record-btn)
-                if (!e.target.classList.contains('copy-result-btn') && !e.target.classList.contains('copy-record-btn')) {
+                // 클릭된 요소가 복사 버튼인지 확인
+                if (!e.target.classList.contains('copy-record-btn')) {
                     return;
                 }
 
                 const btn = e.target;
+
+                // 1. data-record 속성에서 recordIndex 가져오기
+                const recordIndex = btn.getAttribute('data-record');
 
                 // 해당 레코드의 그룹 찾기
                 const groupDiv = btn.closest('.struct-result-group');
@@ -2252,29 +2255,36 @@ T9710249709001234567890123456789012XX`;
 
                 const rows = tbody.querySelectorAll('tr');
                 
-                // TSV 형식으로 변환 (필드명\t값)
+                // 2. TSV 형식으로 변환 (필드명\t크기\t값)
                 const tsvLines = [];
                 rows.forEach(function(row) {
                     const cells = row.querySelectorAll('td');
-                    // 새 형식: 5개 컬럼 (필드명, 크기, 시작, 종료, 값)
+                    // 5개 컬럼: 필드명, 크기, 시작, 종료, 값
                     if (cells.length >= 5) {
                         const fieldName = cells[0].textContent;  // 필드명
-                        const value = cells[4].textContent;       // 값
-                        tsvLines.push(fieldName + '\t' + value);
+                        const size = cells[1].textContent;       // 크기
+                        const value = cells[4].textContent;      // 값
+                        tsvLines.push(fieldName + '\t' + size + '\t' + value);
                     }
                 });
 
                 const tsvText = tsvLines.join('\n');
 
-                // 클립보드에 복사
+                // 3. 클립보드에 복사
                 navigator.clipboard.writeText(tsvText).then(function() {
-                    // 복사 성공 시 버튼 텍스트 임시 변경
+                    // 4. 복사 성공 시:
+                    // - 버튼 텍스트 → "✓ 복사됨"
                     const originalText = btn.textContent;
-                    btn.textContent = '✓ 복사됨';
+                    const originalBg = btn.style.backgroundColor;
                     
-                    // 2초 후 원래 텍스트로 복원
+                    btn.textContent = '✓ 복사됨';
+                    // - 배경색 임시 변경
+                    btn.style.backgroundColor = '#17a2b8';
+                    
+                    // - 2초 후 원래대로
                     setTimeout(function() {
                         btn.textContent = originalText;
+                        btn.style.backgroundColor = originalBg;
                     }, 2000);
                 }).catch(function(err) {
                     console.error('클립보드 복사 실패:', err);
