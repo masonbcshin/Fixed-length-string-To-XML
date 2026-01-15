@@ -156,6 +156,24 @@
             display: block;
         }
 
+        /* 구조체 결과 그룹 스타일 */
+        .struct-result-group {
+            margin-bottom: 30px;
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .struct-result-group h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .struct-result-group + .struct-result-group {
+            margin-top: 20px;
+        }
+
         /* 모바일 대응 */
         @media (max-width: 600px) {
             body {
@@ -635,6 +653,7 @@
 
         // 구조체 파싱 결과를 테이블로 표시
         function displayStructResults(parsedData) {
+            // 1. struct-result-container 초기화
             const container = document.getElementById('struct-result-container');
             container.innerHTML = '';
 
@@ -666,64 +685,97 @@
                 return;
             }
 
-            // 테이블 생성
-            const table = document.createElement('table');
-            table.id = 'result-table';
-
-            // thead 생성
-            const thead = document.createElement('thead');
-            const headerRow = document.createElement('tr');
-            const headers = ['라인', '구조체명', '필드명', '크기', '시작', '종료', '값'];
-
-            headers.forEach(function(headerText) {
-                const th = document.createElement('th');
-                th.textContent = headerText;
-                headerRow.appendChild(th);
+            // 2. 라인별로 그룹화
+            const groupedByLine = {};
+            validData.forEach(function(item) {
+                const lineNum = item.lineNumber;
+                if (!groupedByLine[lineNum]) {
+                    groupedByLine[lineNum] = {
+                        structName: item.structName,
+                        fields: []
+                    };
+                }
+                groupedByLine[lineNum].fields.push(item);
             });
 
-            thead.appendChild(headerRow);
+            // 3. 각 라인마다 테이블 생성
+            const lineNumbers = Object.keys(groupedByLine).sort(function(a, b) {
+                return parseInt(a) - parseInt(b);
+            });
 
-            // tbody 생성
-            const tbody = document.createElement('tbody');
+            lineNumbers.forEach(function(lineNum) {
+                const lineData = groupedByLine[lineNum];
 
-            // 데이터 행 추가
-            validData.forEach(function(item) {
-                const tr = document.createElement('tr');
+                // 그룹 컨테이너 생성
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'struct-result-group';
 
-                const values = [
-                    item.lineNumber,
-                    item.structName,
-                    item.fieldName,
-                    item.fieldSize,
-                    item.startPos,
-                    item.endPos,
-                    item.value
-                ];
+                // 제목: "라인 N - 구조체명"
+                const title = document.createElement('h3');
+                title.textContent = '라인 ' + lineNum + ' - ' + lineData.structName;
+                groupDiv.appendChild(title);
 
-                values.forEach(function(value, tdIndex) {
-                    const td = document.createElement('td');
-                    td.textContent = value;
+                // 테이블 생성
+                const table = document.createElement('table');
+                table.id = 'result-table';
 
-                    // value가 공백만 있으면 class="empty-value" 추가
-                    if (tdIndex === 6 && typeof value === 'string' && value.trim() === '') {
-                        td.classList.add('empty-value');
-                    }
+                // thead 생성
+                const thead = document.createElement('thead');
+                const headerRow = document.createElement('tr');
+                const headers = ['순번', '필드명', '크기', '시작', '종료', '값'];
 
-                    tr.appendChild(td);
+                headers.forEach(function(headerText) {
+                    const th = document.createElement('th');
+                    th.textContent = headerText;
+                    headerRow.appendChild(th);
                 });
 
-                tbody.appendChild(tr);
+                thead.appendChild(headerRow);
+
+                // tbody 생성
+                const tbody = document.createElement('tbody');
+
+                // 해당 라인의 모든 필드를 행으로 추가
+                lineData.fields.forEach(function(item, index) {
+                    const tr = document.createElement('tr');
+
+                    const values = [
+                        index + 1,       // 순번
+                        item.fieldName,  // 필드명
+                        item.fieldSize,  // 크기
+                        item.startPos,   // 시작
+                        item.endPos,     // 종료
+                        item.value       // 값
+                    ];
+
+                    values.forEach(function(value, tdIndex) {
+                        const td = document.createElement('td');
+                        td.textContent = value;
+
+                        // value가 공백만 있으면 class="empty-value" 추가 (마지막 컬럼)
+                        if (tdIndex === 5 && typeof value === 'string' && value.trim() === '') {
+                            td.classList.add('empty-value');
+                        }
+
+                        tr.appendChild(td);
+                    });
+
+                    tbody.appendChild(tr);
+                });
+
+                table.appendChild(thead);
+                table.appendChild(tbody);
+
+                // 반응형 wrapper
+                const wrapper = document.createElement('div');
+                wrapper.className = 'table-wrapper';
+                wrapper.appendChild(table);
+
+                groupDiv.appendChild(wrapper);
+
+                // 4. 컨테이너에 그룹 추가
+                container.appendChild(groupDiv);
             });
-
-            table.appendChild(thead);
-            table.appendChild(tbody);
-
-            // 반응형 wrapper
-            const wrapper = document.createElement('div');
-            wrapper.className = 'table-wrapper';
-            wrapper.appendChild(table);
-
-            container.appendChild(wrapper);
         }
 
         // DOMContentLoaded 이벤트
