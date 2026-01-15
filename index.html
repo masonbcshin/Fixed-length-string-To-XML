@@ -559,6 +559,13 @@
     <script>
         /**
          * =====================================================
+         * 전역 변수
+         * =====================================================
+         */
+        let structCardIndex = 0;
+
+        /**
+         * =====================================================
          * 정규식 캐싱 - 성능 최적화를 위해 정규식을 미리 컴파일
          * =====================================================
          */
@@ -1688,6 +1695,45 @@
         // DOMContentLoaded 이벤트 - 이벤트 리스너 등록
         // =========================================
         document.addEventListener('DOMContentLoaded', function() {
+            // =========================================
+            // 구조체 카드 초기화 - 첫 번째 카드 자동 추가
+            // =========================================
+            const structContainer = document.getElementById('struct-definitions-container');
+            structContainer.appendChild(createStructCard(0));
+            structCardIndex = 1;
+
+            // =========================================
+            // 구조체 추가 버튼 클릭 이벤트
+            // =========================================
+            document.getElementById('add-struct-btn').addEventListener('click', function() {
+                const newCard = createStructCard(structCardIndex);
+                structContainer.appendChild(newCard);
+                structCardIndex++;
+            });
+
+            // =========================================
+            // 구조체 삭제 버튼 이벤트 위임
+            // =========================================
+            structContainer.addEventListener('click', function(e) {
+                if (e.target.classList.contains('remove-struct-btn')) {
+                    // 클릭된 버튼의 부모 .struct-card 찾기
+                    const card = e.target.closest('.struct-card');
+                    if (!card) return;
+
+                    // 확인 대화상자
+                    if (confirm('이 구조체를 삭제하시겠습니까?')) {
+                        // 해당 카드 제거
+                        card.remove();
+
+                        // 남은 카드가 0개면 structCardIndex를 0으로 리셋
+                        const remainingCards = structContainer.querySelectorAll('.struct-card');
+                        if (remainingCards.length === 0) {
+                            structCardIndex = 0;
+                        }
+                    }
+                }
+            });
+
             // 도움말 토글 이벤트
             const helpToggle = document.querySelector('.help-toggle');
             const helpContent = document.querySelector('.help-content');
@@ -1776,24 +1822,53 @@
 
             // 구조체 샘플 로드 버튼 클릭 이벤트
             document.getElementById('struct-sample-btn').addEventListener('click', function() {
-                // C 구조체 정의 샘플 (DHF_H, DHF_D, DHF_T)
-                const sampleStructDef = `typedef struct{
+                // 기존 카드 모두 삭제 후 새로 생성
+                structContainer.innerHTML = '';
+                structCardIndex = 0;
+
+                // 샘플 데이터 정의 (3개의 구조체)
+                const sampleStructs = [
+                    {
+                        name: 'DHF_H',
+                        kubun: 'H',
+                        definition: `typedef struct{
   char record_kubun[1];
   char bank_cd[2];
   char cust_id[7];
-} DHF_H;
-
-typedef struct{
+} DHF_H;`
+                    },
+                    {
+                        name: 'DHF_D',
+                        kubun: 'D',
+                        definition: `typedef struct{
   char record_kubun[1];
   char acno[16];
   char amt[20];
-} DHF_D;
-
-typedef struct{
+} DHF_D;`
+                    },
+                    {
+                        name: 'DHF_T',
+                        kubun: 'T',
+                        definition: `typedef struct{
   char record_kubun[1];
   char tot_cnt[10];
   char tot_amt[20];
-} DHF_T;`;
+} DHF_T;`
+                    }
+                ];
+
+                // 각 샘플 구조체마다 카드 생성
+                sampleStructs.forEach(function(sample) {
+                    const card = createStructCard(structCardIndex);
+                    structContainer.appendChild(card);
+                    
+                    // 카드 내부 입력 필드에 값 설정
+                    card.querySelector('.struct-name').value = sample.name;
+                    card.querySelector('.struct-kubun').value = sample.kubun;
+                    card.querySelector('.struct-definition').value = sample.definition;
+                    
+                    structCardIndex++;
+                });
 
                 // 통 데이터 샘플 (구조체 길이에 맞게 조정)
                 // DHF_H: 1+2+7 = 10자
@@ -1804,14 +1879,29 @@ D123456789012345600000000000000100000
 D987654321098765400000000000000200000
 T000000000200000000000000300000`;
 
-                document.getElementById('struct-definitions').value = sampleStructDef;
                 document.getElementById('struct-data').value = sampleData;
             });
 
             // 구조체 파싱 실행 버튼 클릭 이벤트
             document.getElementById('struct-parse-btn').addEventListener('click', function() {
-                // 1. struct-definitions 값 가져오기, trim
-                const structDefInput = document.getElementById('struct-definitions').value.trim();
+                // 1. 모든 카드에서 구조체 정의 수집
+                const cards = structContainer.querySelectorAll('.struct-card');
+                
+                if (cards.length === 0) {
+                    displayError('구조체 카드가 없습니다.', 'struct-result-container');
+                    return;
+                }
+
+                // 모든 카드의 구조체 정의를 합침
+                let combinedStructDefs = '';
+                cards.forEach(function(card) {
+                    const definition = card.querySelector('.struct-definition').value.trim();
+                    if (definition) {
+                        combinedStructDefs += definition + '\n';
+                    }
+                });
+
+                const structDefInput = combinedStructDefs.trim();
                 
                 // 2. struct-data 값 가져오기, trim
                 const dataInput = document.getElementById('struct-data').value.trim();
@@ -1841,7 +1931,12 @@ T000000000200000000000000300000`;
 
             // 구조체 초기화 버튼 클릭 이벤트
             document.getElementById('struct-clear-btn').addEventListener('click', function() {
-                document.getElementById('struct-definitions').value = '';
+                // 모든 카드 삭제 후 새 카드 하나 추가
+                structContainer.innerHTML = '';
+                structCardIndex = 0;
+                structContainer.appendChild(createStructCard(0));
+                structCardIndex = 1;
+                
                 document.getElementById('struct-data').value = '';
                 document.getElementById('struct-result-container').innerHTML = '';
             });
