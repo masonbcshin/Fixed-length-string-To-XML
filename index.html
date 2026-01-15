@@ -564,9 +564,10 @@
         }
 
         // 에러 메시지 표시
-        function displayError(message) {
-            // 1. result-container 가져오기
-            const container = document.getElementById('result-container');
+        function displayError(message, targetContainer) {
+            // 1. targetContainer 가져오기 (기본값: result-container)
+            const containerId = targetContainer || 'result-container';
+            const container = document.getElementById(containerId);
 
             // 2. innerHTML을 에러 메시지로 설정
             container.innerHTML = `<div class="error-message">⚠️ ${message}</div>`;
@@ -643,12 +644,6 @@
 
             // 9. result-container에 wrapper 추가
             container.appendChild(wrapper);
-        }
-
-        // 구조체 파싱 에러 메시지 표시
-        function displayStructError(message) {
-            const container = document.getElementById('struct-result-container');
-            container.innerHTML = `<div class="error-message">⚠️ ${message}</div>`;
         }
 
         // 구조체 파싱 결과를 테이블로 표시
@@ -891,27 +886,32 @@ T000000000200000000000000300000`;
 
             // 구조체 파싱 실행 버튼 클릭 이벤트
             document.getElementById('struct-parse-btn').addEventListener('click', function() {
-                // 입력값 가져오기
-                const structDefInput = document.getElementById('struct-definitions').value;
-                const dataInput = document.getElementById('struct-data').value;
+                // 1. struct-definitions 값 가져오기, trim
+                const structDefInput = document.getElementById('struct-definitions').value.trim();
+                
+                // 2. struct-data 값 가져오기, trim
+                const dataInput = document.getElementById('struct-data').value.trim();
 
-                // 유효성 검사
-                if (structDefInput.trim() === '' || dataInput.trim() === '') {
-                    displayStructError('구조체 정의와 데이터를 모두 입력하세요.');
+                // 3. 둘 다 비어있으면 displayError 호출
+                if (structDefInput === '' || dataInput === '') {
+                    displayError('입력값을 확인하세요', 'struct-result-container');
                     return;
                 }
 
-                // 구조체 정의 파싱
+                // 4. parseStructDefinitions 호출, null이면 displayError
                 const structDefs = parseStructDefinitions(structDefInput);
                 if (structDefs === null) {
-                    displayStructError('구조체 정의 파싱 실패: 형식을 확인하세요.');
+                    displayError('구조체 파싱 실패', 'struct-result-container');
                     return;
                 }
 
-                // 데이터 파싱
+                // 5. 파싱된 구조체 개수 콘솔 출력
+                console.log('파싱된 구조체 개수: ' + structDefs.length);
+
+                // 6. parseStructData 호출
                 const parsedData = parseStructData(dataInput, structDefs);
 
-                // 결과 표시
+                // 7. displayStructResults 호출
                 displayStructResults(parsedData);
             });
 
