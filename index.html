@@ -4,7 +4,26 @@
     <meta charset="UTF-8">
     <title>통전문 파서</title>
     <style>
-        /* 전체 레이아웃 */
+        /**
+         * =====================================================
+         * 통전문 파서 스타일시트
+         * =====================================================
+         * 주요 기능:
+         * 1. XML 파싱 탭 - XML 규격 기반 통전문 파싱
+         * 2. C 구조체 파싱 탭 - C 구조체 기반 파싱
+         * 
+         * UX 기능:
+         * - 구조체 카드 접기/펼치기 (▼ ↔ ▶)
+         * - 드래그 앤 드롭 카드 재정렬
+         * - 로컬 스토리지 자동 저장/복원
+         * - 다크모드 지원
+         * - 키보드 단축키 (Ctrl+Enter, Ctrl+N)
+         * =====================================================
+         */
+
+        /* =====================================================
+         * 기본 레이아웃 스타일
+         * ===================================================== */
         body {
             max-width: 1200px;
             margin: 0 auto;
@@ -45,7 +64,9 @@
             background: #0056b3;
         }
 
-        /* 결과 영역 */
+        /* =====================================================
+         * 결과 표시 영역
+         * ===================================================== */
         #result-container, #struct-result-container {
             margin-top: 30px;
         }
@@ -137,7 +158,9 @@
             margin-bottom: 10px;
         }
 
-        /* 탭 스타일 */
+        /* =====================================================
+         * 탭 네비게이션 스타일
+         * ===================================================== */
         .tab-container {
             display: flex;
             border-bottom: 1px solid #ddd;
@@ -229,7 +252,9 @@
             background: #1e7e34;
         }
 
-        /* 도움말 섹션 스타일 */
+        /* =====================================================
+         * 도움말 섹션 (접기/펼치기)
+         * ===================================================== */
         .help-section {
             background: #f8f9fa;
             border: 1px solid #dee2e6;
@@ -375,7 +400,9 @@
             margin: 0;
         }
 
-        /* 구조체 추가 버튼 스타일 */
+        /* =====================================================
+         * 구조체 정의 영역
+         * ===================================================== */
         #add-struct-btn {
             padding: 8px 16px;
             background: #17a2b8;
@@ -402,20 +429,89 @@
             border: 2px solid #dee2e6;
             border-radius: 8px;
             padding: 15px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        /* 드래그 앤 드롭 스타일 */
+        .struct-card[draggable="true"] {
+            cursor: grab;
+        }
+
+        .struct-card.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .struct-card.drag-over {
+            border-color: #007bff;
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.3);
         }
 
         .struct-card-header {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             margin-bottom: 15px;
             border-bottom: 1px solid #dee2e6;
             padding-bottom: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .struct-card-header:hover {
+            background: rgba(0, 0, 0, 0.02);
+            margin: -5px -5px 10px -5px;
+            padding: 5px 5px 15px 5px;
+            border-radius: 5px 5px 0 0;
+        }
+
+        .struct-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .collapse-icon {
+            font-size: 12px;
+            color: #6c757d;
+            transition: transform 0.3s ease;
+            width: 16px;
+            text-align: center;
+        }
+
+        .struct-card.collapsed .collapse-icon {
+            transform: rotate(-90deg);
         }
 
         .struct-number {
             font-weight: bold;
             color: #495057;
             font-size: 16px;
+        }
+
+        /* 접힌 상태의 구조체명 미리보기 */
+        .struct-preview {
+            font-size: 14px;
+            color: #6c757d;
+            margin-left: 10px;
+            font-style: italic;
+        }
+
+        .struct-card-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .drag-handle {
+            cursor: grab;
+            color: #adb5bd;
+            font-size: 18px;
+            padding: 4px 8px;
+        }
+
+        .drag-handle:hover {
+            color: #6c757d;
         }
 
         .remove-struct-btn {
@@ -429,6 +525,21 @@
 
         .remove-struct-btn:hover {
             background: #c82333;
+        }
+
+        /* 카드 본문 접기/펼치기 */
+        .struct-card-body {
+            max-height: 1000px;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+            opacity: 1;
+        }
+
+        .struct-card.collapsed .struct-card-body {
+            max-height: 0;
+            opacity: 0;
+            padding: 0;
+            margin: 0;
         }
 
         .struct-card-body .input-row {
@@ -459,6 +570,96 @@
         .struct-card-body .input-row textarea {
             width: 100%;
             box-sizing: border-box;
+        }
+
+        /* 로컬 스토리지 복원 알림 스타일 */
+        .restore-notification {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .restore-notification-text {
+            color: #1565c0;
+            font-size: 14px;
+        }
+
+        .restore-notification-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .restore-btn {
+            padding: 6px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .restore-btn.primary {
+            background: #1976d2;
+            color: white;
+        }
+
+        .restore-btn.primary:hover {
+            background: #1565c0;
+        }
+
+        .restore-btn.secondary {
+            background: #e0e0e0;
+            color: #424242;
+        }
+
+        .restore-btn.secondary:hover {
+            background: #bdbdbd;
+        }
+
+        /* 단축키 힌트 스타일 */
+        .shortcut-hint {
+            font-size: 11px;
+            color: #6c757d;
+            margin-left: 5px;
+        }
+
+        /* 다크모드 토글 버튼 */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background: #e0e0e0;
         }
 
         /* 파싱 통계 스타일 */
@@ -545,10 +746,253 @@
                 flex-wrap: wrap;
                 gap: 8px;
             }
+
+            .theme-toggle {
+                top: 10px;
+                right: 10px;
+                width: 35px;
+                height: 35px;
+            }
+        }
+
+        /* =====================================================
+         * 다크모드 스타일
+         * ===================================================== */
+        body.dark-mode {
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode h1 {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .tab-btn {
+            background: #2d2d44;
+            border-color: #3d3d5c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .tab-btn.active {
+            background: #1a1a2e;
+            border-bottom-color: #1a1a2e;
+            color: #64b5f6;
+        }
+
+        body.dark-mode textarea,
+        body.dark-mode input[type="text"] {
+            background: #2d2d44;
+            border-color: #3d3d5c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode textarea::placeholder,
+        body.dark-mode input::placeholder {
+            color: #888;
+        }
+
+        body.dark-mode .struct-card {
+            background: #2d2d44;
+            border-color: #3d3d5c;
+        }
+
+        body.dark-mode .struct-card-header {
+            border-bottom-color: #3d3d5c;
+        }
+
+        body.dark-mode .struct-card-header:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        body.dark-mode .struct-number {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .struct-preview {
+            color: #aaa;
+        }
+
+        body.dark-mode .struct-card-body .input-row label {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .struct-card-body .input-row small {
+            color: #aaa;
+        }
+
+        body.dark-mode .help-section {
+            background: #2d2d44;
+            border-color: #3d3d5c;
+        }
+
+        body.dark-mode .help-toggle {
+            background: #3d3d5c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .help-toggle:hover {
+            background: #4d4d6c;
+        }
+
+        body.dark-mode .help-content {
+            color: #ccc;
+        }
+
+        body.dark-mode .help-content h4 {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .help-content p,
+        body.dark-mode .help-content li {
+            color: #bbb;
+        }
+
+        body.dark-mode .help-content code {
+            background: #3d3d5c;
+            color: #64b5f6;
+        }
+
+        body.dark-mode .help-content pre {
+            background: #1a1a2e;
+        }
+
+        body.dark-mode #result-table,
+        body.dark-mode .result-table {
+            border-color: #3d3d5c;
+        }
+
+        body.dark-mode #result-table th,
+        body.dark-mode .result-table th {
+            background: #3d3d5c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode #result-table td,
+        body.dark-mode .result-table td {
+            border-color: #3d3d5c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode #result-table tr:nth-child(even),
+        body.dark-mode .result-table tr:nth-child(even) {
+            background: #252540;
+        }
+
+        body.dark-mode #result-table tr:hover,
+        body.dark-mode .result-table tr:hover {
+            background: #35355c;
+        }
+
+        body.dark-mode #result-table td:nth-child(7),
+        body.dark-mode .result-table td:last-child {
+            background: #2d2d44;
+        }
+
+        body.dark-mode .empty-value {
+            background: #4a3030;
+        }
+
+        body.dark-mode .struct-result-group {
+            border-color: #3d3d5c;
+            background: #252540;
+        }
+
+        body.dark-mode .struct-result-group h3 {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .record-header {
+            border-bottom-color: #3d3d5c;
+        }
+
+        body.dark-mode .record-header h3 {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .parse-stats {
+            background: #2a3d5c;
+            border-color: #3d5c8a;
+        }
+
+        body.dark-mode .parse-stats h3 {
+            color: #64b5f6;
+        }
+
+        body.dark-mode .stats-grid > div {
+            background: #1a1a2e;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .error-message {
+            background: #4a2020;
+            border-color: #8b3030;
+            color: #ff8a80;
+        }
+
+        body.dark-mode .restore-notification {
+            background: #2a3d5c;
+            border-color: #3d5c8a;
+        }
+
+        body.dark-mode .restore-notification-text {
+            color: #64b5f6;
+        }
+
+        body.dark-mode .restore-btn.secondary {
+            background: #3d3d5c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .restore-btn.secondary:hover {
+            background: #4d4d6c;
+        }
+
+        body.dark-mode .theme-toggle {
+            background: #3d3d5c;
+            border-color: #4d4d6c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .theme-toggle:hover {
+            background: #4d4d6c;
+        }
+
+        body.dark-mode .test-results.success {
+            background: #1e3a29;
+            border-color: #2e8b57;
+        }
+
+        body.dark-mode .test-results.failure {
+            background: #3a1e1e;
+            border-color: #8b2e2e;
+        }
+
+        body.dark-mode .test-item {
+            border-bottom-color: rgba(255,255,255,0.1);
+        }
+
+        body.dark-mode .section-header h3 {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .drag-handle {
+            color: #6c757d;
+        }
+
+        body.dark-mode .drag-handle:hover {
+            color: #adb5bd;
+        }
+
+        body.dark-mode .struct-card.drag-over {
+            border-color: #64b5f6;
+            box-shadow: 0 0 10px rgba(100, 181, 246, 0.3);
         }
     </style>
 </head>
 <body>
+    <!-- 다크모드 토글 버튼 -->
+    <button class="theme-toggle" id="theme-toggle" title="다크모드 전환">🌙</button>
+    
     <h1>통전문 파서</h1>
     
     <div class="tab-container">
@@ -619,7 +1063,7 @@
         <div id="struct-input-section">
             <div class="section-header">
                 <h3>C 구조체 정의</h3>
-                <button id="add-struct-btn">+ 구조체 추가</button>
+                <button id="add-struct-btn">+ 구조체 추가 <span class="shortcut-hint">(Ctrl+N)</span></button>
             </div>
             
             <div id="struct-definitions-container">
@@ -631,7 +1075,7 @@
             
             <div class="button-group">
                 <button id="struct-sample-btn">샘플 로드</button>
-                <button id="struct-parse-btn">파싱 실행</button>
+                <button id="struct-parse-btn">파싱 실행 <span class="shortcut-hint">(Ctrl+Enter)</span></button>
                 <button id="struct-clear-btn">전체 초기화</button>
             </div>
         </div>
@@ -692,6 +1136,8 @@
          * =====================================================
          * 구조체 카드 생성 함수
          * 구조체 입력을 위한 카드 DOM 요소 생성
+         * - 접기/펼치기 기능 지원
+         * - 드래그 앤 드롭 재정렬 지원
          * =====================================================
          * @param {number} index - 구조체 인덱스 번호
          * @returns {HTMLElement} div.struct-card DOM 요소
@@ -701,12 +1147,20 @@
             const div = document.createElement('div');
             div.className = 'struct-card';
             div.setAttribute('data-index', index);
+            div.setAttribute('draggable', 'true'); // 드래그 앤 드롭 활성화
 
-            // 2. 내부 HTML 설정
+            // 2. 내부 HTML 설정 (접기/펼치기 아이콘 및 드래그 핸들 포함)
             div.innerHTML = `
                 <div class="struct-card-header">
-                    <span class="struct-number">구조체 #${index + 1}</span>
-                    <button class="remove-struct-btn" data-index="${index}">✕ 삭제</button>
+                    <div class="struct-header-left">
+                        <span class="collapse-icon">▼</span>
+                        <span class="struct-number">구조체 #${index + 1}</span>
+                        <span class="struct-preview"></span>
+                    </div>
+                    <div class="struct-card-header-actions">
+                        <span class="drag-handle" title="드래그하여 순서 변경">⋮⋮</span>
+                        <button class="remove-struct-btn" data-index="${index}">✕ 삭제</button>
+                    </div>
                 </div>
                 
                 <div class="struct-card-body">
@@ -2323,6 +2777,364 @@ T9710249709001234567890123456789012XX`;
                     console.error('클립보드 복사 실패:', err);
                     alert('복사에 실패했습니다.');
                 });
+            });
+
+            // =========================================
+            // 구조체 카드 접기/펼치기 이벤트
+            // - 헤더 클릭 시 본문 토글
+            // - 아이콘 변경 (▼ ↔ ▶)
+            // =========================================
+            structContainer.addEventListener('click', function(e) {
+                // 삭제 버튼이나 드래그 핸들 클릭 시 무시
+                if (e.target.classList.contains('remove-struct-btn') || 
+                    e.target.classList.contains('drag-handle')) {
+                    return;
+                }
+
+                // 헤더 영역 클릭 확인
+                const header = e.target.closest('.struct-card-header');
+                if (!header) return;
+
+                const card = header.closest('.struct-card');
+                if (!card) return;
+
+                // collapsed 클래스 토글
+                card.classList.toggle('collapsed');
+
+                // 접힌 상태에서 구조체명 미리보기 업데이트
+                updateStructPreview(card);
+            });
+
+            /**
+             * 구조체 미리보기 텍스트 업데이트
+             * @param {HTMLElement} card - 구조체 카드 요소
+             */
+            function updateStructPreview(card) {
+                const preview = card.querySelector('.struct-preview');
+                const nameInput = card.querySelector('.struct-name');
+                const kubunInput = card.querySelector('.struct-kubun');
+
+                if (card.classList.contains('collapsed') && preview) {
+                    const name = nameInput ? nameInput.value.trim() : '';
+                    const kubun = kubunInput ? kubunInput.value.trim() : '';
+                    
+                    let previewText = '';
+                    if (name) previewText += name;
+                    if (kubun) previewText += (name ? ' ' : '') + '[' + kubun + ']';
+                    
+                    preview.textContent = previewText ? '- ' + previewText : '';
+                } else if (preview) {
+                    preview.textContent = '';
+                }
+            }
+
+            // 입력값 변경 시 미리보기 업데이트
+            structContainer.addEventListener('input', function(e) {
+                if (e.target.classList.contains('struct-name') || 
+                    e.target.classList.contains('struct-kubun')) {
+                    const card = e.target.closest('.struct-card');
+                    if (card) updateStructPreview(card);
+                }
+            });
+
+            // =========================================
+            // 드래그 앤 드롭 재정렬 기능
+            // HTML5 Drag API 사용
+            // =========================================
+            let draggedCard = null;
+
+            // 드래그 시작
+            structContainer.addEventListener('dragstart', function(e) {
+                const card = e.target.closest('.struct-card');
+                if (!card) return;
+
+                draggedCard = card;
+                card.classList.add('dragging');
+
+                // 드래그 이미지 설정 (선택사항)
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', card.getAttribute('data-index'));
+            });
+
+            // 드래그 종료
+            structContainer.addEventListener('dragend', function(e) {
+                const card = e.target.closest('.struct-card');
+                if (card) {
+                    card.classList.remove('dragging');
+                }
+                draggedCard = null;
+
+                // 모든 drag-over 클래스 제거
+                document.querySelectorAll('.struct-card.drag-over').forEach(function(c) {
+                    c.classList.remove('drag-over');
+                });
+
+                // 카드 인덱스 재정렬
+                renumberStructCards();
+            });
+
+            // 드래그 오버
+            structContainer.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+
+                const card = e.target.closest('.struct-card');
+                if (!card || card === draggedCard) return;
+
+                // drag-over 클래스 추가
+                document.querySelectorAll('.struct-card.drag-over').forEach(function(c) {
+                    c.classList.remove('drag-over');
+                });
+                card.classList.add('drag-over');
+            });
+
+            // 드롭
+            structContainer.addEventListener('drop', function(e) {
+                e.preventDefault();
+
+                const targetCard = e.target.closest('.struct-card');
+                if (!targetCard || !draggedCard || targetCard === draggedCard) return;
+
+                // 드래그한 카드를 타겟 위치로 이동
+                const cards = Array.from(structContainer.querySelectorAll('.struct-card'));
+                const draggedIndex = cards.indexOf(draggedCard);
+                const targetIndex = cards.indexOf(targetCard);
+
+                if (draggedIndex < targetIndex) {
+                    // 아래로 이동
+                    targetCard.parentNode.insertBefore(draggedCard, targetCard.nextSibling);
+                } else {
+                    // 위로 이동
+                    targetCard.parentNode.insertBefore(draggedCard, targetCard);
+                }
+
+                targetCard.classList.remove('drag-over');
+            });
+
+            /**
+             * 구조체 카드 번호 재정렬
+             */
+            function renumberStructCards() {
+                const cards = structContainer.querySelectorAll('.struct-card');
+                cards.forEach(function(card, index) {
+                    const numberSpan = card.querySelector('.struct-number');
+                    if (numberSpan) {
+                        numberSpan.textContent = '구조체 #' + (index + 1);
+                    }
+                    card.setAttribute('data-index', index);
+                });
+            }
+
+            // =========================================
+            // 로컬 스토리지 저장/복원 기능
+            // - 페이지 떠날 때 자동 저장
+            // - 재방문 시 복원 제안
+            // =========================================
+            const STORAGE_KEY = 'structParserData';
+
+            /**
+             * 현재 구조체 정의들을 로컬 스토리지에 저장
+             */
+            function saveToLocalStorage() {
+                const cards = structContainer.querySelectorAll('.struct-card');
+                const data = [];
+
+                cards.forEach(function(card) {
+                    const name = card.querySelector('.struct-name').value;
+                    const kubun = card.querySelector('.struct-kubun').value;
+                    const definition = card.querySelector('.struct-definition').value;
+                    const collapsed = card.classList.contains('collapsed');
+
+                    // 하나라도 입력된 카드만 저장
+                    if (name || kubun || definition) {
+                        data.push({
+                            name: name,
+                            kubun: kubun,
+                            definition: definition,
+                            collapsed: collapsed
+                        });
+                    }
+                });
+
+                // 데이터가 있을 때만 저장
+                if (data.length > 0) {
+                    const saveData = {
+                        structs: data,
+                        structData: document.getElementById('struct-data').value,
+                        savedAt: new Date().toISOString()
+                    };
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(saveData));
+                    console.log('로컬 스토리지에 저장됨:', data.length + '개 구조체');
+                }
+            }
+
+            /**
+             * 로컬 스토리지에서 복원
+             */
+            function restoreFromLocalStorage() {
+                const savedData = localStorage.getItem(STORAGE_KEY);
+                if (!savedData) return;
+
+                try {
+                    const data = JSON.parse(savedData);
+                    if (!data.structs || data.structs.length === 0) return;
+
+                    // 저장 시간 표시
+                    const savedAt = new Date(data.savedAt);
+                    const timeStr = savedAt.toLocaleString('ko-KR');
+
+                    // 복원 알림 표시
+                    showRestoreNotification(data, timeStr);
+                } catch (e) {
+                    console.error('로컬 스토리지 데이터 파싱 실패:', e);
+                }
+            }
+
+            /**
+             * 복원 알림 UI 표시
+             */
+            function showRestoreNotification(data, timeStr) {
+                // 기존 알림 제거
+                const existingNotif = document.querySelector('.restore-notification');
+                if (existingNotif) existingNotif.remove();
+
+                const notification = document.createElement('div');
+                notification.className = 'restore-notification';
+                notification.innerHTML = `
+                    <span class="restore-notification-text">
+                        📁 이전 작업을 복원할 수 있습니다 (${timeStr}, ${data.structs.length}개 구조체)
+                    </span>
+                    <div class="restore-notification-actions">
+                        <button class="restore-btn primary" id="restore-yes">복원</button>
+                        <button class="restore-btn secondary" id="restore-no">무시</button>
+                    </div>
+                `;
+
+                // struct-input-section 앞에 삽입
+                const inputSection = document.getElementById('struct-input-section');
+                inputSection.parentNode.insertBefore(notification, inputSection);
+
+                // 복원 버튼 이벤트
+                document.getElementById('restore-yes').addEventListener('click', function() {
+                    doRestore(data);
+                    notification.remove();
+                });
+
+                // 무시 버튼 이벤트
+                document.getElementById('restore-no').addEventListener('click', function() {
+                    notification.remove();
+                    localStorage.removeItem(STORAGE_KEY); // 저장된 데이터 삭제
+                });
+            }
+
+            /**
+             * 실제 복원 수행
+             */
+            function doRestore(data) {
+                // 기존 카드 삭제
+                structContainer.innerHTML = '';
+                structCardIndex = 0;
+
+                // 저장된 구조체 복원
+                data.structs.forEach(function(struct) {
+                    const card = createStructCard(structCardIndex);
+                    structContainer.appendChild(card);
+
+                    card.querySelector('.struct-name').value = struct.name || '';
+                    card.querySelector('.struct-kubun').value = struct.kubun || '';
+                    card.querySelector('.struct-definition').value = struct.definition || '';
+
+                    if (struct.collapsed) {
+                        card.classList.add('collapsed');
+                        updateStructPreview(card);
+                    }
+
+                    structCardIndex++;
+                });
+
+                // 데이터 복원
+                if (data.structData) {
+                    document.getElementById('struct-data').value = data.structData;
+                }
+
+                console.log('로컬 스토리지에서 복원됨:', data.structs.length + '개 구조체');
+            }
+
+            // 페이지 떠날 때 자동 저장
+            window.addEventListener('beforeunload', function() {
+                saveToLocalStorage();
+            });
+
+            // 페이지 로드 시 복원 제안 표시
+            // 구조체 탭이 활성화될 때까지 대기
+            setTimeout(function() {
+                restoreFromLocalStorage();
+            }, 100);
+
+            // =========================================
+            // 다크모드 토글 기능
+            // - localStorage에 테마 설정 저장
+            // =========================================
+            const THEME_KEY = 'structParserTheme';
+            const themeToggle = document.getElementById('theme-toggle');
+
+            /**
+             * 테마 초기화
+             */
+            function initTheme() {
+                const savedTheme = localStorage.getItem(THEME_KEY);
+                if (savedTheme === 'dark') {
+                    document.body.classList.add('dark-mode');
+                    themeToggle.textContent = '☀️';
+                } else {
+                    themeToggle.textContent = '🌙';
+                }
+            }
+
+            /**
+             * 테마 토글
+             */
+            function toggleTheme() {
+                const isDark = document.body.classList.toggle('dark-mode');
+                localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+                themeToggle.textContent = isDark ? '☀️' : '🌙';
+            }
+
+            // 테마 초기화
+            initTheme();
+
+            // 테마 토글 버튼 클릭 이벤트
+            themeToggle.addEventListener('click', toggleTheme);
+
+            // =========================================
+            // 키보드 단축키
+            // - Ctrl+Enter: 파싱 실행
+            // - Ctrl+N: 구조체 추가
+            // =========================================
+            document.addEventListener('keydown', function(e) {
+                // Ctrl+Enter: 파싱 실행
+                if (e.ctrlKey && e.key === 'Enter') {
+                    e.preventDefault();
+                    
+                    // 현재 활성화된 탭 확인
+                    const xmlTabActive = document.getElementById('xml-tab').classList.contains('active');
+                    const structTabActive = document.getElementById('struct-tab').classList.contains('active');
+
+                    if (xmlTabActive) {
+                        document.getElementById('parse-btn').click();
+                    } else if (structTabActive) {
+                        document.getElementById('struct-parse-btn').click();
+                    }
+                }
+
+                // Ctrl+N: 구조체 추가 (struct 탭에서만)
+                if (e.ctrlKey && e.key === 'n') {
+                    const structTabActive = document.getElementById('struct-tab').classList.contains('active');
+                    if (structTabActive) {
+                        e.preventDefault();
+                        document.getElementById('add-struct-btn').click();
+                    }
+                }
             });
         });
     </script>
