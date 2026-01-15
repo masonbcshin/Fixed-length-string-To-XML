@@ -2071,37 +2071,45 @@
 
             // 구조체 샘플 로드 버튼 클릭 이벤트
             document.getElementById('struct-sample-btn').addEventListener('click', function() {
-                // 기존 카드 모두 삭제 후 새로 생성
+                // 1. 기존 모든 구조체 카드 삭제
                 structContainer.innerHTML = '';
+                
+                // 2. structCardIndex = 0 리셋
                 structCardIndex = 0;
 
-                // 샘플 데이터 정의 (3개의 구조체)
+                // 3. 구조체 3개 추가
                 const sampleStructs = [
                     {
+                        // 카드 1: DHF_H
                         name: 'DHF_H',
                         kubun: 'H',
                         definition: `typedef struct{
   char record_kubun[1];
   char bank_cd[2];
   char cust_id[7];
+  char crlf[2];
 } DHF_H;`
                     },
                     {
+                        // 카드 2: DHF_D
                         name: 'DHF_D',
                         kubun: 'D',
                         definition: `typedef struct{
   char record_kubun[1];
   char acno[16];
   char amt[20];
+  char crlf[2];
 } DHF_D;`
                     },
                     {
+                        // 카드 3: DHF_T
                         name: 'DHF_T',
                         kubun: 'T',
                         definition: `typedef struct{
   char record_kubun[1];
   char tot_cnt[10];
   char tot_amt[20];
+  char crlf[2];
 } DHF_T;`
                     }
                 ];
@@ -2119,14 +2127,15 @@
                     structCardIndex++;
                 });
 
-                // 통 데이터 샘플 (구조체 길이에 맞게 조정)
-                // DHF_H: 1+2+7 = 10자
-                // DHF_D: 1+16+20 = 37자
-                // DHF_T: 1+10+20 = 31자
-                const sampleData = `H881234567
-D123456789012345600000000000000100000
-D987654321098765400000000000000200000
-T000000000200000000000000300000`;
+                // 4. 데이터 설정
+                // DHF_H: 1+2+7+2 = 12 bytes
+                // DHF_D: 1+16+20+2 = 39 bytes
+                // DHF_T: 1+10+20+2 = 33 bytes
+                // 총 123 bytes (줄바꿈 제거 시)
+                const sampleData = `H88123125235XX
+D7092357029352901234567890123456789012XX
+D2730957203950001234567890123456789012XX
+T9710249709001234567890123456789012XX`;
 
                 document.getElementById('struct-data').value = sampleData;
             });
