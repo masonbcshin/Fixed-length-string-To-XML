@@ -1818,34 +1818,92 @@
                 return { records: [], stats: { totalBytes: 0, parsedBytes: 0, recordCount: 0, errorBytes: 0 } };
             }
 
-            // 1. dataText를 줄바꿈으로 split, 빈 줄 제거
-            const lines = dataText.split('\n').filter(function(line) {
-                return line.trim() !== '';
-            });
+            // 1. 옵션 읽기
+            const recognizeCRLF = document.getElementById('recognize-crlf').checked;
 
-            // 2. 통계 초기화
-            const totalBytes = dataText.replace(/\n/g, '').length;
+            // 2. 데이터 전처리
+            let processedData;
+
+            if (recognizeCRLF) {
+                // 개행문자 인식 모드
+
+                // 먼저 이스케이프 시퀀스 처리
+                let temp = dataText.replace(/\\r\\n/g, '\r\n')
+                                   .replace(/\\n/g, '\n')
+                                   .replace(/\\r/g, '\r');
+
+                // 줄바꿈으로 레코드 분리
+                const lines = temp.split(/\r?\n/).filter(line => line.trim().length > 0);
+
+                // 각 레코드에 CRLF 추가 (없으면)
+                processedData = lines.map(line => {
+                    // 이미 CRLF로 끝나는지 확인
+                    if (line.endsWith('\r\n')) {
+                        return line;
+                    }
+                    // CRLF 추가
+                    return line + '\r\n';
+                }).join('');
+
+                console.log(`개행 인식 모드: ${lines.length}개 레코드, 각 레코드 끝에 CRLF 추가`);
+
+                // CRLF 필드 존재 여부 확인 (경고만)
+                const hasCrlfField = structDefs.some(struct => 
+                    struct.fields && struct.fields.some(field => 
+                        field.name && field.name.toLowerCase() === 'crlf'
+                    )
+                );
+                if (!hasCrlfField) {
+                    console.warn('경고: 개행 인식 모드이지만 구조체에 crlf 필드가 없습니다.');
+                }
+
+            } else {
+                // 개행문자 무시 모드
+
+                // 모든 개행 제거
+                processedData = dataText.replace(/[\r\n]/g, '');
+
+                console.log(`개행 무시 모드: 총 ${processedData.length} bytes`);
+
+                // CRLF 필드 존재 여부 확인 (경고만)
+                const hasCrlfField = structDefs.some(struct => 
+                    struct.fields && struct.fields.some(field => 
+                        field.name && field.name.toLowerCase() === 'crlf'
+                    )
+                );
+                if (hasCrlfField) {
+                    console.warn('경고: 개행 무시 모드이지만 구조체에 crlf 필드가 있습니다.');
+                }
+            }
+
+            // 3. 통계 초기화
+            const totalBytes = processedData.length;
             let parsedBytes = 0;
             let errorBytes = 0;
 
-            // 3. 레코드 배열 초기화
+            // 4. 레코드 배열 초기화
             const records = [];
 
-            // 4. 각 라인마다 처리
-            lines.forEach(function(line, lineIndex) {
-                const recordIndex = lineIndex;
+            // 5. 순차 파싱 로직 (currentPos 루프)
+            let currentPos = 0;
+            let recordIndex = 0;
+
+            while (currentPos < processedData.length) {
+                // 현재 위치에서 남은 데이터
+                const remainingData = processedData.substring(currentPos);
 
                 // findStructByKubun 함수를 먼저 시도, 실패 시 findMatchingStruct 사용
-                let matchedStruct = findStructByKubun(line, structDefs);
+                let matchedStruct = findStructByKubun(remainingData, structDefs);
                 if (!matchedStruct) {
-                    matchedStruct = findMatchingStruct(line, structDefs);
+                    matchedStruct = findMatchingStruct(remainingData, structDefs);
                 }
 
-                // 매칭 실패 시 에러 바이트 누적
+                // 매칭 실패 시 1바이트 스킵하고 계속
                 if (!matchedStruct) {
-                    errorBytes += line.length;
-                    console.warn('라인 ' + (lineIndex + 1) + ': 매칭되는 구조체 없음');
-                    return; // 다음 라인으로 continue
+                    errorBytes += 1;
+                    console.warn('위치 ' + currentPos + ': 매칭되는 구조체 없음, 1바이트 스킵');
+                    currentPos += 1;
+                    continue;
                 }
 
                 // 구조체 크기 계산
@@ -1853,32 +1911,31 @@
                     return sum + f.size;
                 }, 0);
 
-                // 데이터가 구조체 크기보다 짧으면 해당 레코드 건너뛰기
-                if (line.length < expectedLength) {
-                    errorBytes += line.length;
-                    console.warn('레코드 ' + (recordIndex + 1) + ': 데이터 부족 (필요: ' + expectedLength + ', 실제: ' + line.length + ')');
-                    return; // 다음 라인으로 continue
+                // 데이터가 구조체 크기보다 짧으면 나머지 에러 처리 후 종료
+                if (remainingData.length < expectedLength) {
+                    errorBytes += remainingData.length;
+                    console.warn('위치 ' + currentPos + ': 데이터 부족 (필요: ' + expectedLength + ', 실제: ' + remainingData.length + ')');
+                    break;
                 }
 
                 // 필드 배열 생성
                 const fields = [];
-                let currentPos = 0;
+                let fieldPos = 0;
 
                 matchedStruct.fields.forEach(function(field) {
-                    const startPos = currentPos;
-                    const endPos = currentPos + field.size;
-                    const value = line.substring(startPos, endPos);
+                    const startPos = fieldPos;
+                    const endPos = fieldPos + field.size;
+                    const value = remainingData.substring(startPos, endPos);
 
                     fields.push({
                         fieldName: field.name,
                         fieldSize: field.size,
-                        startPos: startPos,
-                        endPos: endPos,
+                        startPos: currentPos + startPos,
+                        endPos: currentPos + endPos,
                         value: value
                     });
 
-                    parsedBytes += field.size;
-                    currentPos += field.size;
+                    fieldPos += field.size;
                 });
 
                 // 레코드 객체 추가
@@ -1889,13 +1946,12 @@
                     fields: fields
                 });
 
-                // 라인 길이 검증 경고 (데이터가 더 긴 경우)
-                if (line.length > expectedLength) {
-                    console.warn('라인 ' + (lineIndex + 1) + ': 예상 길이 ' + expectedLength + ', 실제 길이 ' + line.length + ' (초과 데이터 무시됨)');
-                }
-            });
+                parsedBytes += expectedLength;
+                currentPos += expectedLength;
+                recordIndex++;
+            }
 
-            // 5. 결과 반환
+            // 6. 결과 반환
             console.log('parseStructData: ' + records.length + '개의 레코드가 파싱되었습니다.');
             return {
                 records: records,
