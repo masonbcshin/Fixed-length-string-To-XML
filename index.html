@@ -225,6 +225,140 @@
             background: #1e7e34;
         }
 
+        /* 도움말 섹션 스타일 */
+        .help-section {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .help-toggle {
+            width: 100%;
+            padding: 12px 16px;
+            background: #e9ecef;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            font-size: 14px;
+            font-weight: bold;
+            color: #495057;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .help-toggle:hover {
+            background: #dee2e6;
+        }
+
+        .help-toggle-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .help-toggle.expanded .help-toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .help-content {
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+
+        .help-content.expanded {
+            padding: 16px;
+            max-height: 500px;
+        }
+
+        .help-content h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .help-content p {
+            margin: 0 0 10px 0;
+            color: #666;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .help-content ul {
+            margin: 0 0 10px 0;
+            padding-left: 20px;
+        }
+
+        .help-content li {
+            margin: 5px 0;
+            color: #666;
+            font-size: 13px;
+        }
+
+        .help-content code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .help-content pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 12px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+            margin: 10px 0;
+        }
+
+        /* 테스트 버튼 스타일 */
+        #run-tests-btn {
+            background: #6f42c1;
+            margin-left: auto;
+        }
+
+        #run-tests-btn:hover {
+            background: #5a32a3;
+        }
+
+        /* 테스트 결과 스타일 */
+        .test-results {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .test-results.success {
+            background: #d4edda;
+            border: 1px solid #28a745;
+        }
+
+        .test-results.failure {
+            background: #f8d7da;
+            border: 1px solid #dc3545;
+        }
+
+        .test-item {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .test-item:last-child {
+            border-bottom: none;
+        }
+
+        .test-pass {
+            color: #28a745;
+        }
+
+        .test-fail {
+            color: #dc3545;
+        }
+
         /* 모바일 대응 */
         @media (max-width: 600px) {
             body {
@@ -260,6 +394,47 @@
     </div>
 
     <div id="struct-tab" class="tab-content" style="display:none;">
+        <!-- 도움말 섹션 -->
+        <div class="help-section">
+            <button class="help-toggle" type="button">
+                <span>📖 사용 방법 안내</span>
+                <span class="help-toggle-icon">▼</span>
+            </button>
+            <div class="help-content">
+                <h4>C 구조체 파싱 사용법</h4>
+                <p>고정 길이 데이터를 C 구조체 정의에 따라 파싱합니다.</p>
+                
+                <h4>1. 구조체 정의 형식</h4>
+                <p><code>typedef struct { ... } 구조체명;</code> 형식으로 입력합니다.</p>
+                <pre>typedef struct {
+    char record_kubun[1];  // 레코드 구분
+    char bank_cd[2];       // 은행 코드
+    char cust_id[7];       // 고객 ID
+} DHF_H;</pre>
+                
+                <h4>2. 데이터 입력 규칙</h4>
+                <ul>
+                    <li>각 줄이 하나의 데이터 레코드입니다</li>
+                    <li>여러 구조체가 있을 경우, 첫 글자로 구조체를 자동 매칭합니다</li>
+                    <li>예: <code>H</code>로 시작 → <code>DHF_H</code> (H로 끝나는 구조체)</li>
+                    <li>예: <code>D</code>로 시작 → <code>DHF_D</code> (D로 끝나는 구조체)</li>
+                </ul>
+                
+                <h4>3. 지원 기능</h4>
+                <ul>
+                    <li>여러 구조체 동시 정의 가능</li>
+                    <li>주석 지원: <code>//</code> 한줄 주석, <code>/* */</code> 블록 주석</li>
+                    <li>파싱 결과를 TSV 형식으로 클립보드에 복사 가능</li>
+                </ul>
+                
+                <h4>4. 주의사항</h4>
+                <ul>
+                    <li>데이터 길이가 구조체 총 크기와 다르면 경고가 표시됩니다</li>
+                    <li>char 배열만 정확히 지원됩니다 (int, short 등은 char로 처리)</li>
+                </ul>
+            </div>
+        </div>
+
         <div id="struct-input-section">
             <label for="struct-definitions">C 구조체 정의 (여러 개 입력 가능)</label>
             <textarea id="struct-definitions" rows="20" placeholder="typedef struct { ... } 구조체명; 형식으로 입력"></textarea>
@@ -271,6 +446,7 @@
                 <button id="struct-sample-btn">샘플 로드</button>
                 <button id="struct-parse-btn">파싱 실행</button>
                 <button id="struct-clear-btn">초기화</button>
+                <button id="run-tests-btn">테스트 실행</button>
             </div>
         </div>
 
@@ -278,7 +454,55 @@
     </div>
 
     <script>
-        // XML 규격 문자열을 파싱하여 배열로 변환
+        /**
+         * =====================================================
+         * 정규식 캐싱 - 성능 최적화를 위해 정규식을 미리 컴파일
+         * =====================================================
+         */
+        const REGEX_CACHE = {
+            // 한줄 주석 제거: // 부터 줄 끝까지 매칭
+            singleLineComment: /\/\/.*$/gm,
+            
+            // 블록 주석 제거: /* 부터 */ 까지 (비탐욕적 매칭)
+            blockComment: /\/\*[\s\S]*?\*\//g,
+            
+            // typedef struct 블록 추출:
+            // - typedef\s+struct: "typedef struct" 키워드
+            // - (\w+)?: 선택적 구조체 이름 (캡처 그룹 1)
+            // - \s*\{([^}]+)\}: 중괄호와 내용 (캡처 그룹 2)
+            // - \s*(\w+)\s*;: typedef 별칭 이름 (캡처 그룹 3)
+            structPattern: /typedef\s+struct\s+(\w+)?\s*\{([^}]+)\}\s*(\w+)\s*;/g,
+            
+            // 필드 추출:
+            // - (unsigned\s+)?: 선택적 unsigned 키워드 (캡처 그룹 1)
+            // - (\w+): 기본 타입 (char, int 등) (캡처 그룹 2)
+            // - \s+(\w+): 필드명 (캡처 그룹 3)
+            // - \s*\[\s*(\d+)\s*\]: 배열 크기 (캡처 그룹 4)
+            fieldPattern: /(unsigned\s+)?(\w+)\s+(\w+)\s*\[\s*(\d+)\s*\]/g,
+            
+            // 구조체명에서 숫자 추출: 문자열 끝의 연속된 숫자
+            trailingNumber: /(\d+)$/
+        };
+
+        /**
+         * 정규식 패턴을 복제하여 반환
+         * 정규식은 상태를 가지므로(lastIndex), 사용 전 복제 필요
+         * @param {string} name - REGEX_CACHE의 키 이름
+         * @returns {RegExp} 복제된 정규식 객체
+         */
+        function getRegex(name) {
+            const original = REGEX_CACHE[name];
+            return new RegExp(original.source, original.flags);
+        }
+
+        /**
+         * =====================================================
+         * XML 규격 파싱 함수
+         * XML 문자열을 파싱하여 col 요소 배열로 변환
+         * =====================================================
+         * @param {string} xmlString - XML 규격 문자열
+         * @returns {Array|null} col 요소 배열 또는 null (에러 시)
+         */
         function parseXMLSpec(xmlString) {
             // 입력값 유효성 검사
             if (typeof xmlString !== 'string') {
@@ -369,7 +593,15 @@
             return result;
         }
 
-        // 통전문을 XML 규격에 맞게 파싱
+        /**
+         * =====================================================
+         * 통전문 파싱 함수
+         * 통전문 문자열을 XML 규격에 맞게 분리
+         * =====================================================
+         * @param {string} telegramString - 통전문 문자열
+         * @param {Array} xmlSpec - parseXMLSpec의 결과 배열
+         * @returns {Array} 파싱된 결과 배열
+         */
         function parseTelegram(telegramString, xmlSpec) {
             // 현재 위치 초기화
             let currentPos = 0;
@@ -412,7 +644,14 @@
             return result;
         }
 
-        // C 구조체 정의 문자열을 파싱하여 구조체 배열로 변환
+        /**
+         * =====================================================
+         * C 구조체 정의 파싱 함수
+         * 구조체 정의 문자열을 파싱하여 구조체 배열로 변환
+         * =====================================================
+         * @param {string} structText - C 구조체 정의 문자열
+         * @returns {Array|null} 구조체 배열 또는 null (에러 시)
+         */
         function parseStructDefinitions(structText) {
             // 입력값 유효성 검사
             if (typeof structText !== 'string' || structText.trim() === '') {
@@ -420,19 +659,12 @@
                 return null;
             }
 
-            // 1. 주석 제거 처리
-            // // 주석 제거
-            let cleanedText = structText.replace(/\/\/.*$/gm, '');
-            // /* */ 주석 제거
-            cleanedText = cleanedText.replace(/\/\*[\s\S]*?\*\//g, '');
+            // 1. 주석 제거 처리 - 캐시된 정규식 사용
+            let cleanedText = structText.replace(getRegex('singleLineComment'), '');
+            cleanedText = cleanedText.replace(getRegex('blockComment'), '');
 
-            // 2. typedef struct 블록 추출 정규식 (다양한 형식 지원)
-            // typedef struct 구조체명 { ... } 구조체명; 형식도 지원
-            const structPattern = /typedef\s+struct\s+(\w+)?\s*\{([^}]+)\}\s*(\w+)\s*;/g;
-            
-            // 3. 필드 추출 정규식 (다양한 타입 지원)
-            // unsigned char, char, int, short, long, unsigned int 등
-            const fieldPattern = /(unsigned\s+)?(\w+)\s+(\w+)\s*\[\s*(\d+)\s*\]/g;
+            // 2. typedef struct 블록 추출 - 캐시된 정규식 사용
+            const structPattern = getRegex('structPattern');
             
             // 타입별 크기 정의 (바이트)
             const typeSizes = {
@@ -458,10 +690,9 @@
                 // 필드 배열
                 const fields = [];
                 
-                // 필드들 추출
+                // 필드들 추출 - 새로운 정규식 인스턴스 사용
+                const fieldPattern = getRegex('fieldPattern');
                 let fieldMatch;
-                // 각 구조체마다 fieldPattern의 lastIndex를 리셋해야 함
-                fieldPattern.lastIndex = 0;
                 while ((fieldMatch = fieldPattern.exec(fieldsContent)) !== null) {
                     const unsignedPrefix = fieldMatch[1] ? fieldMatch[1].trim() : '';
                     const baseType = fieldMatch[2];
@@ -488,7 +719,7 @@
                     });
                 }
                 
-                // 4. 빈 구조체 검증 - fields가 0개인 구조체는 제외
+                // 빈 구조체 검증 - fields가 0개인 구조체는 제외
                 if (fields.length === 0) {
                     console.warn('parseStructDefinitions: 구조체 "' + structName + '"에 유효한 필드가 없어 제외됩니다.');
                     continue;
@@ -513,7 +744,15 @@
             return result;
         }
 
-        // 데이터 라인에 매칭되는 구조체 찾기
+        /**
+         * =====================================================
+         * 매칭 구조체 찾기 함수
+         * 데이터 라인의 첫 글자로 매칭되는 구조체 탐색
+         * =====================================================
+         * @param {string} line - 데이터 라인
+         * @param {Array} structDefs - 구조체 정의 배열
+         * @returns {Object|null} 매칭된 구조체 또는 null
+         */
         function findMatchingStruct(line, structDefs) {
             // 입력값 유효성 검사
             if (!line || !Array.isArray(structDefs) || structDefs.length === 0) {
@@ -556,8 +795,8 @@
                 if (lastPart.length === 1) {
                     structIdentifier = lastPart;
                 } else {
-                    // 마지막 부분에서 숫자 추출 시도
-                    const numMatch = lastPart.match(/(\d+)$/);
+                    // 마지막 부분에서 숫자 추출 시도 - 캐시된 정규식 사용
+                    const numMatch = lastPart.match(getRegex('trailingNumber'));
                     if (numMatch) {
                         structIdentifier = numMatch[1];
                     } else {
@@ -582,7 +821,15 @@
             return null;
         }
 
-        // 통 데이터를 구조체 정의에 맞게 파싱
+        /**
+         * =====================================================
+         * 구조체 데이터 파싱 함수
+         * 통 데이터를 구조체 정의에 맞게 파싱
+         * =====================================================
+         * @param {string} dataText - 데이터 텍스트 (줄바꿈으로 구분)
+         * @param {Array} structDefs - 구조체 정의 배열
+         * @returns {Array} 파싱 결과 배열
+         */
         function parseStructData(dataText, structDefs) {
             // 입력값 유효성 검사
             if (typeof dataText !== 'string' || dataText.trim() === '') {
@@ -656,7 +903,14 @@
             return result;
         }
 
-        // 에러 메시지 표시
+        /**
+         * =====================================================
+         * 에러 메시지 표시 함수
+         * 지정된 컨테이너에 에러 메시지 표시
+         * =====================================================
+         * @param {string} message - 에러 메시지
+         * @param {string} targetContainer - 타겟 컨테이너 ID (기본: result-container)
+         */
         function displayError(message, targetContainer) {
             // 1. targetContainer 가져오기 (기본값: result-container)
             const containerId = targetContainer || 'result-container';
@@ -666,13 +920,22 @@
             container.innerHTML = `<div class="error-message">⚠️ ${message}</div>`;
         }
 
-        // 파싱 결과를 테이블로 표시
+        /**
+         * =====================================================
+         * XML 파싱 결과 표시 함수
+         * DocumentFragment를 사용하여 DOM 조작 최적화
+         * =====================================================
+         * @param {Array} parsedData - parseTelegram의 결과 배열
+         */
         function displayResults(parsedData) {
             // 1. result-container 요소 가져오기
             const container = document.getElementById('result-container');
 
             // 2. innerHTML 초기화
             container.innerHTML = '';
+
+            // DocumentFragment 생성 - DOM 조작 최적화
+            const fragment = document.createDocumentFragment();
 
             // 3. table 요소 생성
             const table = document.createElement('table');
@@ -735,15 +998,26 @@
             wrapper.className = 'table-wrapper';
             wrapper.appendChild(table);
 
-            // 9. result-container에 wrapper 추가
-            container.appendChild(wrapper);
+            // 9. fragment에 추가 후 한 번에 DOM 업데이트
+            fragment.appendChild(wrapper);
+            container.appendChild(fragment);
         }
 
-        // 구조체 파싱 결과를 테이블로 표시
+        /**
+         * =====================================================
+         * 구조체 파싱 결과 표시 함수
+         * DocumentFragment를 사용하여 DOM 조작 최적화
+         * =====================================================
+         * @param {Array} parsedData - parseStructData의 결과 배열
+         * @param {Array} structDefs - 구조체 정의 배열
+         */
         function displayStructResults(parsedData, structDefs) {
             // 1. struct-result-container 초기화
             const container = document.getElementById('struct-result-container');
             container.innerHTML = '';
+
+            // DocumentFragment 생성 - DOM 조작 최적화
+            const fragment = document.createDocumentFragment();
 
             // 에러가 있는지 확인
             const errors = parsedData.filter(function(item) {
@@ -755,7 +1029,7 @@
                 const errorDiv = document.createElement('div');
                 errorDiv.className = 'parse-error';
                 errorDiv.textContent = '라인 ' + e.lineNumber + ' 파싱 실패: ' + e.line;
-                container.appendChild(errorDiv);
+                fragment.appendChild(errorDiv);
             });
 
             // 정상 파싱 결과만 필터링
@@ -766,6 +1040,8 @@
             if (validData.length === 0) {
                 if (errors.length === 0) {
                     container.innerHTML = '<div class="error-message">⚠️ 파싱 결과가 없습니다.</div>';
+                } else {
+                    container.appendChild(fragment);
                 }
                 return;
             }
@@ -809,7 +1085,7 @@
                 lineCountP.textContent = '데이터 라인: ' + lineCount + '개';
                 summaryDiv.appendChild(lineCountP);
 
-                container.appendChild(summaryDiv);
+                fragment.appendChild(summaryDiv);
             }
 
             // 2. 라인별로 그룹화
@@ -907,13 +1183,375 @@
 
                 groupDiv.appendChild(wrapper);
 
-                // 4. 컨테이너에 그룹 추가
-                container.appendChild(groupDiv);
+                // 4. fragment에 그룹 추가
+                fragment.appendChild(groupDiv);
             });
+
+            // 한 번에 DOM 업데이트
+            container.appendChild(fragment);
         }
 
-        // DOMContentLoaded 이벤트
+        /**
+         * =====================================================
+         * 테스트 케이스 실행 함수
+         * 다양한 입력 상황에 대한 자동화된 테스트
+         * =====================================================
+         * @returns {Object} 테스트 결과 객체 { passed, failed, results }
+         */
+        function runTests() {
+            const results = [];
+            let passed = 0;
+            let failed = 0;
+
+            /**
+             * 개별 테스트 실행 헬퍼
+             */
+            function test(name, fn) {
+                try {
+                    const result = fn();
+                    if (result === true) {
+                        passed++;
+                        results.push({ name: name, passed: true });
+                    } else {
+                        failed++;
+                        results.push({ name: name, passed: false, reason: result || '실패' });
+                    }
+                } catch (e) {
+                    failed++;
+                    results.push({ name: name, passed: false, reason: e.message });
+                }
+            }
+
+            // =========================================
+            // 테스트 케이스 1: 구조체 1개만 있는 경우
+            // =========================================
+            test('구조체 1개만 있는 경우', function() {
+                const structDef = `typedef struct {
+                    char field1[5];
+                    char field2[10];
+                } SingleStruct;`;
+                
+                const data = 'HELLO1234567890';
+                
+                const defs = parseStructDefinitions(structDef);
+                if (!defs || defs.length !== 1) return '구조체 파싱 실패';
+                
+                const parsed = parseStructData(data, defs);
+                if (parsed.length !== 2) return '필드 파싱 실패';
+                if (parsed[0].value !== 'HELLO') return '첫 번째 필드 값 불일치';
+                if (parsed[1].value !== '1234567890') return '두 번째 필드 값 불일치';
+                
+                return true;
+            });
+
+            // =========================================
+            // 테스트 케이스 2: 구조체 5개 이상인 경우
+            // =========================================
+            test('구조체 5개 이상인 경우', function() {
+                const structDef = `
+                    typedef struct { char type[1]; char data[4]; } Type_A;
+                    typedef struct { char type[1]; char data[4]; } Type_B;
+                    typedef struct { char type[1]; char data[4]; } Type_C;
+                    typedef struct { char type[1]; char data[4]; } Type_D;
+                    typedef struct { char type[1]; char data[4]; } Type_E;
+                `;
+                
+                const data = 'AAAAA\nBBBBB\nCCCCC\nDDDDD\nEEEEE';
+                
+                const defs = parseStructDefinitions(structDef);
+                if (!defs || defs.length !== 5) return '구조체 개수 불일치: ' + (defs ? defs.length : 0);
+                
+                const parsed = parseStructData(data, defs);
+                // 5줄 × 2필드 = 10개 필드
+                if (parsed.length !== 10) return '필드 파싱 개수 불일치: ' + parsed.length;
+                
+                return true;
+            });
+
+            // =========================================
+            // 테스트 케이스 3: 데이터 라인 100개 이상
+            // =========================================
+            test('데이터 라인 100개 이상', function() {
+                const structDef = `typedef struct { char id[4]; char val[6]; } DataLine;`;
+                
+                // 100개 라인 생성
+                let dataLines = [];
+                for (let i = 0; i < 100; i++) {
+                    const id = ('0000' + i).slice(-4);
+                    dataLines.push(id + 'VALUE1');
+                }
+                const data = dataLines.join('\n');
+                
+                const defs = parseStructDefinitions(structDef);
+                if (!defs) return '구조체 파싱 실패';
+                
+                const parsed = parseStructData(data, defs);
+                // 100줄 × 2필드 = 200개 필드
+                if (parsed.length !== 200) return '필드 파싱 개수 불일치: ' + parsed.length;
+                
+                // 첫 번째와 마지막 라인 검증
+                if (parsed[0].value !== '0000') return '첫 라인 첫 필드 불일치';
+                if (parsed[198].value !== '0099') return '마지막 라인 첫 필드 불일치';
+                
+                return true;
+            });
+
+            // =========================================
+            // 테스트 케이스 4: 길이가 안 맞는 데이터
+            // =========================================
+            test('길이가 안 맞는 데이터 (짧음)', function() {
+                const structDef = `typedef struct { char field1[10]; char field2[10]; } TestStruct;`;
+                const data = 'SHORTDATA'; // 9자 (예상: 20자)
+                
+                const defs = parseStructDefinitions(structDef);
+                const parsed = parseStructData(data, defs);
+                
+                // 파싱은 성공해야 함 (부족한 부분은 빈 문자열)
+                if (parsed.length !== 2) return '필드 파싱 실패';
+                if (parsed[0].value !== 'SHORTDATA') return '첫 번째 필드 값 불일치';
+                if (parsed[1].value !== '') return '두 번째 필드가 빈 문자열이어야 함';
+                
+                return true;
+            });
+
+            test('길이가 안 맞는 데이터 (김)', function() {
+                const structDef = `typedef struct { char field1[5]; } ShortStruct;`;
+                const data = 'EXTRALONG_DATA_HERE'; // 예상보다 긴 데이터
+                
+                const defs = parseStructDefinitions(structDef);
+                const parsed = parseStructData(data, defs);
+                
+                // 정의된 필드까지만 파싱
+                if (parsed.length !== 1) return '필드 파싱 개수 불일치';
+                if (parsed[0].value !== 'EXTRA') return '값 불일치: ' + parsed[0].value;
+                
+                return true;
+            });
+
+            // =========================================
+            // 테스트 케이스 5: 잘못된 구조체 문법
+            // =========================================
+            test('잘못된 구조체 문법 - typedef 누락', function() {
+                const structDef = `struct { char field[5]; } BadStruct;`;
+                const defs = parseStructDefinitions(structDef);
+                
+                // null을 반환해야 함
+                if (defs !== null) return '잘못된 문법인데 파싱됨';
+                
+                return true;
+            });
+
+            test('잘못된 구조체 문법 - 중괄호 누락', function() {
+                const structDef = `typedef struct char field[5]; BadStruct;`;
+                const defs = parseStructDefinitions(structDef);
+                
+                if (defs !== null) return '잘못된 문법인데 파싱됨';
+                
+                return true;
+            });
+
+            test('잘못된 구조체 문법 - 세미콜론 누락', function() {
+                const structDef = `typedef struct { char field[5]; } BadStruct`;
+                const defs = parseStructDefinitions(structDef);
+                
+                if (defs !== null) return '잘못된 문법인데 파싱됨';
+                
+                return true;
+            });
+
+            test('빈 구조체 (필드 없음)', function() {
+                const structDef = `typedef struct { } EmptyStruct;`;
+                const defs = parseStructDefinitions(structDef);
+                
+                // 빈 구조체는 제외되므로 null 반환
+                if (defs !== null) return '빈 구조체인데 파싱됨';
+                
+                return true;
+            });
+
+            // =========================================
+            // 테스트 케이스 6: 빈 입력
+            // =========================================
+            test('빈 입력 - 구조체 정의', function() {
+                const defs = parseStructDefinitions('');
+                if (defs !== null) return '빈 입력인데 파싱됨';
+                return true;
+            });
+
+            test('빈 입력 - 데이터', function() {
+                const structDef = `typedef struct { char field[5]; } TestStruct;`;
+                const defs = parseStructDefinitions(structDef);
+                const parsed = parseStructData('', defs);
+                
+                if (parsed.length !== 0) return '빈 데이터인데 결과 있음';
+                return true;
+            });
+
+            test('공백만 있는 입력', function() {
+                const defs = parseStructDefinitions('   \n\t\n   ');
+                if (defs !== null) return '공백만 있는데 파싱됨';
+                return true;
+            });
+
+            // =========================================
+            // 테스트 케이스 7: 주석 처리
+            // =========================================
+            test('한줄 주석 처리', function() {
+                const structDef = `typedef struct {
+                    // 이것은 주석입니다
+                    char field1[5]; // 필드 설명
+                    char field2[5];
+                } CommentStruct;`;
+                
+                const defs = parseStructDefinitions(structDef);
+                if (!defs || defs.length !== 1) return '구조체 파싱 실패';
+                if (defs[0].fields.length !== 2) return '필드 개수 불일치';
+                
+                return true;
+            });
+
+            test('블록 주석 처리', function() {
+                const structDef = `typedef struct {
+                    /* 블록 주석
+                       여러 줄 */
+                    char field1[5];
+                    char field2[5];
+                } CommentStruct;`;
+                
+                const defs = parseStructDefinitions(structDef);
+                if (!defs || defs.length !== 1) return '구조체 파싱 실패';
+                if (defs[0].fields.length !== 2) return '필드 개수 불일치';
+                
+                return true;
+            });
+
+            // =========================================
+            // 테스트 케이스 8: 구조체 매칭 로직
+            // =========================================
+            test('구조체 매칭 - 첫 글자 기준', function() {
+                const structDef = `
+                    typedef struct { char type[1]; char data[4]; } Record_H;
+                    typedef struct { char type[1]; char data[9]; } Record_D;
+                `;
+                
+                const data = 'H1234\nD123456789';
+                
+                const defs = parseStructDefinitions(structDef);
+                const parsed = parseStructData(data, defs);
+                
+                // H 라인: 2필드, D 라인: 2필드 = 4개
+                if (parsed.length !== 4) return '필드 파싱 개수 불일치: ' + parsed.length;
+                
+                // 첫 라인은 Record_H
+                if (parsed[0].structName !== 'Record_H') return '첫 라인 구조체 매칭 실패';
+                // 두 번째 라인은 Record_D
+                if (parsed[2].structName !== 'Record_D') return '두 번째 라인 구조체 매칭 실패';
+                
+                return true;
+            });
+
+            // =========================================
+            // 테스트 케이스 9: XML 파싱
+            // =========================================
+            test('XML 파싱 - 정상', function() {
+                const xml = `<packet>
+                    <col id="field1" type="X" size="5" />
+                    <col id="field2" type="N" size="10" />
+                </packet>`;
+                
+                const spec = parseXMLSpec(xml);
+                if (!spec || spec.length !== 2) return 'XML 파싱 실패';
+                if (spec[0].id !== 'field1') return '첫 번째 필드 ID 불일치';
+                if (spec[1].size !== 10) return '두 번째 필드 크기 불일치';
+                
+                return true;
+            });
+
+            test('XML 파싱 - 빈 입력', function() {
+                const spec = parseXMLSpec('');
+                if (spec !== null) return '빈 입력인데 파싱됨';
+                return true;
+            });
+
+            test('XML 파싱 - 잘못된 형식', function() {
+                const spec = parseXMLSpec('<invalid><unclosed>');
+                if (spec !== null) return '잘못된 XML인데 파싱됨';
+                return true;
+            });
+
+            // =========================================
+            // 테스트 케이스 10: 통전문 파싱
+            // =========================================
+            test('통전문 파싱 - 정상', function() {
+                const xml = `<packet>
+                    <col id="code" type="X" size="3" />
+                    <col id="name" type="X" size="5" />
+                </packet>`;
+                const telegram = 'ABCHELLO';
+                
+                const spec = parseXMLSpec(xml);
+                const parsed = parseTelegram(telegram, spec);
+                
+                if (parsed.length !== 2) return '필드 개수 불일치';
+                if (parsed[0].value !== 'ABC') return '첫 번째 값 불일치';
+                if (parsed[1].value !== 'HELLO') return '두 번째 값 불일치';
+                
+                return true;
+            });
+
+            return { passed: passed, failed: failed, results: results };
+        }
+
+        /**
+         * =====================================================
+         * 테스트 결과 표시 함수
+         * 테스트 결과를 UI에 표시
+         * =====================================================
+         * @param {Object} testResult - runTests()의 반환값
+         */
+        function displayTestResults(testResult) {
+            const container = document.getElementById('struct-result-container');
+            container.innerHTML = '';
+
+            const div = document.createElement('div');
+            div.className = 'test-results ' + (testResult.failed === 0 ? 'success' : 'failure');
+
+            const title = document.createElement('h3');
+            title.textContent = '테스트 결과: ' + testResult.passed + '개 통과, ' + testResult.failed + '개 실패';
+            div.appendChild(title);
+
+            testResult.results.forEach(function(result) {
+                const item = document.createElement('div');
+                item.className = 'test-item';
+                
+                if (result.passed) {
+                    item.innerHTML = '<span class="test-pass">✓</span> ' + result.name;
+                } else {
+                    item.innerHTML = '<span class="test-fail">✗</span> ' + result.name + 
+                                   ' <small>(' + result.reason + ')</small>';
+                }
+                
+                div.appendChild(item);
+            });
+
+            container.appendChild(div);
+        }
+
+        // =========================================
+        // DOMContentLoaded 이벤트 - 이벤트 리스너 등록
+        // =========================================
         document.addEventListener('DOMContentLoaded', function() {
+            // 도움말 토글 이벤트
+            const helpToggle = document.querySelector('.help-toggle');
+            const helpContent = document.querySelector('.help-content');
+            
+            if (helpToggle && helpContent) {
+                helpToggle.addEventListener('click', function() {
+                    helpToggle.classList.toggle('expanded');
+                    helpContent.classList.toggle('expanded');
+                });
+            }
+
             // 탭 전환 이벤트
             document.querySelectorAll('.tab-btn').forEach(function(btn) {
                 btn.addEventListener('click', function() {
@@ -1059,6 +1697,12 @@ T000000000200000000000000300000`;
                 document.getElementById('struct-definitions').value = '';
                 document.getElementById('struct-data').value = '';
                 document.getElementById('struct-result-container').innerHTML = '';
+            });
+
+            // 테스트 실행 버튼 클릭 이벤트
+            document.getElementById('run-tests-btn').addEventListener('click', function() {
+                const testResult = runTests();
+                displayTestResults(testResult);
             });
 
             // 복사 버튼 클릭 이벤트 (이벤트 위임 사용)
