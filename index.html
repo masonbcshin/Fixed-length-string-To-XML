@@ -1095,7 +1095,22 @@
                 return null;
             }
 
-            // 5. 구분값 검증
+            // 5. 입력 검증 강화
+            for (let i = 0; i < structDefs.length; i++) {
+                const def = structDefs[i];
+                
+                // 구조체명에 특수문자 있으면 경고 (영문, 숫자, 언더스코어만 허용)
+                if (def.name && !/^[a-zA-Z0-9_가-힣]+$/.test(def.name)) {
+                    console.warn('collectStructDefinitions: 구조체 "' + def.name + '"의 이름에 특수문자가 포함되어 있습니다. 예상치 못한 동작이 발생할 수 있습니다.');
+                }
+                
+                // 구분값이 너무 길면 (10자 이상) 경고
+                if (def.kubun && def.kubun.length >= 10) {
+                    console.warn('collectStructDefinitions: 구조체 "' + def.name + '"의 구분값이 ' + def.kubun.length + '자로 너무 깁니다. 10자 미만을 권장합니다.');
+                }
+            }
+
+            // 6. 구분값 검증
             if (structDefs.length >= 2) {
                 // 구조체가 2개 이상인데 kubun이 null인 것이 있으면 경고
                 const hasNullKubun = structDefs.some(function(def) {
@@ -1119,9 +1134,19 @@
                     displayError('중복된 구분값이 있습니다: ' + duplicates.join(', '), 'struct-result-container');
                     return null;
                 }
+
+                // 구분값 길이 일관성 검사 (모두 같은 길이 권장)
+                const kubunLengths = kubunValues.map(function(k) { return k.length; });
+                const uniqueLengths = kubunLengths.filter(function(len, idx, arr) {
+                    return arr.indexOf(len) === idx;
+                });
+                
+                if (uniqueLengths.length > 1) {
+                    console.warn('collectStructDefinitions: 구분값 길이가 일관되지 않습니다. 길이: ' + uniqueLengths.join(', ') + '. 모두 같은 길이로 통일하는 것을 권장합니다.');
+                }
             }
 
-            // 6. structDefs 반환
+            // 7. structDefs 반환
             console.log('collectStructDefinitions: ' + structDefs.length + '개의 구조체가 수집되었습니다.');
             return structDefs;
         }
@@ -1300,6 +1325,18 @@
                     return; // 다음 라인으로 continue
                 }
 
+                // 구조체 크기 계산
+                const expectedLength = matchedStruct.fields.reduce(function(sum, f) {
+                    return sum + f.size;
+                }, 0);
+
+                // 데이터가 구조체 크기보다 짧으면 해당 레코드 건너뛰기
+                if (line.length < expectedLength) {
+                    errorBytes += line.length;
+                    console.warn('레코드 ' + (recordIndex + 1) + ': 데이터 부족 (필요: ' + expectedLength + ', 실제: ' + line.length + ')');
+                    return; // 다음 라인으로 continue
+                }
+
                 // 필드 배열 생성
                 const fields = [];
                 let currentPos = 0;
@@ -1329,13 +1366,9 @@
                     fields: fields
                 });
 
-                // 라인 길이 검증 경고
-                const expectedLength = matchedStruct.fields.reduce(function(sum, f) {
-                    return sum + f.size;
-                }, 0);
-                
-                if (line.length !== expectedLength) {
-                    console.warn('라인 ' + (lineIndex + 1) + ': 예상 길이 ' + expectedLength + ', 실제 길이 ' + line.length);
+                // 라인 길이 검증 경고 (데이터가 더 긴 경우)
+                if (line.length > expectedLength) {
+                    console.warn('라인 ' + (lineIndex + 1) + ': 예상 길이 ' + expectedLength + ', 실제 길이 ' + line.length + ' (초과 데이터 무시됨)');
                 }
             });
 
@@ -1358,11 +1391,11 @@
          * 지정된 컨테이너에 에러 메시지 표시
          * =====================================================
          * @param {string} message - 에러 메시지
-         * @param {string} targetContainer - 타겟 컨테이너 ID (기본: result-container)
+         * @param {string} targetContainer - 타겟 컨테이너 ID (기본: struct-result-container)
          */
         function displayError(message, targetContainer) {
-            // 1. targetContainer 가져오기 (기본값: result-container)
-            const containerId = targetContainer || 'result-container';
+            // 1. targetContainer 가져오기 (기본값: struct-result-container)
+            const containerId = targetContainer || 'struct-result-container';
             const container = document.getElementById(containerId);
 
             // 2. innerHTML을 에러 메시지로 설정
@@ -2067,14 +2100,14 @@
 
                 // 2. 둘 다 trim()해서 빈 문자열이면 에러 표시 후 return
                 if (xmlInput.trim() === '' || telegramInput.trim() === '') {
-                    displayError("입력값을 확인하세요");
+                    displayError("입력값을 확인하세요", 'result-container');
                     return;
                 }
 
                 // 3. parseXMLSpec 호출, 결과가 null이면 에러 표시 후 return
                 const xmlSpec = parseXMLSpec(xmlInput);
                 if (xmlSpec === null) {
-                    displayError("XML 파싱 실패: 형식을 확인하세요");
+                    displayError("XML 파싱 실패: 형식을 확인하세요", 'result-container');
                     return;
                 }
 
