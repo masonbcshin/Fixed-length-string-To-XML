@@ -124,6 +124,38 @@
             margin-top: 20px;
         }
 
+        /* 탭 스타일 */
+        .tab-container {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            cursor: pointer;
+            margin-right: 5px;
+            border-radius: 5px 5px 0 0;
+        }
+
+        .tab-btn.active {
+            background: white;
+            border-bottom: 2px solid white;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         /* 모바일 대응 */
         @media (max-width: 600px) {
             body {
@@ -135,21 +167,32 @@
 <body>
     <h1>통전문 파서</h1>
     
-    <div id="input-section">
-        <label for="xml-input">XML 규격</label>
-        <textarea id="xml-input" rows="10" placeholder="XML 규격 입력"></textarea>
+    <div class="tab-container">
+        <button class="tab-btn active" data-tab="xml">XML 파싱</button>
+        <button class="tab-btn" data-tab="struct">C 구조체 파싱</button>
+    </div>
+
+    <div id="xml-tab" class="tab-content active">
+        <div id="input-section">
+            <label for="xml-input">XML 규격</label>
+            <textarea id="xml-input" rows="10" placeholder="XML 규격 입력"></textarea>
+            
+            <label for="telegram-input">통전문</label>
+            <textarea id="telegram-input" rows="5" placeholder="통전문 입력"></textarea>
+        </div>
         
-        <label for="telegram-input">통전문</label>
-        <textarea id="telegram-input" rows="5" placeholder="통전문 입력"></textarea>
+        <div class="button-group">
+            <button id="sample-btn">샘플 로드</button>
+            <button id="parse-btn">파싱 실행</button>
+            <button id="clear-btn">초기화</button>
+        </div>
+        
+        <div id="result-container"></div>
     </div>
-    
-    <div class="button-group">
-        <button id="sample-btn">샘플 로드</button>
-        <button id="parse-btn">파싱 실행</button>
-        <button id="clear-btn">초기화</button>
+
+    <div id="struct-tab" class="tab-content" style="display:none;">
+        <!-- 여기에 새 구조체 파싱 UI가 들어갈 예정 -->
     </div>
-    
-    <div id="result-container"></div>
 
     <script>
         // XML 규격 문자열을 파싱하여 배열로 변환
@@ -370,6 +413,30 @@
 
         // DOMContentLoaded 이벤트
         document.addEventListener('DOMContentLoaded', function() {
+            // 탭 전환 이벤트
+            document.querySelectorAll('.tab-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    // 모든 탭 버튼에서 active 제거
+                    document.querySelectorAll('.tab-btn').forEach(function(b) {
+                        b.classList.remove('active');
+                    });
+                    // 클릭된 버튼에 active 추가
+                    this.classList.add('active');
+
+                    // 모든 탭 콘텐츠 숨기기
+                    document.querySelectorAll('.tab-content').forEach(function(content) {
+                        content.classList.remove('active');
+                        content.style.display = 'none';
+                    });
+
+                    // 선택된 탭 콘텐츠 표시
+                    const tabId = this.getAttribute('data-tab') + '-tab';
+                    const selectedTab = document.getElementById(tabId);
+                    selectedTab.classList.add('active');
+                    selectedTab.style.display = 'block';
+                });
+            });
+
             // 샘플 로드 버튼 클릭 이벤트
             document.getElementById('sample-btn').addEventListener('click', function() {
                 // XML 규격 샘플 설정
