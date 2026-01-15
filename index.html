@@ -343,6 +343,62 @@
             return result;
         }
 
+        // C 구조체 정의 문자열을 파싱하여 구조체 배열로 변환
+        function parseStructDefinitions(structText) {
+            // 입력값 유효성 검사
+            if (typeof structText !== 'string' || structText.trim() === '') {
+                console.error('parseStructDefinitions: 유효하지 않은 입력입니다.');
+                return null;
+            }
+
+            // typedef struct 블록 추출 정규식
+            const structPattern = /typedef\s+struct\s*\{([^}]+)\}\s*(\w+)\s*;/g;
+            
+            // 필드 추출 정규식
+            const fieldPattern = /char\s+(\w+)\s*\[\s*(\d+)\s*\]/g;
+            
+            // 결과 배열
+            const result = [];
+            
+            // typedef struct 블록들 추출
+            let structMatch;
+            while ((structMatch = structPattern.exec(structText)) !== null) {
+                const fieldsContent = structMatch[1]; // 중괄호 안의 내용
+                const structName = structMatch[2];    // 구조체명
+                
+                // 필드 배열
+                const fields = [];
+                
+                // 필드들 추출
+                let fieldMatch;
+                // 각 구조체마다 fieldPattern의 lastIndex를 리셋해야 함
+                fieldPattern.lastIndex = 0;
+                while ((fieldMatch = fieldPattern.exec(fieldsContent)) !== null) {
+                    fields.push({
+                        name: fieldMatch[1],
+                        size: parseInt(fieldMatch[2], 10)
+                    });
+                }
+                
+                // 구조체 객체 추가
+                result.push({
+                    name: structName,
+                    fields: fields
+                });
+            }
+            
+            // 구조체가 하나도 없으면 null 반환
+            if (result.length === 0) {
+                console.error('parseStructDefinitions: 파싱된 구조체가 없습니다.');
+                return null;
+            }
+            
+            // 파싱된 구조체 개수 출력
+            console.log('parseStructDefinitions: ' + result.length + '개의 구조체가 파싱되었습니다.');
+            
+            return result;
+        }
+
         // 에러 메시지 표시
         function displayError(message) {
             // 1. result-container 가져오기
