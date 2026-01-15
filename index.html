@@ -90,6 +90,22 @@
             overflow-x: auto;
         }
 
+        /* 버튼 그룹 */
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        #sample-btn {
+            background: #28a745;
+            margin-right: 10px;
+        }
+
+        #sample-btn:hover {
+            background: #1e7e34;
+        }
+
         /* 모바일 대응 */
         @media (max-width: 600px) {
             body {
@@ -109,7 +125,10 @@
         <textarea id="telegram-input" rows="5" placeholder="통전문 입력"></textarea>
     </div>
     
-    <button id="parse-btn">파싱 실행</button>
+    <div class="button-group">
+        <button id="sample-btn">샘플 로드</button>
+        <button id="parse-btn">파싱 실행</button>
+    </div>
     
     <div id="result-container"></div>
 
@@ -335,6 +354,25 @@
 
         // DOMContentLoaded 이벤트
         document.addEventListener('DOMContentLoaded', function() {
+            // 샘플 로드 버튼 클릭 이벤트
+            document.getElementById('sample-btn').addEventListener('click', function() {
+                // XML 규격 샘플 설정
+                const sampleXml = `<packet id="송금전문" default=" ">
+  <col id="헤더시작" type="X" size="6" />
+  <col id="거래구분" type="X" size="2" />
+  <col id="계좌번호" type="N" size="12" />
+  <col id="송금액" type="N" size="15" />
+  <col id="받는사람" type="X" size="20" />
+</packet>`;
+                
+                // 통전문 샘플 설정 (정확히 55자)
+                const sampleTelegram = 'HEADER01123456789012000000000100000홍길동              ';
+                
+                document.getElementById('xml-input').value = sampleXml;
+                document.getElementById('telegram-input').value = sampleTelegram;
+            });
+
+            // 파싱 실행 버튼 클릭 이벤트
             document.getElementById('parse-btn').addEventListener('click', function() {
                 // 1. xml-input과 telegram-input 값 가져오기
                 const xmlInput = document.getElementById('xml-input').value;
