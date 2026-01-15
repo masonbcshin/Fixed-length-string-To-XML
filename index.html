@@ -51,32 +51,36 @@
         }
 
         /* 테이블 스타일 */
-        #result-table {
+        #result-table, .result-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
         }
 
-        #result-table th, #result-table td {
+        #result-table th, #result-table td,
+        .result-table th, .result-table td {
             border: 1px solid #ddd;
             padding: 10px;
             text-align: left;
         }
 
-        #result-table th {
+        #result-table th, .result-table th {
             background: #f0f0f0;
             font-weight: bold;
         }
 
-        #result-table tr:nth-child(even) {
+        #result-table tr:nth-child(even),
+        .result-table tr:nth-child(even) {
             background: #f9f9f9;
         }
 
-        #result-table tr:hover {
+        #result-table tr:hover,
+        .result-table tr:hover {
             background: #f0f8ff;
         }
 
-        #result-table td:nth-child(7) {
+        #result-table td:nth-child(7),
+        .result-table td:last-child {
             font-family: 'Courier New', monospace;
             background: #fafafa;
         }
@@ -457,10 +461,89 @@
             box-sizing: border-box;
         }
 
+        /* 파싱 통계 스타일 */
+        .parse-stats {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .parse-stats h3 {
+            margin: 0 0 12px 0;
+            color: #1565c0;
+            font-size: 16px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .stats-grid > div {
+            background: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        /* 레코드 헤더 스타일 */
+        .record-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .record-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #333;
+        }
+
+        /* 구분값 배지 스타일 */
+        .kubun-badge {
+            background: #6610f2;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* 레코드 복사 버튼 스타일 */
+        .copy-record-btn {
+            padding: 6px 12px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .copy-record-btn:hover {
+            background: #1e7e34;
+        }
+
         /* 모바일 대응 */
         @media (max-width: 600px) {
             body {
                 padding: 10px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .record-header {
+                flex-wrap: wrap;
+                gap: 8px;
             }
         }
     </style>
@@ -1353,131 +1436,105 @@
          * 구조체 파싱 결과 표시 함수
          * DocumentFragment를 사용하여 DOM 조작 최적화
          * =====================================================
-         * @param {Array} parsedData - parseStructData의 결과 배열
-         * @param {Array} structDefs - 구조체 정의 배열
+         * @param {Object} parseResult - { records, stats } 형식의 파싱 결과
+         *   - records: 레코드 배열 (각 레코드: { recordIndex, structName, kubun, fields })
+         *   - stats: 통계 정보 { totalBytes, parsedBytes, recordCount, errorBytes }
          */
-        function displayStructResults(parsedData, structDefs) {
+        function displayStructResults(parseResult) {
             // 1. struct-result-container 초기화
             const container = document.getElementById('struct-result-container');
             container.innerHTML = '';
 
-            // DocumentFragment 생성 - DOM 조작 최적화
-            const fragment = document.createDocumentFragment();
-
-            // 에러가 있는지 확인
-            const errors = parsedData.filter(function(item) {
-                return item.error === true;
-            });
-
-            // 에러 메시지 표시 - 각 에러를 개별 parse-error 박스로 표시
-            errors.forEach(function(e) {
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'parse-error';
-                errorDiv.textContent = '라인 ' + e.lineNumber + ' 파싱 실패: ' + e.line;
-                fragment.appendChild(errorDiv);
-            });
-
-            // 정상 파싱 결과만 필터링
-            const validData = parsedData.filter(function(item) {
-                return item.error !== true;
-            });
-
-            if (validData.length === 0) {
-                if (errors.length === 0) {
-                    container.innerHTML = '<div class="error-message">⚠️ 파싱 결과가 없습니다.</div>';
-                } else {
-                    container.appendChild(fragment);
-                }
+            // 입력값 유효성 검사
+            if (!parseResult || !parseResult.records) {
+                container.innerHTML = '<div class="error-message">⚠️ 파싱 결과가 없습니다.</div>';
                 return;
             }
 
-            // 구조체 요약 정보 표시
-            if (structDefs && structDefs.length > 0) {
-                const summaryDiv = document.createElement('div');
-                summaryDiv.className = 'struct-summary';
+            const { records, stats } = parseResult;
 
-                // 제목
-                const title = document.createElement('h3');
-                title.textContent = '📋 파싱 정보';
-                summaryDiv.appendChild(title);
+            // DocumentFragment 생성 - DOM 조작 최적화
+            const fragment = document.createDocumentFragment();
 
-                // 구조체 수
-                const structCountP = document.createElement('p');
-                structCountP.textContent = '구조체 수: ' + structDefs.length + '개';
-                summaryDiv.appendChild(structCountP);
+            // 2. 통계 정보 표시
+            if (stats) {
+                const percent = stats.totalBytes > 0 
+                    ? ((stats.parsedBytes / stats.totalBytes) * 100).toFixed(1) 
+                    : 0;
 
-                // 각 구조체명과 총 크기 목록
-                const structList = document.createElement('ul');
-                structDefs.forEach(function(structDef) {
-                    const li = document.createElement('li');
-                    // 구조체의 총 크기 사용 (totalSize가 있으면 사용, 없으면 계산)
-                    const totalSize = structDef.totalSize || structDef.fields.reduce(function(sum, field) {
-                        return sum + field.size;
-                    }, 0);
-                    li.textContent = structDef.name + ': ' + totalSize + ' bytes';
-                    structList.appendChild(li);
-                });
-                summaryDiv.appendChild(structList);
+                const statsDiv = document.createElement('div');
+                statsDiv.className = 'parse-stats';
 
-                // 처리된 데이터 라인 수 계산 (unique lineNumber 개수)
-                const uniqueLines = {};
-                validData.forEach(function(item) {
-                    uniqueLines[item.lineNumber] = true;
-                });
-                const lineCount = Object.keys(uniqueLines).length;
+                statsDiv.innerHTML = `
+                    <h3>📊 파싱 통계</h3>
+                    <div class="stats-grid">
+                        <div>전체: ${stats.totalBytes} bytes</div>
+                        <div>파싱: ${stats.parsedBytes} bytes (${percent}%)</div>
+                        <div>레코드: ${stats.recordCount}개</div>
+                        <div>오류: ${stats.errorBytes} bytes</div>
+                    </div>
+                `;
 
-                const lineCountP = document.createElement('p');
-                lineCountP.textContent = '데이터 라인: ' + lineCount + '개';
-                summaryDiv.appendChild(lineCountP);
-
-                fragment.appendChild(summaryDiv);
+                fragment.appendChild(statsDiv);
             }
 
-            // 2. 라인별로 그룹화
-            const groupedByLine = {};
-            validData.forEach(function(item) {
-                const lineNum = item.lineNumber;
-                if (!groupedByLine[lineNum]) {
-                    groupedByLine[lineNum] = {
-                        structName: item.structName,
-                        fields: []
-                    };
+            // 레코드가 없으면 메시지 표시
+            if (records.length === 0) {
+                const noDataDiv = document.createElement('div');
+                noDataDiv.className = 'error-message';
+                noDataDiv.textContent = '⚠️ 파싱된 레코드가 없습니다.';
+                fragment.appendChild(noDataDiv);
+                container.appendChild(fragment);
+                return;
+            }
+
+            // 3. 레코드별 그룹화 (recordIndex 기준)
+            const recordMap = new Map();
+            records.forEach(function(record) {
+                const idx = record.recordIndex;
+                if (!recordMap.has(idx)) {
+                    recordMap.set(idx, record);
                 }
-                groupedByLine[lineNum].fields.push(item);
             });
 
-            // 3. 각 라인마다 테이블 생성
-            const lineNumbers = Object.keys(groupedByLine).sort(function(a, b) {
-                return parseInt(a) - parseInt(b);
-            });
-
-            lineNumbers.forEach(function(lineNum) {
-                const lineData = groupedByLine[lineNum];
-
+            // 4. 각 레코드마다 테이블 생성
+            recordMap.forEach(function(record, recordIndex) {
                 // 그룹 컨테이너 생성
                 const groupDiv = document.createElement('div');
                 groupDiv.className = 'struct-result-group';
 
-                // 복사 버튼 추가
-                const copyBtn = document.createElement('button');
-                copyBtn.className = 'copy-result-btn';
-                copyBtn.setAttribute('data-line', lineNum);
-                copyBtn.textContent = '📋 복사';
-                groupDiv.appendChild(copyBtn);
+                // 레코드 헤더 생성
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'record-header';
 
-                // 제목: "라인 N - 구조체명"
+                // 제목: "레코드 #N - 구조체명"
                 const title = document.createElement('h3');
-                title.textContent = '라인 ' + lineNum + ' - ' + lineData.structName;
-                groupDiv.appendChild(title);
+                title.textContent = '레코드 #' + (recordIndex + 1) + ' - ' + record.structName;
+                headerDiv.appendChild(title);
+
+                // 구분값 배지
+                const kubunBadge = document.createElement('span');
+                kubunBadge.className = 'kubun-badge';
+                kubunBadge.textContent = '구분: ' + (record.kubun || 'N/A');
+                headerDiv.appendChild(kubunBadge);
+
+                // 복사 버튼
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-record-btn';
+                copyBtn.setAttribute('data-record', recordIndex);
+                copyBtn.textContent = '📋 복사';
+                headerDiv.appendChild(copyBtn);
+
+                groupDiv.appendChild(headerDiv);
 
                 // 테이블 생성
                 const table = document.createElement('table');
-                table.id = 'result-table';
+                table.className = 'result-table';
 
                 // thead 생성
                 const thead = document.createElement('thead');
                 const headerRow = document.createElement('tr');
-                const headers = ['순번', '필드명', '크기', '시작', '종료', '값'];
+                const headers = ['필드명', '크기', '시작', '종료', '값'];
 
                 headers.forEach(function(headerText) {
                     const th = document.createElement('th');
@@ -1490,33 +1547,34 @@
                 // tbody 생성
                 const tbody = document.createElement('tbody');
 
-                // 해당 라인의 모든 필드를 행으로 추가
-                lineData.fields.forEach(function(item, index) {
-                    const tr = document.createElement('tr');
+                // 해당 레코드의 모든 필드를 행으로 추가
+                if (record.fields && record.fields.length > 0) {
+                    record.fields.forEach(function(field) {
+                        const tr = document.createElement('tr');
 
-                    const values = [
-                        index + 1,       // 순번
-                        item.fieldName,  // 필드명
-                        item.fieldSize,  // 크기
-                        item.startPos,   // 시작
-                        item.endPos,     // 종료
-                        item.value       // 값
-                    ];
+                        const values = [
+                            field.fieldName,   // 필드명
+                            field.fieldSize,   // 크기
+                            field.startPos,    // 시작
+                            field.endPos,      // 종료
+                            field.value        // 값
+                        ];
 
-                    values.forEach(function(value, tdIndex) {
-                        const td = document.createElement('td');
-                        td.textContent = value;
+                        values.forEach(function(value, tdIndex) {
+                            const td = document.createElement('td');
+                            td.textContent = value;
 
-                        // value가 공백만 있으면 class="empty-value" 추가 (마지막 컬럼)
-                        if (tdIndex === 5 && typeof value === 'string' && value.trim() === '') {
-                            td.classList.add('empty-value');
-                        }
+                            // value가 공백만 있으면 class="empty-value" 추가 (마지막 컬럼)
+                            if (tdIndex === 4 && typeof value === 'string' && value.trim() === '') {
+                                td.classList.add('empty-value');
+                            }
 
-                        tr.appendChild(td);
+                            tr.appendChild(td);
+                        });
+
+                        tbody.appendChild(tr);
                     });
-
-                    tbody.appendChild(tr);
-                });
+                }
 
                 table.appendChild(thead);
                 table.appendChild(tbody);
@@ -1528,7 +1586,7 @@
 
                 groupDiv.appendChild(wrapper);
 
-                // 4. fragment에 그룹 추가
+                // fragment에 그룹 추가
                 fragment.appendChild(groupDiv);
             });
 
@@ -2083,14 +2141,21 @@ T000000000200000000000000300000`;
                     return;
                 }
 
-                // 모든 카드의 구조체 정의를 합침
-                let combinedStructDefs = '';
-                cards.forEach(function(card) {
+                // 카드별로 구조체 정의와 kubun 값을 수집
+                const structInfos = [];
+                cards.forEach(function(card, idx) {
                     const definition = card.querySelector('.struct-definition').value.trim();
+                    const kubun = card.querySelector('.struct-kubun').value.trim();
+                    const name = card.querySelector('.struct-name').value.trim();
                     if (definition) {
-                        combinedStructDefs += definition + '\n';
+                        structInfos.push({ definition, kubun: kubun || null, name: name || ('구조체' + (idx + 1)) });
                     }
                 });
+
+                // 모든 카드의 구조체 정의를 합침
+                const combinedStructDefs = structInfos.map(function(info) {
+                    return info.definition;
+                }).join('\n');
 
                 const structDefInput = combinedStructDefs.trim();
                 
@@ -2110,14 +2175,77 @@ T000000000200000000000000300000`;
                     return;
                 }
 
+                // 구조체 정의에 kubun 정보 매핑
+                structDefs.forEach(function(structDef, idx) {
+                    const matchingInfo = structInfos.find(function(info) {
+                        return info.definition.indexOf(structDef.name) !== -1;
+                    });
+                    if (matchingInfo) {
+                        structDef.kubun = matchingInfo.kubun;
+                    }
+                });
+
                 // 5. 파싱된 구조체 개수 콘솔 출력
                 console.log('파싱된 구조체 개수: ' + structDefs.length);
 
                 // 6. parseStructData 호출
                 const parsedData = parseStructData(dataInput, structDefs);
 
-                // 7. displayStructResults 호출 (structDefs 전달)
-                displayStructResults(parsedData, structDefs);
+                // 7. parsedData를 { records, stats } 형식으로 변환
+                const totalBytes = dataInput.replace(/\n/g, '').length;
+                let parsedBytes = 0;
+                let errorBytes = 0;
+
+                // 레코드별로 그룹화 (lineNumber를 recordIndex로 사용)
+                const recordMap = new Map();
+                
+                parsedData.forEach(function(item) {
+                    if (item.error) {
+                        errorBytes += item.line ? item.line.length : 0;
+                        return;
+                    }
+
+                    const recordIndex = item.lineNumber - 1; // 0-based index
+                    
+                    if (!recordMap.has(recordIndex)) {
+                        // 해당 구조체의 kubun 찾기
+                        const matchedStruct = structDefs.find(function(s) {
+                            return s.name === item.structName;
+                        });
+                        
+                        recordMap.set(recordIndex, {
+                            recordIndex: recordIndex,
+                            structName: item.structName,
+                            kubun: matchedStruct ? matchedStruct.kubun : null,
+                            fields: []
+                        });
+                    }
+
+                    recordMap.get(recordIndex).fields.push({
+                        fieldName: item.fieldName,
+                        fieldSize: item.fieldSize,
+                        startPos: item.startPos,
+                        endPos: item.endPos,
+                        value: item.value
+                    });
+
+                    parsedBytes += item.fieldSize;
+                });
+
+                const records = Array.from(recordMap.values());
+
+                const parseResult = {
+                    records: records,
+                    stats: {
+                        totalBytes: totalBytes,
+                        parsedBytes: parsedBytes,
+                        recordCount: records.length,
+                        errorBytes: errorBytes
+                    }
+                };
+
+                // 8. displayStructResults 호출
+                displayStructResults(parseResult);
             });
 
             // 구조체 초기화 버튼 클릭 이벤트
@@ -2143,15 +2271,14 @@ T000000000200000000000000300000`;
 
             // 복사 버튼 클릭 이벤트 (이벤트 위임 사용)
             document.getElementById('struct-result-container').addEventListener('click', function(e) {
-                // 클릭된 요소가 복사 버튼인지 확인
-                if (!e.target.classList.contains('copy-result-btn')) {
+                // 클릭된 요소가 복사 버튼인지 확인 (copy-result-btn 또는 copy-record-btn)
+                if (!e.target.classList.contains('copy-result-btn') && !e.target.classList.contains('copy-record-btn')) {
                     return;
                 }
 
                 const btn = e.target;
-                const lineNum = btn.getAttribute('data-line');
 
-                // 해당 라인의 그룹 찾기
+                // 해당 레코드의 그룹 찾기
                 const groupDiv = btn.closest('.struct-result-group');
                 if (!groupDiv) {
                     return;
@@ -2169,9 +2296,10 @@ T000000000200000000000000300000`;
                 const tsvLines = [];
                 rows.forEach(function(row) {
                     const cells = row.querySelectorAll('td');
-                    if (cells.length >= 6) {
-                        const fieldName = cells[1].textContent;  // 필드명
-                        const value = cells[5].textContent;       // 값
+                    // 새 형식: 5개 컬럼 (필드명, 크기, 시작, 종료, 값)
+                    if (cells.length >= 5) {
+                        const fieldName = cells[0].textContent;  // 필드명
+                        const value = cells[4].textContent;       // 값
                         tsvLines.push(fieldName + '\t' + value);
                     }
                 });
