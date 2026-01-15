@@ -1045,6 +1045,52 @@
 
         /**
          * =====================================================
+         * kubun 기반 구조체 찾기 함수
+         * 데이터의 첫 부분을 kubun 값과 비교하여 구조체 탐색
+         * =====================================================
+         * @param {string} data - 현재 위치부터의 데이터
+         * @param {Array} structDefs - 구조체 정의 배열
+         * @returns {Object|null} 매칭된 구조체 또는 null
+         */
+        function findStructByKubun(data, structDefs) {
+            // 입력값 유효성 검사
+            if (!data || !Array.isArray(structDefs) || structDefs.length === 0) {
+                return null;
+            }
+
+            // 1. kubun이 null이 아닌 구조체들을 순회하며 매칭 시도
+            for (let i = 0; i < structDefs.length; i++) {
+                const structDef = structDefs[i];
+                const kubun = structDef.kubun;
+
+                // kubun이 null이면 건너뛰기
+                if (kubun === null || kubun === undefined) {
+                    continue;
+                }
+
+                // kubun 길이만큼 data에서 추출하여 비교
+                const kubunLength = kubun.length;
+                const dataKubun = data.substring(0, kubunLength);
+
+                // 매칭되면 해당 구조체 반환
+                if (dataKubun === kubun) {
+                    return structDef;
+                }
+            }
+
+            // 2. 모두 실패 시 kubun이 null인 구조체 반환 (fallback)
+            for (let i = 0; i < structDefs.length; i++) {
+                if (structDefs[i].kubun === null || structDefs[i].kubun === undefined) {
+                    return structDefs[i];
+                }
+            }
+
+            // 3. fallback도 없으면 null 반환
+            return null;
+        }
+
+        /**
+         * =====================================================
          * 매칭 구조체 찾기 함수
          * 데이터 라인의 첫 글자로 매칭되는 구조체 탐색
          * =====================================================
