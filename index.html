@@ -1164,6 +1164,36 @@
             background: #2d2d44;
             color: #adb5bd;
         }
+
+        /* =====================================================
+         * 임시 메시지 스타일
+         * ===================================================== */
+        .temporary-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #17a2b8;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 9999;
+            animation: slideIn 0.3s;
+        }
+
+        .temporary-message.fade-out {
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+            }
+            to {
+                transform: translateX(0);
+            }
+        }
     </style>
 </head>
 <body>
@@ -3614,6 +3644,56 @@ T000000000200000000000000003000`;
                     }
                 }
             });
+
+            // =========================================
+            // 개행문자 인식 (CRLF) 체크박스 change 이벤트
+            // =========================================
+            document.getElementById('recognize-crlf').addEventListener('change', function(e) {
+                const isChecked = e.target.checked;
+                const hasData = document.getElementById('struct-data').value.trim().length > 0;
+                const hasResults = document.getElementById('struct-result-container').children.length > 0;
+
+                if (hasData || hasResults) {
+                    const confirmed = confirm(
+                        '옵션을 변경하면 기존 파싱 결과가 영향을 받을 수 있습니다.\n' +
+                        '다시 파싱하시겠습니까?'
+                    );
+
+                    if (confirmed) {
+                        // 결과 초기화
+                        document.getElementById('struct-result-container').innerHTML = '';
+
+                        // 알림
+                        const msg = isChecked
+                            ? '개행문자 인식이 활성화되었습니다. 각 레코드 끝에 CRLF(2 bytes)가 추가됩니다.'
+                            : '개행문자 인식이 비활성화되었습니다. 모든 줄바꿈이 제거됩니다.';
+
+                        // 임시 메시지 표시
+                        showTemporaryMessage(msg);
+                    } else {
+                        // 변경 취소
+                        e.target.checked = !isChecked;
+                    }
+                }
+            });
+
+            /**
+             * 임시 메시지 표시 함수
+             * @param {string} message - 표시할 메시지
+             */
+            function showTemporaryMessage(message) {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'temporary-message';
+                msgDiv.textContent = message;
+                document.body.appendChild(msgDiv);
+
+                setTimeout(function() {
+                    msgDiv.classList.add('fade-out');
+                    setTimeout(function() {
+                        msgDiv.remove();
+                    }, 300);
+                }, 3000);
+            }
         });
     </script>
 </body>
