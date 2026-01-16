@@ -2282,122 +2282,103 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
          * @returns {Object} { records: [...], stats: {...} } 형식의 파싱 결과
          */
         function parseLineByLine(dataText, structDefs) {
-            // 1. 이스케이프 시퀀스 처리
-            let temp = dataText.replace(/\\r\\n/g, '\r\n')
-                               .replace(/\\n/g, '\n')
-                               .replace(/\\r/g, '\r');
+            // 1. 이스케이프 처리
+            let processedText = dataText
+                .replace(/\\r\\n/g, '\r\n')
+                .replace(/\\n/g, '\n')
+                .replace(/\\r/g, '\r');
 
-            // 2. 줄바꿈으로 레코드 분리
-            const lines = temp.split(/\r?\n/).filter(line => line.trim().length > 0);
+            // 2. 줄 단위로 분리
+            const lines = processedText.split(/\r?\n/)
+                .map(line => line.trimEnd())  // 우측 공백만 제거
+                .filter(line => line.length > 0);  // 빈 줄 제거
 
-            // 3. 각 레코드에 CRLF 추가 (없으면)
-            const processedData = lines.map(line => {
-                // 이미 CRLF로 끝나는지 확인
-                if (line.endsWith('\r\n')) {
-                    return line;
-                }
-                // CRLF 추가
-                return line + '\r\n';
-            }).join('');
+            console.log(`라인 기반 파싱: 총 ${lines.length}개 라인`);
 
-            console.log(`parseLineByLine: ${lines.length}개 레코드, 각 레코드 끝에 CRLF 추가`);
-
-            // 4. CRLF 필드 존재 여부 확인 (경고만)
-            const hasCrlfField = structDefs.some(struct => 
-                struct.fields && struct.fields.some(field => 
-                    field.name && field.name.toLowerCase() === 'crlf'
-                )
-            );
-            if (!hasCrlfField) {
-                console.warn('경고: 라인 기반 파싱 모드이지만 구조체에 crlf 필드가 없습니다.');
-            }
-
-            // 5. 통계 초기화
-            const totalBytes = processedData.length;
-            let parsedBytes = 0;
-            let errorBytes = 0;
-
-            // 6. 레코드 배열 초기화
+            // 3. 변수 초기화
             const records = [];
-
-            // 7. 순차 파싱 로직 (currentPos 루프)
-            let currentPos = 0;
             let recordIndex = 0;
+            let totalBytes = 0;
+            let parsedBytes = 0;
+            let errorLines = 0;
 
-            while (currentPos < processedData.length) {
-                // 현재 위치에서 남은 데이터
-                const remainingData = processedData.substring(currentPos);
+            // 4. 각 라인 순회
+            lines.forEach((line, lineIndex) => {
+                totalBytes += line.length + 2;  // +2 for CRLF
 
-                // findStructByKubun 함수를 먼저 시도, 실패 시 findMatchingStruct 사용
-                let matchedStruct = findStructByKubun(remainingData, structDefs);
-                if (!matchedStruct) {
-                    matchedStruct = findMatchingStruct(remainingData, structDefs);
+                // 구조체 매칭
+                const matched = findStructByKubun(line, structDefs);
+
+                if (!matched) {
+                    console.warn(`라인 ${lineIndex + 1}: 매칭 실패 - "${line.substring(0, 20)}..."`);
+                    errorLines++;
+
+                    // 에러 레코드 추가
+                    records.push({
+                        error: true,
+                        lineNumber: lineIndex + 1,
+                        lineData: line,
+                        message: '매칭되는 구조체 없음'
+                    });
+                    return;  // 다음 라인으로
                 }
 
-                // 매칭 실패 시 1바이트 스킵하고 계속
-                if (!matchedStruct) {
-                    errorBytes += 1;
-                    console.warn('위치 ' + currentPos + ': 매칭되는 구조체 없음, 1바이트 스킵');
-                    currentPos += 1;
-                    continue;
+                // 길이 검증
+                const expectedSize = matched.totalSize;
+                const actualSize = line.length + 2;  // CRLF 포함
+
+                if (actualSize < expectedSize) {
+                    console.warn(
+                        `라인 ${lineIndex + 1}: 길이 부족 ` +
+                        `(예상: ${expectedSize}, 실제: ${actualSize})`
+                    );
+                } else if (actualSize > expectedSize) {
+                    console.warn(
+                        `라인 ${lineIndex + 1}: 길이 초과 ` +
+                        `(예상: ${expectedSize}, 실제: ${actualSize})`
+                    );
                 }
 
-                // 구조체 크기 계산
-                const expectedLength = matchedStruct.fields.reduce(function(sum, f) {
-                    return sum + f.size;
-                }, 0);
+                // 라인 데이터에 CRLF 추가
+                const lineWithCRLF = line + '\r\n';
 
-                // 데이터가 구조체 크기보다 짧으면 나머지 에러 처리 후 종료
-                if (remainingData.length < expectedLength) {
-                    errorBytes += remainingData.length;
-                    console.warn('위치 ' + currentPos + ': 데이터 부족 (필요: ' + expectedLength + ', 실제: ' + remainingData.length + ')');
-                    break;
-                }
+                // 필드별 파싱
+                let fieldOffset = 0;
+                matched.fields.forEach(field => {
+                    const startPos = fieldOffset;
+                    const endPos = startPos + field.size;
+                    const value = lineWithCRLF.substring(startPos, endPos);
 
-                // 필드 배열 생성
-                const fields = [];
-                let fieldPos = 0;
-
-                matchedStruct.fields.forEach(function(field) {
-                    const startPos = fieldPos;
-                    const endPos = fieldPos + field.size;
-                    const value = remainingData.substring(startPos, endPos);
-
-                    fields.push({
+                    records.push({
+                        recordIndex,
+                        lineNumber: lineIndex + 1,
+                        structName: matched.name,
+                        kubun: matched.kubun,
                         fieldName: field.name,
                         fieldSize: field.size,
-                        startPos: currentPos + startPos,
-                        endPos: currentPos + endPos,
-                        value: value
+                        value,
+                        startPos,
+                        endPos
                     });
 
-                    fieldPos += field.size;
+                    fieldOffset += field.size;
                 });
 
-                // 레코드 객체 추가
-                records.push({
-                    recordIndex: recordIndex,
-                    structName: matchedStruct.name,
-                    kubun: matchedStruct.kubun || null,
-                    fields: fields
-                });
-
-                parsedBytes += expectedLength;
-                currentPos += expectedLength;
+                parsedBytes += Math.min(actualSize, expectedSize);
                 recordIndex++;
-            }
+            });
 
-            // 8. 결과 반환
-            console.log('parseLineByLine: ' + records.length + '개의 레코드가 파싱되었습니다.');
-            return {
-                records: records,
-                stats: {
-                    totalBytes: totalBytes,
-                    parsedBytes: parsedBytes,
-                    recordCount: records.length,
-                    errorBytes: errorBytes
-                }
+            // 5. 통계 계산
+            const stats = {
+                totalBytes,
+                parsedBytes,
+                recordCount: recordIndex,
+                errorLines,
+                mode: 'line-by-line'
             };
+
+            // 6. 반환
+            return { records, stats };
         }
 
         /**
