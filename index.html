@@ -1232,6 +1232,23 @@
             color: #000;
         }
 
+        .type-badge {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .type-badge.numeric-type {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .type-badge.string-type {
+            background: #17a2b8;
+            color: white;
+        }
+
         .field-size {
             color: #6c757d;
             text-align: center;
@@ -6840,6 +6857,346 @@ T000000000200000000000000003000`
             }
             
             /**
+             * XML 규격 기반 전문 생성 폼 표시 함수
+             * @param {Array} xmlSpec - parseXMLSpec의 결과 배열 [{id, type, size}, ...]
+             */
+            function displayXMLGenerateForm(xmlSpec) {
+                // 1. xml-generate-form-container 초기화
+                const container = document.getElementById('xml-generate-form-container');
+                
+                // 2. 총 바이트 수 계산
+                const totalSize = xmlSpec.reduce(function(sum, field) {
+                    return sum + field.size;
+                }, 0);
+                
+                // 3. 폼 HTML 생성
+                const formHTML = 
+                    '<div class="generate-form">' +
+                    
+                    '  <div class="form-header">' +
+                    '    <div class="form-title">' +
+                    '      <h4>📝 XML 규격 입력 폼</h4>' +
+                    '      <span class="form-badge">총 ' + totalSize + ' bytes</span>' +
+                    '    </div>' +
+                    '    <div class="form-info">' +
+                    '      <small>' + xmlSpec.length + '개 필드</small>' +
+                    '    </div>' +
+                    '  </div>' +
+                    
+                    '  <table class="input-form-table">' +
+                    '    <thead>' +
+                    '      <tr>' +
+                    '        <th style="width: 20%">필드 ID</th>' +
+                    '        <th style="width: 8%">타입</th>' +
+                    '        <th style="width: 8%">크기</th>' +
+                    '        <th style="width: 39%">입력값</th>' +
+                    '        <th style="width: 25%">미리보기</th>' +
+                    '      </tr>' +
+                    '    </thead>' +
+                    '    <tbody id="xml-form-fields-body">' +
+                    '    </tbody>' +
+                    '  </table>' +
+                    
+                    '  <div class="form-actions">' +
+                    '    <button id="xml-preview-telegram-btn" class="btn-info">' +
+                    '      👁️ 미리보기' +
+                    '    </button>' +
+                    '    <button id="xml-add-to-list-btn" class="btn-success">' +
+                    '      ✓ 레코드 추가' +
+                    '    </button>' +
+                    '    <button id="xml-reset-form-btn" class="btn-secondary">' +
+                    '      🔄 초기화' +
+                    '    </button>' +
+                    '  </div>' +
+                    
+                    '  <div id="xml-telegram-preview-box" class="preview-box" style="display: none;">' +
+                    '  </div>' +
+                    
+                    '</div>';
+                
+                // 4. DOM에 추가
+                container.innerHTML = formHTML;
+                container.style.display = 'block';
+                
+                // 5. 필드 행 생성
+                const tbody = document.getElementById('xml-form-fields-body');
+                
+                xmlSpec.forEach(function(field, index) {
+                    const row = createXMLFieldRow(field, index);
+                    tbody.appendChild(row);
+                });
+                
+                // 6. 이벤트 리스너 연결
+                attachXMLFormEvents(xmlSpec);
+            }
+            
+            /**
+             * XML 필드 입력 행 생성 함수
+             * @param {Object} field - 필드 정의 객체 {id, type, size}
+             * @param {number} index - 필드 인덱스
+             * @returns {HTMLTableRowElement} 테이블 행 요소
+             */
+            function createXMLFieldRow(field, index) {
+                const tr = document.createElement('tr');
+                
+                // 타입에 따른 입력모드 설정 (N: 숫자)
+                const isNumeric = field.type === 'N';
+                const typeLabel = field.type === 'N' ? '숫자' : '문자';
+                const typeClass = field.type === 'N' ? 'numeric-type' : 'string-type';
+                
+                tr.innerHTML = 
+                    '<td>' +
+                    '  <span class="field-name">' + field.id + '</span>' +
+                    '</td>' +
+                    '<td>' +
+                    '  <span class="type-badge ' + typeClass + '">' + typeLabel + '</span>' +
+                    '</td>' +
+                    '<td class="field-size">' + field.size + '</td>' +
+                    '<td>' +
+                    '  <input type="text"' +
+                    '         class="field-input xml-generate-field-input"' +
+                    '         data-field-id="' + field.id + '"' +
+                    '         data-field-type="' + field.type + '"' +
+                    '         data-field-size="' + field.size + '"' +
+                    '         data-field-index="' + index + '"' +
+                    '         id="xml-gen-field-' + index + '"' +
+                    '         maxlength="' + field.size + '"' +
+                    '         placeholder="최대 ' + field.size + '자"' +
+                    (isNumeric ? '         inputmode="numeric"' : '') +
+                    '  />' +
+                    '  <div class="input-meta">' +
+                    '    <span class="char-counter">' +
+                    '      <span class="current-length" id="xml-char-count-' + index + '">0</span>/' + field.size +
+                    '    </span>' +
+                    '  </div>' +
+                    '</td>' +
+                    '<td class="preview-cell">' +
+                    '  <code class="preview-text" id="xml-preview-field-' + index + '" data-field-size="' + field.size + '"></code>' +
+                    '</td>';
+                
+                // 입력 이벤트 바인딩을 위해 setTimeout 사용 (DOM에 추가된 후 실행)
+                setTimeout(function() {
+                    const input = document.getElementById('xml-gen-field-' + index);
+                    const charCountEl = document.getElementById('xml-char-count-' + index);
+                    const previewEl = document.getElementById('xml-preview-field-' + index);
+                    
+                    if (input) {
+                        input.addEventListener('input', function() {
+                            const value = this.value;
+                            const size = parseInt(this.dataset.fieldSize);
+                            const type = this.dataset.fieldType;
+                            
+                            // 글자 수 카운터 업데이트
+                            if (charCountEl) {
+                                charCountEl.textContent = value.length;
+                            }
+                            
+                            // 미리보기 업데이트
+                            if (previewEl) {
+                                previewEl.classList.remove('filled', 'padded', 'over');
+                                
+                                if (value.length === 0) {
+                                    previewEl.textContent = '';
+                                } else if (value.length < size) {
+                                    // 패딩 표시 (타입에 따라 다름: N은 왼쪽 0, X는 오른쪽 공백)
+                                    let padded;
+                                    if (type === 'N') {
+                                        padded = '0'.repeat(size - value.length) + value;
+                                    } else {
+                                        padded = value + '░'.repeat(size - value.length);
+                                    }
+                                    previewEl.textContent = padded;
+                                    previewEl.classList.add('padded');
+                                } else if (value.length === size) {
+                                    previewEl.textContent = value;
+                                    previewEl.classList.add('filled');
+                                } else {
+                                    previewEl.textContent = value.substring(0, size) + '...';
+                                    previewEl.classList.add('over');
+                                }
+                            }
+                        });
+                    }
+                }, 0);
+                
+                return tr;
+            }
+            
+            /**
+             * XML 폼 이벤트 연결 함수
+             * @param {Array} xmlSpec - XML 규격 배열
+             */
+            function attachXMLFormEvents(xmlSpec) {
+                // 미리보기 버튼
+                document.getElementById('xml-preview-telegram-btn').addEventListener('click', function() {
+                    const result = generateXMLTelegram(xmlSpec);
+                    const previewBox = document.getElementById('xml-telegram-preview-box');
+                    
+                    previewBox.innerHTML = 
+                        '<div class="preview-header">' +
+                        '  <strong>📋 미리보기</strong>' +
+                        '  <span class="preview-length">' + result.raw.length + ' bytes</span>' +
+                        '</div>' +
+                        '<div class="preview-content">' +
+                        '  <code>' + escapeHtml(result.display) + '</code>' +
+                        '</div>';
+                    previewBox.style.display = 'block';
+                });
+                
+                // 레코드 추가 버튼
+                document.getElementById('xml-add-to-list-btn').addEventListener('click', function() {
+                    const result = generateXMLTelegram(xmlSpec);
+                    addXMLGeneratedRecord(result.raw);
+                    showTemporaryMessage('✓ 레코드가 추가되었습니다 (' + result.raw.length + ' bytes)');
+                });
+                
+                // 초기화 버튼
+                document.getElementById('xml-reset-form-btn').addEventListener('click', function() {
+                    if (confirm('입력한 내용을 모두 초기화하시겠습니까?')) {
+                        resetXMLGenerateForm();
+                    }
+                });
+            }
+            
+            /**
+             * XML 기반 전문 생성 함수
+             * @param {Array} xmlSpec - XML 규격 배열
+             * @returns {Object} {raw: 원본 문자열, display: 표시용 문자열}
+             */
+            function generateXMLTelegram(xmlSpec) {
+                const inputs = document.querySelectorAll('#xml-form-fields-body .xml-generate-field-input');
+                let raw = '';
+                let display = '';
+                
+                inputs.forEach(function(input, idx) {
+                    const field = xmlSpec[idx];
+                    let value = input.value;
+                    
+                    // 타입에 따른 패딩 처리
+                    if (value.length < field.size) {
+                        if (field.type === 'N') {
+                            // 숫자 타입: 왼쪽 0 패딩
+                            value = '0'.repeat(field.size - value.length) + value;
+                        } else {
+                            // 문자 타입: 오른쪽 공백 패딩
+                            value = value + ' '.repeat(field.size - value.length);
+                        }
+                    } else if (value.length > field.size) {
+                        value = value.substring(0, field.size);
+                    }
+                    
+                    raw += value;
+                    display += value.replace(/ /g, '·');  // 공백을 점으로 표시
+                });
+                
+                return { raw: raw, display: display };
+            }
+            
+            /**
+             * XML 생성 폼 초기화 함수
+             */
+            function resetXMLGenerateForm() {
+                const inputs = document.querySelectorAll('#xml-form-fields-body .xml-generate-field-input');
+                inputs.forEach(function(input, idx) {
+                    input.value = '';
+                    
+                    // 카운터 초기화
+                    const charCountEl = document.getElementById('xml-char-count-' + idx);
+                    if (charCountEl) {
+                        charCountEl.textContent = '0';
+                    }
+                    
+                    // 미리보기 초기화
+                    const previewEl = document.getElementById('xml-preview-field-' + idx);
+                    if (previewEl) {
+                        previewEl.textContent = '';
+                        previewEl.classList.remove('filled', 'padded', 'over');
+                    }
+                });
+                
+                // 미리보기 박스 숨기기
+                document.getElementById('xml-telegram-preview-box').style.display = 'none';
+            }
+            
+            /**
+             * XML 생성된 레코드를 목록에 추가
+             * @param {string} record - 생성된 레코드
+             */
+            function addXMLGeneratedRecord(record) {
+                const area = document.getElementById('xml-generated-records-area');
+                
+                // 첫 번째 레코드인 경우 헤더 추가
+                if (area.children.length === 0) {
+                    const header = document.createElement('div');
+                    header.className = 'generated-records-header';
+                    header.innerHTML = 
+                        '<h5>📦 생성된 레코드</h5>' +
+                        '<div class="header-actions">' +
+                        '  <button id="xml-copy-all-records" class="btn-secondary btn-sm">전체 복사</button>' +
+                        '  <button id="xml-clear-all-records" class="btn-danger btn-sm">전체 삭제</button>' +
+                        '</div>';
+                    area.appendChild(header);
+                    
+                    // 전체 복사 이벤트
+                    document.getElementById('xml-copy-all-records').addEventListener('click', function() {
+                        const records = area.querySelectorAll('.record-text');
+                        let allRecords = '';
+                        records.forEach(function(r) {
+                            allRecords += r.textContent + '\n';
+                        });
+                        navigator.clipboard.writeText(allRecords.trim()).then(function() {
+                            showTemporaryMessage('전체 레코드가 복사되었습니다.');
+                        });
+                    });
+                    
+                    // 전체 삭제 이벤트
+                    document.getElementById('xml-clear-all-records').addEventListener('click', function() {
+                        if (confirm('모든 생성된 레코드를 삭제하시겠습니까?')) {
+                            area.innerHTML = '';
+                            showTemporaryMessage('모든 레코드가 삭제되었습니다.');
+                        }
+                    });
+                }
+                
+                // 레코드 아이템 생성
+                const recordItem = document.createElement('div');
+                recordItem.className = 'record-item';
+                
+                const recordIndex = area.querySelectorAll('.record-item').length + 1;
+                
+                recordItem.innerHTML = 
+                    '<div class="record-header">' +
+                    '  <span class="record-number">#' + recordIndex + '</span>' +
+                    '  <span class="record-size">' + record.length + ' bytes</span>' +
+                    '</div>' +
+                    '<code class="record-text">' + escapeHtml(record) + '</code>' +
+                    '<div class="record-actions">' +
+                    '  <button class="xml-copy-record-btn btn-secondary btn-xs">복사</button>' +
+                    '  <button class="xml-delete-record-btn btn-danger btn-xs">삭제</button>' +
+                    '</div>';
+                
+                area.appendChild(recordItem);
+                
+                // 복사 버튼 이벤트
+                recordItem.querySelector('.xml-copy-record-btn').addEventListener('click', function() {
+                    navigator.clipboard.writeText(record).then(function() {
+                        showTemporaryMessage('레코드가 복사되었습니다.');
+                    });
+                });
+                
+                // 삭제 버튼 이벤트
+                recordItem.querySelector('.xml-delete-record-btn').addEventListener('click', function() {
+                    recordItem.remove();
+                    showTemporaryMessage('레코드가 삭제되었습니다.');
+                    
+                    // 모든 레코드가 삭제되면 헤더도 삭제
+                    if (area.querySelectorAll('.record-item').length === 0) {
+                        area.innerHTML = '';
+                    }
+                });
+            }
+            
+            /**
              * 레코드 생성 함수
              * @param {Object} struct - 구조체 정의
              */
@@ -7572,6 +7929,45 @@ T000000000200000000000000003000`
                 this.textContent = '✓ 로드 완료';
                 
                 showTemporaryMessage('구조체 목록을 불러왔습니다. 생성할 구조체를 선택하세요.');
+            });
+            
+            // load-xml-form-btn 클릭 이벤트 (XML 규격 기반 폼 로드)
+            document.getElementById('load-xml-form-btn').addEventListener('click', function() {
+                const xmlText = document.getElementById('xml-generate-spec').value.trim();
+                
+                if (!xmlText) {
+                    alert('XML 규격을 먼저 입력하세요');
+                    return;
+                }
+                
+                // XML 파싱
+                const xmlSpec = parseXMLSpec(xmlText);
+                
+                if (!xmlSpec || xmlSpec.length === 0) {
+                    alert('XML 파싱에 실패했습니다. 형식을 확인하세요');
+                    return;
+                }
+                
+                // 폼 표시
+                displayXMLGenerateForm(xmlSpec);
+                
+                // 버튼 비활성화
+                this.disabled = true;
+                this.textContent = '✓ 로드 완료';
+                
+                showTemporaryMessage('✓ ' + xmlSpec.length + '개 필드가 로드되었습니다');
+            });
+            
+            // XML 규격 textarea 변경 시 로드 버튼 초기화
+            document.getElementById('xml-generate-spec').addEventListener('input', function() {
+                const loadBtn = document.getElementById('load-xml-form-btn');
+                if (loadBtn && loadBtn.disabled) {
+                    loadBtn.disabled = false;
+                    loadBtn.textContent = '폼 불러오기';
+                    
+                    // 폼 컨테이너 숨기기
+                    document.getElementById('xml-generate-form-container').style.display = 'none';
+                }
             });
             
             // 구조체 카드 추가/삭제 시 폼 로드 버튼 초기화
