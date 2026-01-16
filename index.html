@@ -568,6 +568,218 @@
             opacity: 0.6;
         }
 
+        .secondary-btn {
+            padding: 10px 24px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .secondary-btn:hover {
+            background: #5a6268;
+        }
+
+        .danger-btn {
+            padding: 10px 24px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .danger-btn:hover {
+            background: #c82333;
+        }
+
+        /* =====================================================
+         * 전문 생성 폼 스타일
+         * ===================================================== */
+        .generate-form-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 0;
+        }
+
+        .generate-form-header h5 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .generate-form-header .struct-info {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .generate-fields-form {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .generate-field-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+
+        .generate-field-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .generate-field-row label {
+            min-width: 180px;
+            font-weight: 500;
+            color: #495057;
+            font-size: 14px;
+        }
+
+        .generate-field-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #ced4da;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+        }
+
+        .generate-field-input:focus {
+            border-color: #17a2b8;
+            outline: none;
+        }
+
+        .generate-field-input:disabled {
+            background: #e9ecef;
+            color: #6c757d;
+        }
+
+        .field-counter {
+            min-width: 60px;
+            text-align: right;
+            font-size: 12px;
+            color: #6c757d;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        .field-counter.over {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .generate-form-actions {
+            display: flex;
+            gap: 12px;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+        }
+
+        /* 생성된 레코드 목록 스타일 */
+        #generated-records-area {
+            margin-top: 25px;
+        }
+
+        .generated-records-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            background: #28a745;
+            color: white;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .generated-records-header h5 {
+            margin: 0;
+            flex: 1;
+        }
+
+        .generated-records-header button {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .generated-record-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-top: none;
+        }
+
+        .generated-record-item:last-child {
+            border-radius: 0 0 8px 8px;
+        }
+
+        .record-info {
+            min-width: 150px;
+            font-weight: 500;
+            color: #495057;
+            font-size: 13px;
+        }
+
+        .generated-record-content {
+            flex: 1;
+            padding: 8px 12px;
+            background: #f1f3f4;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            word-break: break-all;
+            color: #212529;
+        }
+
+        .copy-record-btn {
+            padding: 6px 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .copy-record-btn:hover {
+            background: #0056b3;
+        }
+
+        .delete-record-btn {
+            padding: 6px 12px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .delete-record-btn:hover {
+            background: #c82333;
+        }
+
         /* =====================================================
          * 구조체 정의 영역
          * ===================================================== */
@@ -5173,6 +5385,297 @@ T000000000200000000000000003000`
                     crlfHelpModal.classList.remove('show');
                 }
             });
+
+            // =========================================
+            // 전문 생성 폼 이벤트 핸들러
+            // =========================================
+            
+            /**
+             * 전문 생성 폼 표시 함수
+             * @param {Object} struct - 선택된 구조체 정의
+             */
+            function displayGenerateForm(struct) {
+                const container = document.getElementById('generate-form-container');
+                container.innerHTML = '';
+                container.style.display = 'block';
+                
+                // 폼 헤더
+                const header = document.createElement('div');
+                header.className = 'generate-form-header';
+                header.innerHTML = '<h5>📝 ' + struct.name + ' 입력 폼</h5>' +
+                    '<span class="struct-info">총 ' + struct.totalSize + ' bytes, ' + struct.fields.length + '개 필드</span>';
+                container.appendChild(header);
+                
+                // 필드 입력 폼
+                const form = document.createElement('div');
+                form.className = 'generate-fields-form';
+                
+                struct.fields.forEach(function(field, idx) {
+                    const fieldDiv = document.createElement('div');
+                    fieldDiv.className = 'generate-field-row';
+                    
+                    const label = document.createElement('label');
+                    label.textContent = field.name + ' (' + field.size + ' bytes)';
+                    label.setAttribute('for', 'gen-field-' + idx);
+                    
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.id = 'gen-field-' + idx;
+                    input.className = 'generate-field-input';
+                    input.maxLength = field.size;
+                    input.dataset.fieldName = field.name;
+                    input.dataset.fieldSize = field.size;
+                    input.placeholder = field.size + '자 입력';
+                    
+                    // CRLF 필드는 자동 설정
+                    if (field.name.toLowerCase().match(/crlf|cr_lf|newline/)) {
+                        input.value = '\\r\\n';
+                        input.disabled = true;
+                        input.title = '개행문자 (자동 설정)';
+                    }
+                    
+                    // 입력 길이 표시
+                    const counter = document.createElement('span');
+                    counter.className = 'field-counter';
+                    counter.textContent = '0/' + field.size;
+                    
+                    input.addEventListener('input', function() {
+                        counter.textContent = this.value.length + '/' + field.size;
+                        if (this.value.length > field.size) {
+                            counter.classList.add('over');
+                        } else {
+                            counter.classList.remove('over');
+                        }
+                    });
+                    
+                    fieldDiv.appendChild(label);
+                    fieldDiv.appendChild(input);
+                    fieldDiv.appendChild(counter);
+                    form.appendChild(fieldDiv);
+                });
+                
+                container.appendChild(form);
+                
+                // 생성 버튼
+                const actions = document.createElement('div');
+                actions.className = 'generate-form-actions';
+                
+                const generateBtn = document.createElement('button');
+                generateBtn.className = 'primary-btn';
+                generateBtn.textContent = '전문 생성';
+                generateBtn.addEventListener('click', function() {
+                    generateRecord(struct);
+                });
+                
+                const clearBtn = document.createElement('button');
+                clearBtn.className = 'secondary-btn';
+                clearBtn.textContent = '초기화';
+                clearBtn.addEventListener('click', function() {
+                    form.querySelectorAll('.generate-field-input').forEach(function(input) {
+                        if (!input.disabled) {
+                            input.value = '';
+                            const counter = input.nextElementSibling;
+                            if (counter) {
+                                counter.textContent = '0/' + input.dataset.fieldSize;
+                                counter.classList.remove('over');
+                            }
+                        }
+                    });
+                });
+                
+                actions.appendChild(generateBtn);
+                actions.appendChild(clearBtn);
+                container.appendChild(actions);
+            }
+            
+            /**
+             * 레코드 생성 함수
+             * @param {Object} struct - 구조체 정의
+             */
+            function generateRecord(struct) {
+                const inputs = document.querySelectorAll('#generate-form-container .generate-field-input');
+                let record = '';
+                let hasError = false;
+                
+                inputs.forEach(function(input, idx) {
+                    const field = struct.fields[idx];
+                    let value = input.value;
+                    
+                    // CRLF 필드 처리
+                    if (field.name.toLowerCase().match(/crlf|cr_lf|newline/)) {
+                        record += '\r\n';
+                        return;
+                    }
+                    
+                    // 값 패딩 (오른쪽 공백 채우기)
+                    if (value.length < field.size) {
+                        value = value + ' '.repeat(field.size - value.length);
+                    } else if (value.length > field.size) {
+                        value = value.substring(0, field.size);
+                    }
+                    
+                    record += value;
+                });
+                
+                if (!hasError) {
+                    // 생성된 레코드 표시
+                    addGeneratedRecord(record, struct.name);
+                    showTemporaryMessage('레코드가 생성되었습니다. (' + record.length + ' bytes)');
+                }
+            }
+            
+            /**
+             * 생성된 레코드를 목록에 추가
+             * @param {string} record - 생성된 레코드
+             * @param {string} structName - 구조체 이름
+             */
+            function addGeneratedRecord(record, structName) {
+                const area = document.getElementById('generated-records-area');
+                
+                // 첫 번째 레코드인 경우 헤더 추가
+                if (area.children.length === 0) {
+                    const header = document.createElement('div');
+                    header.className = 'generated-records-header';
+                    header.innerHTML = '<h5>📋 생성된 레코드 목록</h5>' +
+                        '<button id="copy-all-records" class="secondary-btn">전체 복사</button>' +
+                        '<button id="clear-all-records" class="danger-btn">전체 삭제</button>';
+                    area.appendChild(header);
+                    
+                    // 전체 복사 버튼 이벤트
+                    document.getElementById('copy-all-records').addEventListener('click', function() {
+                        const records = area.querySelectorAll('.generated-record-content');
+                        let allRecords = '';
+                        records.forEach(function(r) {
+                            allRecords += r.textContent + '\n';
+                        });
+                        navigator.clipboard.writeText(allRecords.trim()).then(function() {
+                            showTemporaryMessage('전체 레코드가 복사되었습니다.');
+                        });
+                    });
+                    
+                    // 전체 삭제 버튼 이벤트
+                    document.getElementById('clear-all-records').addEventListener('click', function() {
+                        if (confirm('모든 생성된 레코드를 삭제하시겠습니까?')) {
+                            area.innerHTML = '';
+                            showTemporaryMessage('모든 레코드가 삭제되었습니다.');
+                        }
+                    });
+                }
+                
+                // 레코드 아이템 생성
+                const item = document.createElement('div');
+                item.className = 'generated-record-item';
+                
+                const info = document.createElement('span');
+                info.className = 'record-info';
+                info.textContent = structName + ' (' + record.length + ' bytes)';
+                
+                const content = document.createElement('code');
+                content.className = 'generated-record-content';
+                content.textContent = record.replace(/\r/g, '\\r').replace(/\n/g, '\\n');
+                
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-record-btn';
+                copyBtn.textContent = '복사';
+                copyBtn.addEventListener('click', function() {
+                    navigator.clipboard.writeText(record).then(function() {
+                        showTemporaryMessage('레코드가 복사되었습니다.');
+                    });
+                });
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-record-btn';
+                deleteBtn.textContent = '삭제';
+                deleteBtn.addEventListener('click', function() {
+                    item.remove();
+                    // 레코드가 모두 삭제되면 헤더도 삭제
+                    if (area.querySelectorAll('.generated-record-item').length === 0) {
+                        area.innerHTML = '';
+                    }
+                });
+                
+                item.appendChild(info);
+                item.appendChild(content);
+                item.appendChild(copyBtn);
+                item.appendChild(deleteBtn);
+                area.appendChild(item);
+            }
+            
+            // load-generate-form-btn 클릭 이벤트
+            document.getElementById('load-generate-form-btn').addEventListener('click', function() {
+                // 1. 구조체 정의 수집
+                const structDefs = collectStructDefinitions();
+                
+                if (!structDefs || structDefs.length === 0) {
+                    alert('구조체를 먼저 정의하세요.');
+                    return;
+                }
+                
+                // 2. select 옵션 채우기
+                const select = document.getElementById('generate-struct-select');
+                select.innerHTML = '<option value="">구조체를 선택하세요</option>';
+                
+                structDefs.forEach(function(struct, index) {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    
+                    // 구조체 정보 표시
+                    const structInfo = (struct.name || ('구조체' + (index + 1))) + ' (' + struct.totalSize + ' bytes';
+                    const fieldInfo = ', ' + struct.fields.length + '개 필드)';
+                    option.textContent = structInfo + fieldInfo;
+                    
+                    select.appendChild(option);
+                });
+                
+                // 3. select 활성화
+                select.disabled = false;
+                
+                // 4. 구조체 선택 이벤트 (기존 이벤트 제거 후 추가)
+                const newSelect = select.cloneNode(true);
+                select.parentNode.replaceChild(newSelect, select);
+                
+                newSelect.addEventListener('change', function() {
+                    const selectedIndex = parseInt(this.value);
+                    
+                    if (isNaN(selectedIndex)) {
+                        document.getElementById('generate-form-container').style.display = 'none';
+                        return;
+                    }
+                    
+                    const selectedStruct = structDefs[selectedIndex];
+                    displayGenerateForm(selectedStruct);
+                });
+                
+                // 버튼 비활성화 (한 번만 로드)
+                this.disabled = true;
+                this.textContent = '✓ 로드 완료';
+                
+                showTemporaryMessage('구조체 목록을 불러왔습니다. 생성할 구조체를 선택하세요.');
+            });
+            
+            // 구조체 카드 추가/삭제 시 폼 로드 버튼 초기화
+            // MutationObserver 사용 (DOMNodeInserted는 deprecated)
+            const structObserver = new MutationObserver(function(mutations) {
+                const loadBtn = document.getElementById('load-generate-form-btn');
+                if (loadBtn && loadBtn.disabled) {
+                    loadBtn.disabled = false;
+                    loadBtn.textContent = '폼 불러오기';
+                }
+            });
+            
+            const structDefsContainer = document.getElementById('struct-definitions-container');
+            if (structDefsContainer) {
+                structObserver.observe(structDefsContainer, { childList: true, subtree: true });
+            }
+            
+            // 초기 로드 버튼 활성화 확인
+            setTimeout(function() {
+                const loadBtn = document.getElementById('load-generate-form-btn');
+                const cards = document.querySelectorAll('.struct-card');
+                if (loadBtn && cards.length > 0) {
+                    loadBtn.disabled = false;
+                }
+            }, 100);
         });
     </script>
 </body>
