@@ -1233,9 +1233,9 @@
         }
 
         .type-badge {
-            padding: 3px 8px;
+            padding: 4px 10px;
             border-radius: 4px;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: bold;
         }
 
@@ -1247,6 +1247,25 @@
         .type-badge.string-type {
             background: #17a2b8;
             color: white;
+        }
+
+        .type-badge.type-X {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .type-badge.type-N {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .type-badge.type-A {
+            background: #28a745;
+            color: white;
+        }
+
+        .field-type-cell {
+            text-align: center;
         }
 
         .field-size {
@@ -6861,39 +6880,29 @@ T000000000200000000000000003000`
              * @param {Array} xmlSpec - parseXMLSpec의 결과 배열 [{id, type, size}, ...]
              */
             function displayXMLGenerateForm(xmlSpec) {
-                // 1. xml-generate-form-container 초기화
-                const container = document.getElementById('xml-generate-form-container');
-                
-                // 2. 총 바이트 수 계산
-                const totalSize = xmlSpec.reduce(function(sum, field) {
-                    return sum + field.size;
-                }, 0);
-                
-                // 3. 폼 HTML 생성
+                // 폼 HTML 생성
                 const formHTML = 
                     '<div class="generate-form">' +
                     
                     '  <div class="form-header">' +
                     '    <div class="form-title">' +
-                    '      <h4>📝 XML 규격 입력 폼</h4>' +
-                    '      <span class="form-badge">총 ' + totalSize + ' bytes</span>' +
-                    '    </div>' +
-                    '    <div class="form-info">' +
-                    '      <small>' + xmlSpec.length + '개 필드</small>' +
+                    '      <h4>📝 필드 입력 폼</h4>' +
+                    '      <span class="form-badge">' + xmlSpec.length + '개 필드</span>' +
                     '    </div>' +
                     '  </div>' +
                     
                     '  <table class="input-form-table">' +
                     '    <thead>' +
                     '      <tr>' +
-                    '        <th style="width: 20%">필드 ID</th>' +
-                    '        <th style="width: 8%">타입</th>' +
+                    '        <th style="width: 30%">필드명 (ID)</th>' +
+                    '        <th style="width: 10%">타입</th>' +
                     '        <th style="width: 8%">크기</th>' +
-                    '        <th style="width: 39%">입력값</th>' +
-                    '        <th style="width: 25%">미리보기</th>' +
+                    '        <th style="width: 37%">입력값</th>' +
+                    '        <th style="width: 15%">미리보기</th>' +
                     '      </tr>' +
                     '    </thead>' +
                     '    <tbody id="xml-form-fields-body">' +
+                    '      <!-- 필드 행 -->' +
                     '    </tbody>' +
                     '  </table>' +
                     
@@ -6910,116 +6919,56 @@ T000000000200000000000000003000`
                     '  </div>' +
                     
                     '  <div id="xml-telegram-preview-box" class="preview-box" style="display: none;">' +
+                    '    <!-- 미리보기 -->' +
                     '  </div>' +
                     
                     '</div>';
                 
-                // 4. DOM에 추가
-                container.innerHTML = formHTML;
-                container.style.display = 'block';
+                // DOM에 추가
+                document.getElementById('xml-generate-form-container').innerHTML = formHTML;
+                document.getElementById('xml-generate-form-container').style.display = 'block';
                 
-                // 5. 필드 행 생성
+                // 필드 행 생성
                 const tbody = document.getElementById('xml-form-fields-body');
                 
                 xmlSpec.forEach(function(field, index) {
-                    const row = createXMLFieldRow(field, index);
-                    tbody.appendChild(row);
+                    const tr = document.createElement('tr');
+                    const isNumeric = field.type === 'N';
+                    
+                    tr.innerHTML = 
+                        '<td>' +
+                        '  <span class="field-name">' + field.id + '</span>' +
+                        '</td>' +
+                        '<td class="field-type-cell">' +
+                        '  <span class="type-badge type-' + field.type + '">' + field.type + '</span>' +
+                        '</td>' +
+                        '<td class="field-size">' + field.size + '</td>' +
+                        '<td>' +
+                        '  <input type="text"' +
+                        '         class="field-input xml-field-input"' +
+                        '         data-field="' + field.id + '"' +
+                        '         data-type="' + field.type + '"' +
+                        '         data-size="' + field.size + '"' +
+                        '         data-index="' + index + '"' +
+                        '         maxlength="' + field.size + '"' +
+                        '         placeholder="' + (isNumeric ? '숫자 입력' : '텍스트 입력') + '"' +
+                        (isNumeric ? '         inputmode="numeric"' : '') +
+                        '  />' +
+                        '  <div class="input-meta">' +
+                        '    <span class="char-counter">' +
+                        '      <span class="current-length">0</span>/' + field.size +
+                        '    </span>' +
+                        '  </div>' +
+                        '</td>' +
+                        '<td class="preview-cell">' +
+                        '  <code class="preview-text"></code>' +
+                        '</td>';
+                    
+                    tbody.appendChild(tr);
                 });
                 
-                // 6. 이벤트 리스너 연결
+                // 이벤트 리스너 연결
                 attachXMLFormEvents(xmlSpec);
-            }
-            
-            /**
-             * XML 필드 입력 행 생성 함수
-             * @param {Object} field - 필드 정의 객체 {id, type, size}
-             * @param {number} index - 필드 인덱스
-             * @returns {HTMLTableRowElement} 테이블 행 요소
-             */
-            function createXMLFieldRow(field, index) {
-                const tr = document.createElement('tr');
-                
-                // 타입에 따른 입력모드 설정 (N: 숫자)
-                const isNumeric = field.type === 'N';
-                const typeLabel = field.type === 'N' ? '숫자' : '문자';
-                const typeClass = field.type === 'N' ? 'numeric-type' : 'string-type';
-                
-                tr.innerHTML = 
-                    '<td>' +
-                    '  <span class="field-name">' + field.id + '</span>' +
-                    '</td>' +
-                    '<td>' +
-                    '  <span class="type-badge ' + typeClass + '">' + typeLabel + '</span>' +
-                    '</td>' +
-                    '<td class="field-size">' + field.size + '</td>' +
-                    '<td>' +
-                    '  <input type="text"' +
-                    '         class="field-input xml-generate-field-input"' +
-                    '         data-field-id="' + field.id + '"' +
-                    '         data-field-type="' + field.type + '"' +
-                    '         data-field-size="' + field.size + '"' +
-                    '         data-field-index="' + index + '"' +
-                    '         id="xml-gen-field-' + index + '"' +
-                    '         maxlength="' + field.size + '"' +
-                    '         placeholder="최대 ' + field.size + '자"' +
-                    (isNumeric ? '         inputmode="numeric"' : '') +
-                    '  />' +
-                    '  <div class="input-meta">' +
-                    '    <span class="char-counter">' +
-                    '      <span class="current-length" id="xml-char-count-' + index + '">0</span>/' + field.size +
-                    '    </span>' +
-                    '  </div>' +
-                    '</td>' +
-                    '<td class="preview-cell">' +
-                    '  <code class="preview-text" id="xml-preview-field-' + index + '" data-field-size="' + field.size + '"></code>' +
-                    '</td>';
-                
-                // 입력 이벤트 바인딩을 위해 setTimeout 사용 (DOM에 추가된 후 실행)
-                setTimeout(function() {
-                    const input = document.getElementById('xml-gen-field-' + index);
-                    const charCountEl = document.getElementById('xml-char-count-' + index);
-                    const previewEl = document.getElementById('xml-preview-field-' + index);
-                    
-                    if (input) {
-                        input.addEventListener('input', function() {
-                            const value = this.value;
-                            const size = parseInt(this.dataset.fieldSize);
-                            const type = this.dataset.fieldType;
-                            
-                            // 글자 수 카운터 업데이트
-                            if (charCountEl) {
-                                charCountEl.textContent = value.length;
-                            }
-                            
-                            // 미리보기 업데이트
-                            if (previewEl) {
-                                previewEl.classList.remove('filled', 'padded', 'over');
-                                
-                                if (value.length === 0) {
-                                    previewEl.textContent = '';
-                                } else if (value.length < size) {
-                                    // 패딩 표시 (타입에 따라 다름: N은 왼쪽 0, X는 오른쪽 공백)
-                                    let padded;
-                                    if (type === 'N') {
-                                        padded = '0'.repeat(size - value.length) + value;
-                                    } else {
-                                        padded = value + '░'.repeat(size - value.length);
-                                    }
-                                    previewEl.textContent = padded;
-                                    previewEl.classList.add('padded');
-                                } else if (value.length === size) {
-                                    previewEl.textContent = value;
-                                    previewEl.classList.add('filled');
-                                } else {
-                                    previewEl.textContent = value.substring(0, size) + '...';
-                                    previewEl.classList.add('over');
-                                }
-                            }
-                        });
-                    }
-                }, 0);
-                
-                return tr;
             }
             
             /**
@@ -7027,6 +6976,49 @@ T000000000200000000000000003000`
              * @param {Array} xmlSpec - XML 규격 배열
              */
             function attachXMLFormEvents(xmlSpec) {
+                // 입력 필드 이벤트 리스너
+                const inputs = document.querySelectorAll('#xml-form-fields-body .xml-field-input');
+                inputs.forEach(function(input) {
+                    input.addEventListener('input', function() {
+                        const value = this.value;
+                        const size = parseInt(this.dataset.size);
+                        const type = this.dataset.type;
+                        const row = this.closest('tr');
+                        
+                        // 글자 수 카운터 업데이트
+                        const charCountEl = row.querySelector('.current-length');
+                        if (charCountEl) {
+                            charCountEl.textContent = value.length;
+                        }
+                        
+                        // 미리보기 업데이트
+                        const previewEl = row.querySelector('.preview-text');
+                        if (previewEl) {
+                            previewEl.classList.remove('filled', 'padded', 'over');
+                            
+                            if (value.length === 0) {
+                                previewEl.textContent = '';
+                            } else if (value.length < size) {
+                                // 패딩 표시 (타입에 따라 다름: N은 왼쪽 0, X/A는 오른쪽 공백)
+                                let padded;
+                                if (type === 'N') {
+                                    padded = '0'.repeat(size - value.length) + value;
+                                } else {
+                                    padded = value + '░'.repeat(size - value.length);
+                                }
+                                previewEl.textContent = padded;
+                                previewEl.classList.add('padded');
+                            } else if (value.length === size) {
+                                previewEl.textContent = value;
+                                previewEl.classList.add('filled');
+                            } else {
+                                previewEl.textContent = value.substring(0, size) + '...';
+                                previewEl.classList.add('over');
+                            }
+                        }
+                    });
+                });
+                
                 // 미리보기 버튼
                 document.getElementById('xml-preview-telegram-btn').addEventListener('click', function() {
                     const result = generateXMLTelegram(xmlSpec);
@@ -7064,7 +7056,7 @@ T000000000200000000000000003000`
              * @returns {Object} {raw: 원본 문자열, display: 표시용 문자열}
              */
             function generateXMLTelegram(xmlSpec) {
-                const inputs = document.querySelectorAll('#xml-form-fields-body .xml-generate-field-input');
+                const inputs = document.querySelectorAll('#xml-form-fields-body .xml-field-input');
                 let raw = '';
                 let display = '';
                 
@@ -7096,18 +7088,20 @@ T000000000200000000000000003000`
              * XML 생성 폼 초기화 함수
              */
             function resetXMLGenerateForm() {
-                const inputs = document.querySelectorAll('#xml-form-fields-body .xml-generate-field-input');
-                inputs.forEach(function(input, idx) {
+                const inputs = document.querySelectorAll('#xml-form-fields-body .xml-field-input');
+                inputs.forEach(function(input) {
                     input.value = '';
                     
+                    const row = input.closest('tr');
+                    
                     // 카운터 초기화
-                    const charCountEl = document.getElementById('xml-char-count-' + idx);
+                    const charCountEl = row.querySelector('.current-length');
                     if (charCountEl) {
                         charCountEl.textContent = '0';
                     }
                     
                     // 미리보기 초기화
-                    const previewEl = document.getElementById('xml-preview-field-' + idx);
+                    const previewEl = row.querySelector('.preview-text');
                     if (previewEl) {
                         previewEl.textContent = '';
                         previewEl.classList.remove('filled', 'padded', 'over');
