@@ -7148,82 +7148,157 @@ T000000000200000000000000003000`
             }
             
             /**
-             * XML 레코드를 목록에 추가하는 함수
-             * @param {Object} record - 레코드 객체
+             * XML 레코드를 목록에 추가 (C 구조체 addRecordToList와 동일한 구조)
+             * @param {Object} record - 레코드 객체 (id, structName, telegram, fieldData, timestamp, length)
              */
             function addXMLRecordToList(record) {
-                const area = document.getElementById('xml-generated-records-area');
+                const container = document.getElementById('xml-generated-records-area');
                 
                 // 첫 번째 레코드인 경우 헤더 추가
-                if (area.children.length === 0) {
+                if (container.children.length === 0) {
                     const header = document.createElement('div');
-                    header.className = 'generated-records-header';
-                    header.innerHTML = 
-                        '<h5>📦 생성된 레코드</h5>' +
-                        '<div class="header-actions">' +
-                        '  <button id="xml-copy-all-records-new" class="btn-secondary btn-sm">전체 복사</button>' +
-                        '  <button id="xml-clear-all-records-new" class="btn-danger btn-sm">전체 삭제</button>' +
-                        '</div>';
-                    area.appendChild(header);
+                    header.className = 'records-header';
+                    header.innerHTML = `
+                        <div class="header-left">
+                            <h4>📦 생성된 XML 레코드 목록</h4>
+                            <span class="xml-record-count-badge">0개</span>
+                        </div>
+                        <div class="header-right">
+                            <button id="export-xml-records-btn" class="export-btn">
+                                💾 전체 내보내기
+                            </button>
+                            <button id="clear-xml-records-btn" class="clear-btn">
+                                🗑️ 전체 삭제
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(header);
                     
-                    // 전체 복사 이벤트
-                    document.getElementById('xml-copy-all-records-new').addEventListener('click', function() {
-                        const records = area.querySelectorAll('.record-text');
-                        let allRecords = '';
-                        records.forEach(function(r) {
-                            allRecords += r.textContent + '\n';
-                        });
-                        navigator.clipboard.writeText(allRecords.trim()).then(function() {
-                            showTemporaryMessage('전체 레코드가 복사되었습니다.');
-                        });
+                    // 목록 컨테이너 추가
+                    const listContainer = document.createElement('div');
+                    listContainer.id = 'xml-records-list';
+                    listContainer.className = 'records-list';
+                    container.appendChild(listContainer);
+                    
+                    // 전체 내보내기 버튼 이벤트
+                    document.getElementById('export-xml-records-btn').addEventListener('click', function() {
+                        if (!window.xmlGeneratedRecords || window.xmlGeneratedRecords.length === 0) {
+                            showTemporaryMessage('내보낼 레코드가 없습니다.');
+                            return;
+                        }
+                        showXMLExportModal();
                     });
                     
-                    // 전체 삭제 이벤트
-                    document.getElementById('xml-clear-all-records-new').addEventListener('click', function() {
-                        if (confirm('모든 생성된 레코드를 삭제하시겠습니까?')) {
-                            area.innerHTML = '';
-                            showTemporaryMessage('모든 레코드가 삭제되었습니다.');
+                    // 전체 삭제 버튼 이벤트
+                    document.getElementById('clear-xml-records-btn').addEventListener('click', function() {
+                        const count = window.xmlGeneratedRecords?.length || 0;
+                        
+                        if (count === 0) {
+                            alert('삭제할 레코드가 없습니다');
+                            return;
+                        }
+                        
+                        if (confirm(`${count}개의 레코드를 모두 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
+                            // 애니메이션과 함께 삭제
+                            const recordItems = container.querySelectorAll('.xml-record-item');
+                            
+                            recordItems.forEach((item, index) => {
+                                setTimeout(() => {
+                                    item.style.opacity = '0';
+                                    item.style.transform = 'translateX(-100%)';
+                                }, index * 50);
+                            });
+                            
+                            setTimeout(() => {
+                                document.getElementById('xml-generated-records-area').innerHTML = '';
+                                window.xmlGeneratedRecords = [];
+                                showTemporaryMessage('✓ 모든 레코드가 삭제되었습니다');
+                            }, recordItems.length * 50 + 300);
                         }
                     });
                 }
                 
-                // 레코드 아이템 생성
-                const recordItem = document.createElement('div');
-                recordItem.className = 'record-item';
+                // 레코드 카드 생성
+                const recordCard = document.createElement('div');
+                recordCard.className = 'record-item xml-record-item';
+                recordCard.dataset.id = record.id;
                 
-                const recordIndex = area.querySelectorAll('.record-item').length + 1;
+                const recordIndex = container.querySelectorAll('.xml-record-item').length;
                 
-                recordItem.innerHTML = 
-                    '<div class="record-header">' +
-                    '  <span class="record-number">#' + recordIndex + '</span>' +
-                    '  <span class="record-timestamp">' + record.timestamp + '</span>' +
-                    '  <span class="record-size">' + record.length + ' bytes</span>' +
-                    '</div>' +
-                    '<code class="record-text">' + escapeHtml(record.telegram) + '</code>' +
-                    '<div class="record-actions">' +
-                    '  <button class="xml-copy-record-btn-new btn-secondary btn-xs">복사</button>' +
-                    '  <button class="xml-delete-record-btn-new btn-danger btn-xs">삭제</button>' +
-                    '</div>';
-                
-                area.appendChild(recordItem);
-                
-                // 복사 버튼 이벤트
-                recordItem.querySelector('.xml-copy-record-btn-new').addEventListener('click', function() {
-                    navigator.clipboard.writeText(record.telegram).then(function() {
-                        showTemporaryMessage('레코드가 복사되었습니다.');
-                    });
-                });
-                
-                // 삭제 버튼 이벤트
-                recordItem.querySelector('.xml-delete-record-btn-new').addEventListener('click', function() {
-                    recordItem.remove();
-                    showTemporaryMessage('레코드가 삭제되었습니다.');
+                recordCard.innerHTML = `
+                    <div class="record-item-header">
+                        <div class="record-meta">
+                            <span class="xml-record-number">#${recordIndex + 1}</span>
+                            <span class="record-struct-name">${record.structName || 'XML 레코드'}</span>
+                            <span class="record-timestamp">${record.timestamp}</span>
+                        </div>
+                        <div class="record-actions">
+                            <button class="btn-icon xml-copy-record-btn" 
+                                    data-id="${record.id}" 
+                                    title="복사">
+                                📋
+                            </button>
+                            <button class="btn-icon xml-view-detail-btn" 
+                                    data-id="${record.id}"
+                                    title="상세보기">
+                                👁️
+                            </button>
+                            <button class="btn-icon xml-delete-record-btn" 
+                                    data-id="${record.id}"
+                                    title="삭제">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
                     
-                    // 모든 레코드가 삭제되면 헤더도 삭제
-                    if (area.querySelectorAll('.record-item').length === 0) {
-                        area.innerHTML = '';
-                    }
-                });
+                    <div class="record-item-body">
+                        <div class="telegram-box">
+                            <pre class="telegram-text">${escapeForDisplay(record.telegram)}</pre>
+                        </div>
+                        <div class="record-stats">
+                            <span class="stat-item">
+                                <span class="stat-label">길이:</span>
+                                <span class="stat-value">${record.length} bytes</span>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="xml-record-detail" style="display: none;">
+                        <table class="detail-table">
+                            <thead>
+                                <tr>
+                                    <th>필드명</th>
+                                    <th>크기</th>
+                                    <th>입력값</th>
+                                    <th>패딩후</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${record.fieldData ? record.fieldData.map(field => `
+                                    <tr>
+                                        <td>${field.name}</td>
+                                        <td>${field.size}</td>
+                                        <td>${field.value || '<비어있음>'}</td>
+                                        <td><code>${escapeForDisplay(field.padded)}</code></td>
+                                    </tr>
+                                `).join('') : ''}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                // 목록에 추가 (최신이 위로)
+                const listContainer = container.querySelector('#xml-records-list');
+                listContainer.insertBefore(recordCard, listContainer.firstChild);
+                
+                // 카운트 업데이트
+                updateXMLRecordCount();
+                
+                // 전역 저장소에 추가
+                if (!window.xmlGeneratedRecords) {
+                    window.xmlGeneratedRecords = [];
+                }
+                window.xmlGeneratedRecords.unshift(record);
             }
             
             /**
@@ -7708,6 +7783,81 @@ T000000000200000000000000003000`
                   }, 300)
                 }
               }
+              
+              // =========================================
+              // XML 레코드 카드 이벤트 (이벤트 위임)
+              // =========================================
+              
+              // XML 복사 버튼
+              if (e.target.classList.contains('xml-copy-record-btn')) {
+                const recordId = parseInt(e.target.dataset.id)
+                const record = window.xmlGeneratedRecords?.find(r => r.id === recordId)
+                
+                if (record) {
+                  navigator.clipboard.writeText(record.telegram).then(() => {
+                    const originalText = e.target.textContent
+                    e.target.textContent = '✓'
+                    e.target.style.backgroundColor = 'rgba(40,167,69,0.3)'
+                    
+                    setTimeout(() => {
+                      e.target.textContent = originalText
+                      e.target.style.backgroundColor = ''
+                    }, 2000)
+                  }).catch(err => {
+                    alert('복사 실패: ' + err.message)
+                  })
+                }
+              }
+              
+              // XML 상세보기 토글
+              if (e.target.classList.contains('xml-view-detail-btn')) {
+                const recordId = e.target.dataset.id
+                const recordCard = document.querySelector(`.xml-record-item[data-id="${recordId}"]`)
+                const detailDiv = recordCard.querySelector('.xml-record-detail')
+                
+                if (detailDiv.style.display === 'none') {
+                  detailDiv.style.display = 'block'
+                  e.target.textContent = '🔼'
+                  e.target.title = '상세닫기'
+                } else {
+                  detailDiv.style.display = 'none'
+                  e.target.textContent = '👁️'
+                  e.target.title = '상세보기'
+                }
+              }
+              
+              // XML 삭제 버튼
+              if (e.target.classList.contains('xml-delete-record-btn')) {
+                const recordId = parseInt(e.target.dataset.id)
+                
+                if (confirm('이 레코드를 삭제하시겠습니까?')) {
+                  // DOM에서 제거
+                  const recordCard = document.querySelector(`.xml-record-item[data-id="${recordId}"]`)
+                  recordCard.style.opacity = '0'
+                  recordCard.style.transform = 'translateX(-100%)'
+                  
+                  setTimeout(() => {
+                    recordCard.remove()
+                    
+                    // 배열에서 제거
+                    const index = window.xmlGeneratedRecords?.findIndex(r => r.id === recordId)
+                    if (index > -1) {
+                      window.xmlGeneratedRecords.splice(index, 1)
+                    }
+                    
+                    // 카운트 업데이트
+                    updateXMLRecordCount()
+                    
+                    // 번호 재정렬
+                    reindexXMLRecords()
+                    
+                    // 목록이 비었으면 헤더도 제거
+                    if (!window.xmlGeneratedRecords || window.xmlGeneratedRecords.length === 0) {
+                      document.getElementById('xml-generated-records-area').innerHTML = ''
+                    }
+                  }, 300)
+                }
+              }
             })
             
             function updateRecordCount() {
@@ -7722,6 +7872,33 @@ T000000000200000000000000003000`
               document.querySelectorAll('.record-item').forEach((card, index) => {
                 const numberSpan = card.querySelector('.record-number')
                 numberSpan.textContent = `#${index + 1}`
+              })
+            }
+            
+            // =========================================
+            // XML 레코드 목록 관련 함수들
+            // =========================================
+            
+            /**
+             * XML 레코드 카운트 업데이트
+             */
+            function updateXMLRecordCount() {
+              const badge = document.querySelector('.xml-record-count-badge')
+              if (badge) {
+                const count = document.querySelectorAll('.xml-record-item').length
+                badge.textContent = `${count}개`
+              }
+            }
+            
+            /**
+             * XML 레코드 번호 재정렬
+             */
+            function reindexXMLRecords() {
+              document.querySelectorAll('.xml-record-item').forEach((card, index) => {
+                const numberSpan = card.querySelector('.xml-record-number')
+                if (numberSpan) {
+                  numberSpan.textContent = `#${index + 1}`
+                }
               })
             }
             
@@ -7919,6 +8096,173 @@ T000000000200000000000000003000`
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
+            }
+            
+            // =========================================
+            // XML 전체 내보내기 모달 관련 함수들
+            // =========================================
+            
+            /**
+             * XML 전체 내보내기 모달 표시
+             */
+            function showXMLExportModal() {
+                const modal = document.createElement('div');
+                modal.className = 'modal-overlay';
+                modal.innerHTML = `
+                    <div class="modal-container">
+                        <div class="modal-header">
+                            <h3>💾 XML 레코드 전체 내보내기</h3>
+                            <button class="modal-close-btn">✕</button>
+                        </div>
+                        
+                        <div class="modal-body">
+                            <p class="modal-description">
+                                총 <strong>${window.xmlGeneratedRecords.length}개</strong>의 XML 레코드를 내보냅니다
+                            </p>
+                            
+                            <div class="export-format-select">
+                                <label>내보내기 형식</label>
+                                <div class="format-options">
+                                    <label class="format-option selected">
+                                        <input type="radio" name="xml-export-format" value="continuous" checked>
+                                        <span class="option-text">
+                                            <strong>연속 데이터</strong>
+                                            <small>모든 레코드를 줄바꿈 없이 연결</small>
+                                        </span>
+                                    </label>
+                                    
+                                    <label class="format-option">
+                                        <input type="radio" name="xml-export-format" value="lines">
+                                        <span class="option-text">
+                                            <strong>줄바꿈 구분</strong>
+                                            <small>각 레코드를 줄바꿈으로 구분</small>
+                                        </span>
+                                    </label>
+                                    
+                                    <label class="format-option">
+                                        <input type="radio" name="xml-export-format" value="hex">
+                                        <span class="option-text">
+                                            <strong>HEX 형식</strong>
+                                            <small>16진수로 변환하여 표시</small>
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="export-preview">
+                                <label>미리보기</label>
+                                <textarea id="xml-export-preview-area" readonly rows="12"></textarea>
+                                <div class="preview-stats">
+                                    <span id="xml-export-total-bytes">0 bytes</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="modal-footer">
+                            <button id="xml-download-export-btn" class="btn-primary">
+                                ⬇️ 파일 다운로드
+                            </button>
+                            <button id="xml-copy-export-btn" class="btn-secondary">
+                                📋 클립보드 복사
+                            </button>
+                            <button class="modal-close-btn btn-cancel">
+                                취소
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                // 포맷 옵션 선택 스타일 처리
+                modal.querySelectorAll('.format-option').forEach(option => {
+                    option.addEventListener('click', function() {
+                        modal.querySelectorAll('.format-option').forEach(opt => opt.classList.remove('selected'));
+                        this.classList.add('selected');
+                        this.querySelector('input[type="radio"]').checked = true;
+                        updateXMLExportPreview();
+                    });
+                });
+                
+                // 포맷 변경 시 미리보기 업데이트
+                modal.querySelectorAll('input[name="xml-export-format"]').forEach(radio => {
+                    radio.addEventListener('change', updateXMLExportPreview);
+                });
+                
+                // 초기 미리보기
+                updateXMLExportPreview();
+                
+                // 닫기 버튼들
+                modal.querySelectorAll('.modal-close-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        modal.remove();
+                    });
+                });
+                
+                // 오버레이 클릭으로 닫기
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        modal.remove();
+                    }
+                });
+                
+                // 다운로드
+                modal.querySelector('#xml-download-export-btn').addEventListener('click', () => {
+                    const format = modal.querySelector('input[name="xml-export-format"]:checked').value;
+                    const data = generateXMLExportData(format);
+                    const filename = `xml_telegrams_${new Date().getTime()}.txt`;
+                    downloadFile(data, filename);
+                });
+                
+                // 복사
+                modal.querySelector('#xml-copy-export-btn').addEventListener('click', () => {
+                    const textarea = modal.querySelector('#xml-export-preview-area');
+                    textarea.select();
+                    document.execCommand('copy');
+                    
+                    const btn = modal.querySelector('#xml-copy-export-btn');
+                    const originalText = btn.textContent;
+                    btn.textContent = '✓ 복사됨';
+                    btn.style.backgroundColor = '#1e7e34';
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.style.backgroundColor = '';
+                    }, 2000);
+                });
+            }
+            
+            /**
+             * XML 내보내기 미리보기 업데이트
+             */
+            function updateXMLExportPreview() {
+                const format = document.querySelector('input[name="xml-export-format"]:checked').value;
+                const data = generateXMLExportData(format);
+                
+                document.getElementById('xml-export-preview-area').value = data;
+                document.getElementById('xml-export-total-bytes').textContent = `${data.length} bytes`;
+            }
+            
+            /**
+             * XML 내보내기 데이터 생성
+             */
+            function generateXMLExportData(format) {
+                const records = window.xmlGeneratedRecords.slice().reverse(); // 원래 순서로
+                const telegrams = records.map(r => r.telegram);
+                
+                switch(format) {
+                    case 'continuous':
+                        return telegrams.join('');
+                    case 'lines':
+                        return telegrams.join('\n');
+                    case 'hex':
+                        return telegrams.map(t => {
+                            return Array.from(t).map(c => {
+                                return c.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase();
+                            }).join(' ');
+                        }).join('\n');
+                    default:
+                        return telegrams.join('');
+                }
             }
             
             /**
