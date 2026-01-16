@@ -451,6 +451,50 @@
         }
 
         /* =====================================================
+         * 서브 탭 네비게이션 (파싱/생성 모드)
+         * ===================================================== */
+        .sub-tab-nav {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .sub-tab-btn {
+            padding: 12px 24px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-size: 15px;
+            transition: all 0.2s;
+        }
+
+        .sub-tab-btn:hover {
+            background: #e9ecef;
+        }
+
+        .sub-tab-btn.active {
+            background: white;
+            border-bottom: 3px solid white;
+            font-weight: bold;
+            color: #007bff;
+            position: relative;
+            bottom: -2px;
+        }
+
+        .sub-mode-content {
+            display: none;
+            padding: 20px 0;
+        }
+
+        .sub-mode-content.active {
+            display: block;
+        }
+
+        /* =====================================================
          * 구조체 정의 영역
          * ===================================================== */
         #add-struct-btn {
@@ -1277,6 +1321,27 @@
             color: #b0b0b0;
         }
 
+        /* 다크모드 - 서브 탭 네비게이션 */
+        body.dark-mode .sub-tab-nav {
+            border-bottom-color: #444;
+        }
+
+        body.dark-mode .sub-tab-btn {
+            background: #2d2d2d;
+            border-color: #444;
+            color: #b0b0b0;
+        }
+
+        body.dark-mode .sub-tab-btn:hover {
+            background: #3d3d3d;
+        }
+
+        body.dark-mode .sub-tab-btn.active {
+            background: #1e1e1e;
+            border-bottom-color: #1e1e1e;
+            color: #64b5f6;
+        }
+
         body.dark-mode .drag-handle {
             color: #6c757d;
         }
@@ -1741,7 +1806,8 @@
             </div>
         </div>
 
-        <div id="struct-input-section">
+        <!-- 공통: 구조체 정의 영역 -->
+        <div id="struct-definitions-area">
             <div class="section-header">
                 <h3>
                     C 구조체 정의
@@ -1769,8 +1835,21 @@
             <div id="struct-definitions-container">
                 <!-- 구조체 입력 카드들이 여기 동적 추가됨 -->
             </div>
-            
-            <label for="struct-data" style="margin-top: 20px;">통 데이터</label>
+        </div>
+
+        <!-- 서브 탭 네비게이션 -->
+        <div class="sub-tab-nav">
+            <button class="sub-tab-btn active" data-mode="parse">
+                📖 파싱 모드
+            </button>
+            <button class="sub-tab-btn" data-mode="generate">
+                ✏️ 생성 모드
+            </button>
+        </div>
+
+        <!-- 파싱 모드 컨텐츠 -->
+        <div id="parse-mode-content" class="sub-mode-content active">
+            <label for="struct-data">통 데이터</label>
             <textarea id="struct-data" rows="10" placeholder="파싱할 데이터 입력 (줄바꿈 유무 무관)"></textarea>
             
             <div class="button-group">
@@ -1779,6 +1858,11 @@
                 <button id="struct-parse-btn">파싱 실행 <span class="shortcut-hint">(Ctrl+Enter)</span></button>
                 <button id="struct-clear-btn">전체 초기화</button>
             </div>
+        </div>
+
+        <!-- 생성 모드 컨텐츠 -->
+        <div id="generate-mode-content" class="sub-mode-content">
+            <!-- 여기에 생성 UI 추가됨 -->
         </div>
 
         <div id="struct-result-container"></div>
@@ -3939,6 +4023,32 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
         // DOMContentLoaded 이벤트 - 이벤트 리스너 등록
         // =========================================
         document.addEventListener('DOMContentLoaded', function() {
+            // =========================================
+            // 서브 탭 (파싱/생성 모드) 전환 이벤트
+            // =========================================
+            document.querySelectorAll('.sub-tab-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    // 1. 모든 서브 탭 버튼에서 active 제거
+                    document.querySelectorAll('.sub-tab-btn').forEach(function(b) {
+                        b.classList.remove('active');
+                    });
+                    // 2. 클릭된 버튼에 active 추가
+                    btn.classList.add('active');
+
+                    // 3. 모든 서브 모드 컨텐츠 숨김
+                    document.querySelectorAll('.sub-mode-content').forEach(function(content) {
+                        content.classList.remove('active');
+                    });
+
+                    // 4. 해당 모드 컨텐츠 표시
+                    const mode = btn.getAttribute('data-mode');
+                    const targetContent = document.getElementById(mode + '-mode-content');
+                    if (targetContent) {
+                        targetContent.classList.add('active');
+                    }
+                });
+            });
+
             // =========================================
             // 구조체 카드 초기화 - 첫 번째 카드 자동 추가
             // =========================================
