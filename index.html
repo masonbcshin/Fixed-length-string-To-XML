@@ -131,6 +131,15 @@
             background: #1e7e34;
         }
 
+        #struct-test-btn {
+            background: #17a2b8;
+            margin-right: 10px;
+        }
+
+        #struct-test-btn:hover {
+            background: #138496;
+        }
+
         #clear-btn, #struct-clear-btn {
             background: #6c757d;
         }
@@ -1485,6 +1494,133 @@
             color: #e0e0e0;
         }
 
+        /* 테스트 케이스 모달 */
+        .test-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 10000;
+        }
+
+        .test-modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .test-modal .test-content {
+            background: white;
+            width: 400px;
+            max-width: 90%;
+            padding: 25px;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .test-modal .test-content h4 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 18px;
+        }
+
+        .test-modal .close-test {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .test-modal .close-test:hover {
+            background: #5a6268;
+        }
+
+        .test-modal .test-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .test-modal .test-buttons button {
+            padding: 12px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.2s;
+        }
+
+        .test-modal .test-buttons button[data-case="normal"] {
+            background: #28a745;
+            color: white;
+        }
+
+        .test-modal .test-buttons button[data-case="normal"]:hover {
+            background: #1e7e34;
+        }
+
+        .test-modal .test-buttons button[data-case="short"] {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .test-modal .test-buttons button[data-case="short"]:hover {
+            background: #e0a800;
+        }
+
+        .test-modal .test-buttons button[data-case="long"] {
+            background: #fd7e14;
+            color: white;
+        }
+
+        .test-modal .test-buttons button[data-case="long"]:hover {
+            background: #e96b02;
+        }
+
+        .test-modal .test-buttons button[data-case="mismatch"] {
+            background: #dc3545;
+            color: white;
+        }
+
+        .test-modal .test-buttons button[data-case="mismatch"]:hover {
+            background: #c82333;
+        }
+
+        .test-modal .test-buttons button[data-case="mixed"] {
+            background: #6f42c1;
+            color: white;
+        }
+
+        .test-modal .test-buttons button[data-case="mixed"]:hover {
+            background: #5a32a3;
+        }
+
+        /* 다크모드 - 테스트 모달 */
+        body.dark-mode .test-modal .test-content {
+            background: #2d2d2d;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .test-modal .test-content h4 {
+            color: #e0e0e0;
+        }
+
         body.dark-mode .help-tip strong {
             color: #ffc107;
         }
@@ -1591,6 +1727,7 @@
             
             <div class="button-group">
                 <button id="struct-sample-btn">샘플 로드</button>
+                <button id="struct-test-btn">테스트 케이스</button>
                 <button id="struct-parse-btn">파싱 실행 <span class="shortcut-hint">(Ctrl+Enter)</span></button>
                 <button id="struct-clear-btn">전체 초기화</button>
             </div>
@@ -1632,6 +1769,21 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 <div class="help-tip">
                     <strong>💡 팁:</strong> 일반적인 전문 파일은 개행문자를 포함합니다.
                     확실하지 않다면 체크 상태로 두세요.
+                </div>
+            </div>
+        </div>
+
+        <!-- 테스트 케이스 선택 모달 -->
+        <div class="test-modal" id="test-case-modal">
+            <div class="test-content">
+                <button class="close-test">✕</button>
+                <h4>🧪 테스트 케이스 선택</h4>
+                <div class="test-buttons">
+                    <button data-case="normal">✅ 정상 데이터</button>
+                    <button data-case="short">⚠️ 길이 부족</button>
+                    <button data-case="long">📏 길이 초과</button>
+                    <button data-case="mismatch">❌ 매칭 실패</button>
+                    <button data-case="mixed">🔀 혼합</button>
                 </div>
             </div>
         </div>
@@ -3649,6 +3801,146 @@ T000000000200000000000000003000`;
                 
                 // 6. 완료 메시지 표시
                 alert('✓ 샘플 로드 완료\n\n개행문자 인식이 활성화되었습니다.\n각 레코드 끝에 자동으로 CRLF가 추가됩니다.');
+            });
+
+            // 테스트 케이스 정의
+            const testCases = {
+                normal: {
+                    name: '정상 데이터',
+                    data: `H881234567
+D123456789012345600000000000000001000
+D987654321098765400000000000000002000
+T000000000200000000000000003000`
+                },
+                short: {
+                    name: '길이 부족',
+                    data: `H88123
+D12345678901234560000000000000000100
+T00000000020000000000000000300`
+                },
+                long: {
+                    name: '길이 초과',
+                    data: `H88123456789999
+D123456789012345600000000000000001000`
+                },
+                mismatch: {
+                    name: '매칭 실패',
+                    data: `X1234567890
+D123456789012345600000000000000001000`
+                },
+                mixed: {
+                    name: '혼합',
+                    data: `H881234567
+D123456789012345600000000000000001000
+X9999999999
+D12345
+H88123456789999
+T000000000200000000000000003000`
+                }
+            };
+
+            // 테스트 케이스 모달 관련 요소
+            const testModal = document.getElementById('test-case-modal');
+            const testBtn = document.getElementById('struct-test-btn');
+            const closeTestBtn = testModal.querySelector('.close-test');
+            const testButtons = testModal.querySelectorAll('.test-buttons button');
+
+            // 테스트 케이스 버튼 클릭 시 모달 표시
+            testBtn.addEventListener('click', function() {
+                testModal.classList.add('show');
+            });
+
+            // 닫기 버튼 클릭 시 모달 닫기
+            closeTestBtn.addEventListener('click', function() {
+                testModal.classList.remove('show');
+            });
+
+            // 모달 배경 클릭 시 닫기
+            testModal.addEventListener('click', function(e) {
+                if (e.target === testModal) {
+                    testModal.classList.remove('show');
+                }
+            });
+
+            // 테스트 케이스 버튼 클릭 이벤트
+            testButtons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    const caseType = this.getAttribute('data-case');
+                    const testCase = testCases[caseType];
+                    
+                    if (!testCase) return;
+
+                    // 1. recognize-crlf 체크박스 자동 체크
+                    document.getElementById('recognize-crlf').checked = true;
+                    
+                    // 2. 기존 모든 구조체 카드 삭제
+                    structContainer.innerHTML = '';
+                    
+                    // 3. structCardIndex = 0 리셋
+                    structCardIndex = 0;
+
+                    // 4. 구조체 3개 추가 (기본 구조체)
+                    const sampleStructs = [
+                        {
+                            name: 'DHF_H',
+                            kubun: 'H',
+                            definition: `typedef struct{
+  char record_kubun[1];
+  char bank_cd[2];
+  char cust_id[7];
+  char crlf[2];
+} DHF_H;`
+                        },
+                        {
+                            name: 'DHF_D',
+                            kubun: 'D',
+                            definition: `typedef struct{
+  char record_kubun[1];
+  char acno[16];
+  char amt[20];
+  char crlf[2];
+} DHF_D;`
+                        },
+                        {
+                            name: 'DHF_T',
+                            kubun: 'T',
+                            definition: `typedef struct{
+  char record_kubun[1];
+  char tot_cnt[10];
+  char tot_amt[20];
+  char crlf[2];
+} DHF_T;`
+                        }
+                    ];
+
+                    // 각 샘플 구조체마다 카드 생성
+                    sampleStructs.forEach(function(sample) {
+                        const card = createStructCard(structCardIndex);
+                        structContainer.appendChild(card);
+                        
+                        card.querySelector('.struct-name').value = sample.name;
+                        card.querySelector('.struct-kubun').value = sample.kubun;
+                        card.querySelector('.struct-definition').value = sample.definition;
+                        
+                        structCardIndex++;
+                    });
+
+                    // 5. 테스트 데이터 설정
+                    document.getElementById('struct-data').value = testCase.data;
+                    
+                    // 6. 모달 닫기
+                    testModal.classList.remove('show');
+                    
+                    // 7. 완료 메시지 표시
+                    alert('✓ 테스트 케이스 로드 완료: ' + testCase.name + '\n\n개행문자 인식이 활성화되었습니다.');
+                });
+            });
+
+            // ESC 키로 테스트 모달 닫기
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && testModal.classList.contains('show')) {
+                    testModal.classList.remove('show');
+                }
             });
 
             // 구조체 파싱 실행 버튼 클릭 이벤트
