@@ -2960,21 +2960,61 @@
     </div>
 
     <div id="xml-tab" class="tab-content active">
-        <div id="input-section">
-            <label for="xml-input">XML 규격</label>
-            <textarea id="xml-input" rows="10" placeholder="XML 규격 입력"></textarea>
+        
+        <!-- 서브 탭 네비게이션 (신규) -->
+        <div class="sub-tab-nav">
+            <button class="sub-tab-btn active" data-mode="parse">
+                📖 파싱 모드
+            </button>
+            <button class="sub-tab-btn" data-mode="generate">
+                ✏️ 생성 모드
+            </button>
+        </div>
+        
+        <!-- 파싱 모드 (기존 내용) -->
+        <div id="xml-parse-mode" class="sub-mode-content active">
+            <div id="input-section">
+                <label for="xml-input">XML 규격</label>
+                <textarea id="xml-input" rows="10" placeholder="XML 규격 입력"></textarea>
+                
+                <label for="telegram-input">통전문</label>
+                <textarea id="telegram-input" rows="5" placeholder="통전문 입력"></textarea>
+                
+                <div class="button-group">
+                    <button id="sample-btn">샘플 로드</button>
+                    <button id="parse-btn">파싱 실행</button>
+                    <button id="clear-btn">초기화</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 생성 모드 (신규) -->
+        <div id="xml-generate-mode" class="sub-mode-content">
+            <div class="generate-intro">
+                <h4>✏️ 전문 생성 (XML 기반)</h4>
+                <p>XML 규격을 입력하고 각 필드에 값을 입력하여 통전문을 생성합니다.</p>
+            </div>
             
-            <label for="telegram-input">통전문</label>
-            <textarea id="telegram-input" rows="5" placeholder="통전문 입력"></textarea>
+            <div class="xml-spec-input">
+                <label for="xml-generate-spec">XML 규격</label>
+                <textarea id="xml-generate-spec" rows="12" placeholder="<packet>...</packet>"></textarea>
+                <button id="load-xml-form-btn" class="primary-btn">
+                    폼 불러오기
+                </button>
+            </div>
+            
+            <div id="xml-generate-form-container" style="display: none;">
+                <!-- 입력 폼 -->
+            </div>
+            
+            <div id="xml-generated-records-area">
+                <!-- 생성된 레코드 -->
+            </div>
         </div>
         
-        <div class="button-group">
-            <button id="sample-btn">샘플 로드</button>
-            <button id="parse-btn">파싱 실행</button>
-            <button id="clear-btn">초기화</button>
-        </div>
-        
+        <!-- 결과 영역 (공통) -->
         <div id="result-container"></div>
+        
     </div>
 
     <div id="struct-tab" class="tab-content" style="display:none;">
@@ -5307,22 +5347,22 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
         // =========================================
         document.addEventListener('DOMContentLoaded', function() {
             // =========================================
-            // 서브 탭 (파싱/생성 모드) 전환 이벤트
+            // 서브 탭 (파싱/생성 모드) 전환 이벤트 - struct-tab
             // =========================================
-            document.querySelectorAll('.sub-tab-btn').forEach(btn => {
+            document.querySelectorAll('#struct-tab .sub-tab-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const mode = this.dataset.mode;
                     
-                    // 모든 버튼 비활성화
-                    document.querySelectorAll('.sub-tab-btn').forEach(b => {
+                    // struct-tab 내 버튼 비활성화
+                    document.querySelectorAll('#struct-tab .sub-tab-btn').forEach(b => {
                         b.classList.remove('active');
                     });
                     
                     // 클릭된 버튼 활성화
                     this.classList.add('active');
                     
-                    // 모든 컨텐츠 숨김
-                    document.querySelectorAll('.sub-mode-content').forEach(content => {
+                    // struct-tab 내 컨텐츠 숨김
+                    document.querySelectorAll('#struct-tab .sub-mode-content').forEach(content => {
                         content.classList.remove('active');
                     });
                     
@@ -5333,7 +5373,37 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     // 결과 영역 초기화
                     document.getElementById('struct-result-container').innerHTML = '';
                     
-                    console.log(`모드 전환: ${mode}`);
+                    console.log(`struct-tab 모드 전환: ${mode}`);
+                });
+            });
+
+            // =========================================
+            // 서브 탭 (파싱/생성 모드) 전환 이벤트 - xml-tab
+            // =========================================
+            document.querySelectorAll('#xml-tab .sub-tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const mode = this.dataset.mode;
+                    
+                    // xml-tab 내 버튼 비활성화
+                    document.querySelectorAll('#xml-tab .sub-tab-btn').forEach(b => {
+                        b.classList.remove('active');
+                    });
+                    
+                    // 클릭된 버튼 활성화
+                    this.classList.add('active');
+                    
+                    // xml-tab 내 컨텐츠 숨김
+                    document.querySelectorAll('#xml-tab .sub-mode-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    
+                    // 선택된 모드 컨텐츠 표시
+                    document.getElementById(`xml-${mode}-mode`).classList.add('active');
+                    
+                    // 결과 영역 초기화
+                    document.getElementById('result-container').innerHTML = '';
+                    
+                    console.log(`xml-tab 모드 전환: ${mode}`);
                 });
             });
 
