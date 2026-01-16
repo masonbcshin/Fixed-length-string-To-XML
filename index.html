@@ -860,6 +860,29 @@
             font-weight: 500;
         }
 
+        /* 길이 검증 뱃지 스타일 */
+        .length-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .length-badge.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .length-badge.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .length-badge.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
         /* 레코드 복사 버튼 스타일 */
         .copy-record-btn {
             padding: 6px 12px;
@@ -1081,6 +1104,21 @@
 
         body.dark-mode .record-header h3 {
             color: #e0e0e0;
+        }
+
+        body.dark-mode .length-badge.success {
+            background: #1e4a2b;
+            color: #90ee90;
+        }
+
+        body.dark-mode .length-badge.warning {
+            background: #4a3d1e;
+            color: #ffd700;
+        }
+
+        body.dark-mode .length-badge.error {
+            background: #4a1e1e;
+            color: #ff9090;
         }
 
         body.dark-mode .parse-settings-info {
@@ -2646,12 +2684,83 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
         /**
          * =====================================================
+         * calculateRecordLength(record, mode)
+         * =====================================================
+         * 레코드의 실제 길이를 계산
+         * @param {Object} record - 레코드 객체 (fields 배열 포함)
+         * @param {string} mode - 파싱 모드 ('line-by-line' 또는 'continuous')
+         * @returns {number} 레코드의 실제 바이트 길이
+         */
+        function calculateRecordLength(record, mode) {
+            if (!record || !record.fields || !Array.isArray(record.fields)) {
+                return 0;
+            }
+            
+            // 모든 필드 크기 합계
+            let totalSize = record.fields.reduce(function(sum, field) {
+                return sum + (field.fieldSize || 0);
+            }, 0);
+            
+            return totalSize;
+        }
+
+        /**
+         * =====================================================
+         * getExpectedLength(structName, structDefs)
+         * =====================================================
+         * 구조체 정의에서 예상 길이를 가져옴
+         * @param {string} structName - 구조체 이름
+         * @param {Array} structDefs - 구조체 정의 배열
+         * @returns {number} 예상 바이트 길이
+         */
+        function getExpectedLength(structName, structDefs) {
+            if (!structName || !Array.isArray(structDefs)) {
+                return 0;
+            }
+            
+            const struct = structDefs.find(function(s) {
+                return s.name === structName;
+            });
+            
+            return struct ? struct.totalSize : 0;
+        }
+
+        /**
+         * =====================================================
+         * createLengthBadge(record, structDefs, mode)
+         * =====================================================
+         * 길이 검증 뱃지 HTML을 생성
+         * @param {Object} record - 레코드 객체
+         * @param {Array} structDefs - 구조체 정의 배열
+         * @param {string} mode - 파싱 모드
+         * @returns {string} 뱃지 HTML 문자열
+         */
+        function createLengthBadge(record, structDefs, mode) {
+            const actualLength = calculateRecordLength(record, mode);
+            const expectedLength = getExpectedLength(record.structName, structDefs);
+            
+            if (expectedLength === 0) {
+                return '<span class="length-badge warning">? 길이 정보 없음</span>';
+            }
+            
+            if (actualLength === expectedLength) {
+                return '<span class="length-badge success">\u2713 ' + actualLength + 'B</span>';
+            } else if (actualLength < expectedLength) {
+                return '<span class="length-badge warning">\u26a0\ufe0f ' + actualLength + 'B / ' + expectedLength + 'B (부족)</span>';
+            } else {
+                return '<span class="length-badge error">\u26a0\ufe0f ' + actualLength + 'B / ' + expectedLength + 'B (초과)</span>';
+            }
+        }
+
+        /**
+         * =====================================================
          * 구조체 파싱 결과 표시 함수
          * DocumentFragment를 사용하여 DOM 조작 최적화
          * =====================================================
-         * @param {Object} parseResult - { records, stats } 형식의 파싱 결과
+         * @param {Object} parseResult - { records, stats, structDefs } 형식의 파싱 결과
          *   - records: 레코드 배열 (각 레코드: { recordIndex, structName, kubun, fields })
          *   - stats: 통계 정보 { totalBytes, parsedBytes, recordCount, errorBytes }
+         *   - structDefs: 구조체 정의 배열
          */
         function displayStructResults(parseResult) {
             // 1. struct-result-container 초기화
@@ -2664,7 +2773,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 return;
             }
 
-            const { records, stats } = parseResult;
+            const { records, stats, structDefs } = parseResult;
 
             // 파싱 설정 정보 가져오기
             const recognizeCRLF = document.getElementById('recognize-crlf').checked;
@@ -2781,6 +2890,12 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 kubunBadge.className = 'kubun-badge';
                 kubunBadge.textContent = '구분: ' + (record.kubun || 'N/A');
                 headerDiv.appendChild(kubunBadge);
+
+                // 길이 검증 뱃지 추가
+                const lengthBadgeHtml = createLengthBadge(record, structDefs, stats.mode);
+                const lengthBadgeContainer = document.createElement('span');
+                lengthBadgeContainer.innerHTML = lengthBadgeHtml;
+                headerDiv.appendChild(lengthBadgeContainer.firstChild);
 
                 // 복사 버튼
                 const copyBtn = document.createElement('button');
@@ -3557,6 +3672,9 @@ T000000000200000000000000003000`;
 
                 // 3. parseStructData(data, structDefs) 호출
                 const result = parseStructData(data, structDefs);
+                
+                // structDefs를 result에 추가
+                result.structDefs = structDefs;
 
                 // 4. displayStructResults(result) 호출
                 displayStructResults(result);
