@@ -1666,11 +1666,29 @@
 
                 // f. 파싱 성공 시 structDefs에 추가
                 if (parsed !== null) {
+                    // CRLF 필드 존재 확인
+                    const hasCRLFField = parsed.fields.some(function(f) {
+                        return f.name.toLowerCase().match(/crlf|cr_lf|newline/);
+                    });
+                    
+                    // 옵션과 일치 여부 확인
+                    const recognizeCRLF = document.getElementById('recognize-crlf').checked;
+                    const currentName = structName || ('구조체' + (index + 1));
+                    
+                    if (recognizeCRLF && !hasCRLFField) {
+                        console.warn('구조체 "' + currentName + '": 개행 인식 활성화되었으나 crlf 필드 없음');
+                    }
+                    
+                    if (!recognizeCRLF && hasCRLFField) {
+                        console.warn('구조체 "' + currentName + '": crlf 필드가 있으나 개행 인식 비활성화됨');
+                    }
+                    
                     structDefs.push({
-                        name: structName || ('구조체' + (index + 1)),
+                        name: currentName,
                         kubun: kubunValue || null,
                         fields: parsed.fields,
-                        totalSize: parsed.totalSize
+                        totalSize: parsed.totalSize,
+                        hasCRLFField: hasCRLFField
                     });
                 } else {
                     // g. 파싱 실패 시 에러 표시 후 null 반환
