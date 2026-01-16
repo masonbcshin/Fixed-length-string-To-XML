@@ -781,6 +781,190 @@
         }
 
         /* =====================================================
+         * 전문 생성 폼 (새 디자인)
+         * ===================================================== */
+        .generate-form {
+            background: white;
+            border: 2px solid #007bff;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .form-header {
+            background: #e7f3ff;
+            padding: 20px;
+            border-bottom: 2px solid #007bff;
+        }
+
+        .form-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-title h4 {
+            margin: 0;
+            color: #004085;
+        }
+
+        .form-badge {
+            background: #007bff;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .form-info {
+            margin-top: 8px;
+            color: #004085;
+            opacity: 0.8;
+        }
+
+        .input-form-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .input-form-table th {
+            background: #f8f9fa;
+            padding: 14px;
+            text-align: left;
+            font-weight: bold;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .input-form-table td {
+            padding: 12px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .input-form-table .field-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid #ced4da;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .input-form-table .field-input:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        .input-form-table .field-input:disabled {
+            background: #e9ecef;
+            color: #6c757d;
+        }
+
+        .input-form-table .field-preview {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            color: #6c757d;
+            word-break: break-all;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .input-form-table .field-preview.filled {
+            color: #28a745;
+            font-weight: 500;
+        }
+
+        .input-form-table .field-preview.padded {
+            color: #007bff;
+        }
+
+        .input-form-table .field-preview.over {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .form-actions .btn-info {
+            background: #17a2b8;
+            flex: 1;
+        }
+
+        .form-actions .btn-info:hover {
+            background: #138496;
+        }
+
+        .form-actions .btn-success {
+            background: #28a745;
+            flex: 1;
+        }
+
+        .form-actions .btn-success:hover {
+            background: #218838;
+        }
+
+        .form-actions .btn-secondary {
+            background: #6c757d;
+            flex: 1;
+        }
+
+        .form-actions .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .form-actions button {
+            padding: 12px;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .form-actions button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .preview-box {
+            margin: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+        }
+
+        .preview-box h5 {
+            margin: 0 0 15px 0;
+            color: #495057;
+        }
+
+        .preview-box .telegram-preview-content {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #ced4da;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+
+        .preview-box .preview-info {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #6c757d;
+        }
+
+        /* =====================================================
          * 구조체 정의 영역
          * ===================================================== */
         #add-struct-btn {
@@ -5391,101 +5575,261 @@ T000000000200000000000000003000`
             // =========================================
             
             /**
-             * 전문 생성 폼 표시 함수
-             * @param {Object} struct - 선택된 구조체 정의
+             * 필드 입력 행 생성 함수
+             * @param {Object} field - 필드 정의 객체
+             * @param {number} index - 필드 인덱스
+             * @param {boolean} recognizeCRLF - CRLF 인식 여부
+             * @returns {HTMLTableRowElement} 테이블 행 요소
              */
-            function displayGenerateForm(struct) {
-                const container = document.getElementById('generate-form-container');
-                container.innerHTML = '';
-                container.style.display = 'block';
+            function createFieldRow(field, index, recognizeCRLF) {
+                const row = document.createElement('tr');
                 
-                // 폼 헤더
-                const header = document.createElement('div');
-                header.className = 'generate-form-header';
-                header.innerHTML = '<h5>📝 ' + struct.name + ' 입력 폼</h5>' +
-                    '<span class="struct-info">총 ' + struct.totalSize + ' bytes, ' + struct.fields.length + '개 필드</span>';
-                container.appendChild(header);
+                // 필드명 셀
+                const nameCell = document.createElement('td');
+                nameCell.textContent = field.name;
+                nameCell.style.fontWeight = '500';
                 
-                // 필드 입력 폼
-                const form = document.createElement('div');
-                form.className = 'generate-fields-form';
+                // 크기 셀
+                const sizeCell = document.createElement('td');
+                sizeCell.textContent = field.size + ' bytes';
+                sizeCell.style.color = '#6c757d';
+                sizeCell.style.fontSize = '13px';
                 
-                struct.fields.forEach(function(field, idx) {
-                    const fieldDiv = document.createElement('div');
-                    fieldDiv.className = 'generate-field-row';
+                // 입력값 셀
+                const inputCell = document.createElement('td');
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = 'gen-field-' + index;
+                input.className = 'field-input generate-field-input';
+                input.dataset.fieldName = field.name;
+                input.dataset.fieldSize = field.size;
+                input.dataset.fieldIndex = index;
+                input.placeholder = field.size + '자 입력';
+                
+                // CRLF 필드 자동 설정 (recognizeCRLF가 true이고 필드명이 CRLF 관련일 때)
+                const isCRLFField = field.name.toLowerCase().match(/crlf|cr_lf|newline/);
+                if (recognizeCRLF && isCRLFField) {
+                    input.value = '\\r\\n';
+                    input.disabled = true;
+                    input.title = '개행문자 (자동 설정)';
+                }
+                
+                inputCell.appendChild(input);
+                
+                // 미리보기 셀
+                const previewCell = document.createElement('td');
+                const preview = document.createElement('span');
+                preview.className = 'field-preview';
+                preview.id = 'preview-field-' + index;
+                preview.dataset.fieldSize = field.size;
+                
+                if (recognizeCRLF && isCRLFField) {
+                    preview.textContent = '\\r\\n';
+                    preview.classList.add('filled');
+                } else {
+                    preview.textContent = '_'.repeat(Math.min(field.size, 20)) + (field.size > 20 ? '...' : '');
+                }
+                
+                previewCell.appendChild(preview);
+                
+                // 입력 이벤트 - 미리보기 업데이트
+                input.addEventListener('input', function() {
+                    const value = this.value;
+                    const size = parseInt(this.dataset.fieldSize);
+                    const previewEl = document.getElementById('preview-field-' + this.dataset.fieldIndex);
                     
-                    const label = document.createElement('label');
-                    label.textContent = field.name + ' (' + field.size + ' bytes)';
-                    label.setAttribute('for', 'gen-field-' + idx);
+                    if (!previewEl) return;
                     
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.id = 'gen-field-' + idx;
-                    input.className = 'generate-field-input';
-                    input.maxLength = field.size;
-                    input.dataset.fieldName = field.name;
-                    input.dataset.fieldSize = field.size;
-                    input.placeholder = field.size + '자 입력';
+                    previewEl.classList.remove('filled', 'padded', 'over');
                     
-                    // CRLF 필드는 자동 설정
+                    if (value.length === 0) {
+                        previewEl.textContent = '_'.repeat(Math.min(size, 20)) + (size > 20 ? '...' : '');
+                    } else if (value.length < size) {
+                        // 패딩 표시
+                        const padded = value + '░'.repeat(size - value.length);
+                        previewEl.textContent = padded.substring(0, 20) + (padded.length > 20 ? '...' : '');
+                        previewEl.classList.add('padded');
+                    } else if (value.length === size) {
+                        previewEl.textContent = value.substring(0, 20) + (value.length > 20 ? '...' : '');
+                        previewEl.classList.add('filled');
+                    } else {
+                        // 초과
+                        previewEl.textContent = value.substring(0, 20) + '... (초과!)';
+                        previewEl.classList.add('over');
+                    }
+                });
+                
+                row.appendChild(nameCell);
+                row.appendChild(sizeCell);
+                row.appendChild(inputCell);
+                row.appendChild(previewCell);
+                
+                return row;
+            }
+            
+            /**
+             * 폼 이벤트 리스너 연결 함수
+             * 현재 선택된 구조체 정보를 클로저로 캡처합니다.
+             * @param {Object} structDef - 구조체 정의 객체
+             */
+            function attachFormEvents(structDef) {
+                // 미리보기 버튼
+                const previewBtn = document.getElementById('preview-telegram-btn');
+                if (previewBtn) {
+                    previewBtn.addEventListener('click', function() {
+                        const previewBox = document.getElementById('telegram-preview-box');
+                        const telegram = buildTelegramFromForm(structDef);
+                        
+                        previewBox.innerHTML = '<h5>📄 전문 미리보기</h5>' +
+                            '<div class="telegram-preview-content">' + 
+                            telegram.display + '</div>' +
+                            '<div class="preview-info">총 ' + telegram.raw.length + ' bytes</div>';
+                        previewBox.style.display = 'block';
+                    });
+                }
+                
+                // 레코드 추가 버튼
+                const addBtn = document.getElementById('add-to-list-btn');
+                if (addBtn) {
+                    addBtn.addEventListener('click', function() {
+                        generateRecord(structDef);
+                    });
+                }
+                
+                // 초기화 버튼
+                const resetBtn = document.getElementById('reset-form-btn');
+                if (resetBtn) {
+                    resetBtn.addEventListener('click', function() {
+                        const inputs = document.querySelectorAll('#form-fields-body .generate-field-input');
+                        inputs.forEach(function(input) {
+                            if (!input.disabled) {
+                                input.value = '';
+                                // 미리보기 초기화
+                                const idx = input.dataset.fieldIndex;
+                                const size = parseInt(input.dataset.fieldSize);
+                                const previewEl = document.getElementById('preview-field-' + idx);
+                                if (previewEl) {
+                                    previewEl.textContent = '_'.repeat(Math.min(size, 20)) + (size > 20 ? '...' : '');
+                                    previewEl.classList.remove('filled', 'padded', 'over');
+                                }
+                            }
+                        });
+                        
+                        // 미리보기 박스 숨기기
+                        const previewBox = document.getElementById('telegram-preview-box');
+                        if (previewBox) {
+                            previewBox.style.display = 'none';
+                        }
+                        
+                        showTemporaryMessage('폼이 초기화되었습니다.');
+                    });
+                }
+            }
+            
+            /**
+             * 폼에서 전문 문자열 생성
+             * @param {Object} structDef - 구조체 정의 객체
+             * @returns {Object} { raw: 실제 전문, display: 표시용 전문 }
+             */
+            function buildTelegramFromForm(structDef) {
+                const inputs = document.querySelectorAll('#form-fields-body .generate-field-input');
+                let raw = '';
+                let display = '';
+                
+                inputs.forEach(function(input, idx) {
+                    const field = structDef.fields[idx];
+                    let value = input.value;
+                    
+                    // CRLF 필드 처리
                     if (field.name.toLowerCase().match(/crlf|cr_lf|newline/)) {
-                        input.value = '\\r\\n';
-                        input.disabled = true;
-                        input.title = '개행문자 (자동 설정)';
+                        raw += '\r\n';
+                        display += '\\r\\n';
+                        return;
                     }
                     
-                    // 입력 길이 표시
-                    const counter = document.createElement('span');
-                    counter.className = 'field-counter';
-                    counter.textContent = '0/' + field.size;
+                    // 값 패딩 (오른쪽 공백 채우기)
+                    if (value.length < field.size) {
+                        value = value + ' '.repeat(field.size - value.length);
+                    } else if (value.length > field.size) {
+                        value = value.substring(0, field.size);
+                    }
                     
-                    input.addEventListener('input', function() {
-                        counter.textContent = this.value.length + '/' + field.size;
-                        if (this.value.length > field.size) {
-                            counter.classList.add('over');
-                        } else {
-                            counter.classList.remove('over');
-                        }
-                    });
+                    raw += value;
+                    display += value.replace(/ /g, '·');  // 공백을 점으로 표시
+                });
+                
+                return { raw: raw, display: display };
+            }
+            
+            /**
+             * 전문 생성 폼 표시 함수
+             * @param {Object} structDef - 구조체 정의 객체
+             */
+            function displayGenerateForm(structDef) {
+                // 1. generate-form-container 초기화
+                const container = document.getElementById('generate-form-container');
+                
+                // 2. recognizeCRLF 옵션 확인
+                const recognizeCRLF = document.getElementById('recognize-crlf').checked;
+                
+                // 3. 폼 HTML 생성
+                const formHTML = 
+                    '<div class="generate-form">' +
                     
-                    fieldDiv.appendChild(label);
-                    fieldDiv.appendChild(input);
-                    fieldDiv.appendChild(counter);
-                    form.appendChild(fieldDiv);
+                    '  <div class="form-header">' +
+                    '    <div class="form-title">' +
+                    '      <h4>📝 ' + (structDef.name || '구조체') + ' 입력 폼</h4>' +
+                    '      <span class="form-badge">총 ' + structDef.totalSize + ' bytes</span>' +
+                    '    </div>' +
+                    '    <div class="form-info">' +
+                    '      <small>' + structDef.fields.length + '개 필드</small>' +
+                    '    </div>' +
+                    '  </div>' +
+                    
+                    '  <table class="input-form-table">' +
+                    '    <thead>' +
+                    '      <tr>' +
+                    '        <th style="width: 25%">필드명</th>' +
+                    '        <th style="width: 8%">크기</th>' +
+                    '        <th style="width: 42%">입력값</th>' +
+                    '        <th style="width: 25%">미리보기</th>' +
+                    '      </tr>' +
+                    '    </thead>' +
+                    '    <tbody id="form-fields-body">' +
+                    '    </tbody>' +
+                    '  </table>' +
+                    
+                    '  <div class="form-actions">' +
+                    '    <button id="preview-telegram-btn" class="btn-info">' +
+                    '      👁️ 미리보기' +
+                    '    </button>' +
+                    '    <button id="add-to-list-btn" class="btn-success">' +
+                    '      ✓ 레코드 추가' +
+                    '    </button>' +
+                    '    <button id="reset-form-btn" class="btn-secondary">' +
+                    '      🔄 초기화' +
+                    '    </button>' +
+                    '  </div>' +
+                    
+                    '  <div id="telegram-preview-box" class="preview-box" style="display: none;">' +
+                    '  </div>' +
+                    
+                    '</div>';
+                
+                // 4. DOM에 추가
+                container.innerHTML = formHTML;
+                container.style.display = 'block';
+                
+                // 5. 필드 행 생성
+                const tbody = document.getElementById('form-fields-body');
+                
+                structDef.fields.forEach(function(field, index) {
+                    const row = createFieldRow(field, index, recognizeCRLF);
+                    tbody.appendChild(row);
                 });
                 
-                container.appendChild(form);
-                
-                // 생성 버튼
-                const actions = document.createElement('div');
-                actions.className = 'generate-form-actions';
-                
-                const generateBtn = document.createElement('button');
-                generateBtn.className = 'primary-btn';
-                generateBtn.textContent = '전문 생성';
-                generateBtn.addEventListener('click', function() {
-                    generateRecord(struct);
-                });
-                
-                const clearBtn = document.createElement('button');
-                clearBtn.className = 'secondary-btn';
-                clearBtn.textContent = '초기화';
-                clearBtn.addEventListener('click', function() {
-                    form.querySelectorAll('.generate-field-input').forEach(function(input) {
-                        if (!input.disabled) {
-                            input.value = '';
-                            const counter = input.nextElementSibling;
-                            if (counter) {
-                                counter.textContent = '0/' + input.dataset.fieldSize;
-                                counter.classList.remove('over');
-                            }
-                        }
-                    });
-                });
-                
-                actions.appendChild(generateBtn);
-                actions.appendChild(clearBtn);
-                container.appendChild(actions);
+                // 6. 이벤트 리스너 연결
+                attachFormEvents(structDef);
             }
             
             /**
@@ -5493,7 +5837,7 @@ T000000000200000000000000003000`
              * @param {Object} struct - 구조체 정의
              */
             function generateRecord(struct) {
-                const inputs = document.querySelectorAll('#generate-form-container .generate-field-input');
+                const inputs = document.querySelectorAll('#form-fields-body .generate-field-input');
                 let record = '';
                 let hasError = false;
                 
