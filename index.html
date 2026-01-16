@@ -747,6 +747,16 @@
             color: #721c24;
         }
 
+        .setting-value.mode-line-by-line {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .setting-value.mode-continuous {
+            background: #d4edda;
+            color: #155724;
+        }
+
         /* 파싱 통계 스타일 */
         .parse-stats {
             background: #e3f2fd;
@@ -1046,6 +1056,16 @@
         body.dark-mode .setting-value.disabled {
             background: #4a2020;
             color: #f5c6cb;
+        }
+
+        body.dark-mode .setting-value.mode-line-by-line {
+            background: #1a3a4a;
+            color: #8ecae6;
+        }
+
+        body.dark-mode .setting-value.mode-continuous {
+            background: #1e4620;
+            color: #a3d9a5;
         }
 
         body.dark-mode .parse-stats {
@@ -2586,11 +2606,23 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
             settingsDiv.innerHTML = `
                 <h4>⚙️ 파싱 설정</h4>
                 <div class="setting-item">
-                    <span class="setting-label">개행문자 인식:</span>
-                    <span class="setting-value ${recognizeCRLF ? 'enabled' : 'disabled'}">
-                        ${recognizeCRLF ? '✓ 활성 (각 레코드 +2 bytes)' : '✗ 비활성'}
+                    <span class="setting-label">파싱 모드:</span>
+                    <span class="setting-value mode-${stats.mode}">
+                        ${stats.mode === 'line-by-line' ? '📄 라인 단위' : '🔗 연속 데이터'}
                     </span>
                 </div>
+                <div class="setting-item">
+                    <span class="setting-label">개행문자 인식:</span>
+                    <span class="setting-value ${recognizeCRLF ? 'enabled' : 'disabled'}">
+                        ${recognizeCRLF ? '✓ 활성' : '✗ 비활성'}
+                    </span>
+                </div>
+                ${stats.mode === 'line-by-line' ? `
+                <div class="setting-item">
+                    <span class="setting-label">처리 라인:</span>
+                    <span class="setting-value">${stats.recordCount}개 라인</span>
+                </div>
+                ` : ''}
             `;
             fragment.appendChild(settingsDiv);
 
