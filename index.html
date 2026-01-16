@@ -817,6 +817,37 @@
             background: #1e7e34;
         }
 
+        /* 자동 설정 필드 스타일 (CRLF 등) */
+        .auto-field {
+            background: #e9ecef;
+            cursor: not-allowed;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        /* 신규 레코드 폼 필드 입력 스타일 */
+        .new-field-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .new-field-input:focus {
+            border-color: #80bdff;
+            outline: none;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+        /* 미리보기 셀 스타일 */
+        .preview-cell {
+            font-family: 'Courier New', monospace;
+            background: #f8f9fa;
+            color: #495057;
+        }
+
         /* 모바일 대응 */
         @media (max-width: 600px) {
             body {
@@ -1110,6 +1141,28 @@
         body.dark-mode .struct-card.drag-over {
             border-color: #64b5f6;
             box-shadow: 0 0 10px rgba(100, 181, 246, 0.3);
+        }
+
+        /* 다크모드 - 자동 설정 필드 스타일 */
+        body.dark-mode .auto-field {
+            background: #3d3d5c;
+            color: #adb5bd;
+        }
+
+        body.dark-mode .new-field-input {
+            background: #2d2d44;
+            border-color: #3d3d5c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .new-field-input:focus {
+            border-color: #64b5f6;
+            box-shadow: 0 0 0 0.2rem rgba(100, 181, 246, 0.25);
+        }
+
+        body.dark-mode .preview-cell {
+            background: #2d2d44;
+            color: #adb5bd;
         }
     </style>
 </head>
@@ -2395,6 +2448,130 @@
 
             // 한 번에 DOM 업데이트
             container.appendChild(fragment);
+        }
+
+        /**
+         * =====================================================
+         * 신규 레코드 입력 폼 표시 함수 (33단계)
+         * 구조체 필드 배열을 받아 입력 폼을 생성
+         * CRLF 필드는 개행 인식 옵션에 따라 자동 처리
+         * =====================================================
+         * @param {Array} fields - 필드 배열 [{name, size}, ...]
+         * @param {HTMLElement} container - 폼을 표시할 컨테이너 요소
+         * @returns {HTMLElement} 생성된 테이블 요소
+         */
+        function showNewRecordForm(fields, container) {
+            // 입력값 유효성 검사
+            if (!Array.isArray(fields) || fields.length === 0) {
+                console.error('showNewRecordForm: 유효하지 않은 필드 배열입니다.');
+                return null;
+            }
+            
+            if (!container || !(container instanceof HTMLElement)) {
+                console.error('showNewRecordForm: 유효하지 않은 컨테이너입니다.');
+                return null;
+            }
+            
+            // 개행문자 인식 옵션 확인
+            const recognizeCRLF = document.getElementById('recognize-crlf').checked;
+            
+            // 테이블 생성
+            const table = document.createElement('table');
+            table.className = 'result-table new-record-form';
+            
+            // thead 생성
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            const headers = ['필드명', '크기', '입력값', '미리보기'];
+            
+            headers.forEach(function(headerText) {
+                const th = document.createElement('th');
+                th.textContent = headerText;
+                headerRow.appendChild(th);
+            });
+            
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            
+            // tbody 생성
+            const tbody = document.createElement('tbody');
+            
+            // 각 필드에 대해 행 생성
+            fields.forEach(function(field) {
+                const tr = document.createElement('tr');
+                
+                // CRLF 필드 여부 확인
+                const isCRLFField = field.name && field.name.toLowerCase().match(/crlf|cr_lf|newline/);
+                
+                // 필드명 셀
+                const tdName = document.createElement('td');
+                tdName.textContent = field.name;
+                tr.appendChild(tdName);
+                
+                // 크기 셀
+                const tdSize = document.createElement('td');
+                tdSize.textContent = field.size;
+                tr.appendChild(tdSize);
+                
+                // 입력값 셀
+                const tdInput = document.createElement('td');
+                const input = document.createElement('input');
+                input.type = 'text';
+                
+                if (isCRLFField && recognizeCRLF) {
+                    // CRLF 필드이고 개행 인식 활성화: 자동 설정
+                    input.value = '\\r\\n';
+                    input.disabled = true;
+                    input.className = 'auto-field';
+                    input.title = '자동 설정됨';
+                } else {
+                    // 일반 필드 또는 개행 인식 비활성화된 CRLF 필드: 수동 입력 가능
+                    input.className = 'new-field-input';
+                    input.setAttribute('data-field', field.name);
+                    input.setAttribute('data-size', field.size);
+                    input.maxLength = field.size;
+                    
+                    if (isCRLFField) {
+                        input.placeholder = '예: CR+LF 또는 공백';
+                    } else {
+                        input.placeholder = field.name + ' 값 입력';
+                    }
+                    
+                    // 입력값 변경 시 미리보기 업데이트
+                    input.addEventListener('input', function() {
+                        const previewCell = tr.querySelector('.preview-cell');
+                        if (previewCell) {
+                            previewCell.textContent = input.value || '';
+                        }
+                    });
+                }
+                
+                tdInput.appendChild(input);
+                tr.appendChild(tdInput);
+                
+                // 미리보기 셀
+                const tdPreview = document.createElement('td');
+                tdPreview.className = 'preview-cell';
+                
+                if (isCRLFField && recognizeCRLF) {
+                    tdPreview.textContent = '\\r\\n';
+                } else {
+                    tdPreview.textContent = '';
+                }
+                
+                tr.appendChild(tdPreview);
+                tbody.appendChild(tr);
+            });
+            
+            table.appendChild(tbody);
+            
+            // 컨테이너 비우고 테이블 추가
+            container.innerHTML = '';
+            container.appendChild(table);
+            
+            console.log('showNewRecordForm: ' + fields.length + '개 필드의 입력 폼이 생성되었습니다.');
+            
+            return table;
         }
 
         /**
