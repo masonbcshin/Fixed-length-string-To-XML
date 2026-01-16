@@ -2790,13 +2790,16 @@
 
             // 구조체 샘플 로드 버튼 클릭 이벤트
             document.getElementById('struct-sample-btn').addEventListener('click', function() {
-                // 1. 기존 모든 구조체 카드 삭제
+                // 1. recognize-crlf 체크박스 자동 체크
+                document.getElementById('recognize-crlf').checked = true;
+                
+                // 2. 기존 모든 구조체 카드 삭제
                 structContainer.innerHTML = '';
                 
-                // 2. structCardIndex = 0 리셋
+                // 3. structCardIndex = 0 리셋
                 structCardIndex = 0;
 
-                // 3. 구조체 3개 추가
+                // 4. 구조체 3개 추가
                 const sampleStructs = [
                     {
                         // 카드 1: DHF_H
@@ -2846,17 +2849,20 @@
                     structCardIndex++;
                 });
 
-                // 4. 데이터 설정
-                // DHF_H: 1+2+7+2 = 12 bytes
-                // DHF_D: 1+16+20+2 = 39 bytes
-                // DHF_T: 1+10+20+2 = 33 bytes
-                // 총 123 bytes (줄바꿈 제거 시)
-                const sampleData = `H88123125235XX
-D7092357029352901234567890123456789012XX
-D2730957203950001234567890123456789012XX
-T9710249709001234567890123456789012XX`;
+                // 5. 데이터 설정
+                // DHF_H: 1+2+7+2 = 12 bytes (데이터 10 + CRLF 2)
+                // DHF_D: 1+16+20+2 = 39 bytes (데이터 37 + CRLF 2)
+                // DHF_T: 1+10+20+2 = 33 bytes (데이터 31 + CRLF 2)
+                // 일반적인 줄바꿈으로 입력, 각 줄에 \r\n 자동 추가됨
+                const sampleData = `H881234567
+D123456789012345600000000000000001000
+D987654321098765400000000000000002000
+T000000000200000000000000003000`;
 
                 document.getElementById('struct-data').value = sampleData;
+                
+                // 6. 완료 메시지 표시
+                alert('✓ 샘플 로드 완료\n\n개행문자 인식이 활성화되었습니다.\n각 레코드 끝에 자동으로 CRLF가 추가됩니다.');
             });
 
             // 구조체 파싱 실행 버튼 클릭 이벤트
