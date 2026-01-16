@@ -885,6 +885,92 @@
             font-weight: bold;
         }
 
+        /* =====================================================
+         * 필드 행 스타일 (createFieldRow)
+         * ===================================================== */
+        .field-name {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .field-tag {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-left: 8px;
+            font-weight: bold;
+        }
+
+        .auto-tag {
+            background: #6c757d;
+            color: white;
+        }
+
+        .numeric-tag {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .field-size {
+            color: #6c757d;
+            text-align: center;
+        }
+
+        .input-form-table .field-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ced4da;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border 0.2s;
+            box-sizing: border-box;
+        }
+
+        .input-form-table .field-input:focus {
+            border-color: #007bff;
+            outline: none;
+            background: #f0f8ff;
+        }
+
+        .input-form-table .field-input.auto-field {
+            background: #e9ecef;
+            cursor: not-allowed;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .input-meta {
+            margin-top: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .char-counter {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .current-length {
+            font-weight: bold;
+        }
+
+        .preview-cell {
+            background: #f8f9fa;
+        }
+
+        .preview-text {
+            display: block;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #495057;
+            background: #fff;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
         .form-actions {
             display: flex;
             gap: 12px;
@@ -5575,6 +5661,16 @@ T000000000200000000000000003000`
             // =========================================
             
             /**
+             * 숫자 필드 여부 확인 헬퍼 함수
+             * @param {string} fieldName - 필드명
+             * @returns {boolean} 숫자 필드 여부
+             */
+            function isNumericField(fieldName) {
+                const numericPatterns = /amt|amount|cnt|count|num|number|price|qty|quantity|seq|no|cd|code/i;
+                return numericPatterns.test(fieldName);
+            }
+            
+            /**
              * 필드 입력 행 생성 함수
              * @param {Object} field - 필드 정의 객체
              * @param {number} index - 필드 인덱스
@@ -5582,89 +5678,113 @@ T000000000200000000000000003000`
              * @returns {HTMLTableRowElement} 테이블 행 요소
              */
             function createFieldRow(field, index, recognizeCRLF) {
-                const row = document.createElement('tr');
+                const tr = document.createElement('tr');
                 
-                // 필드명 셀
-                const nameCell = document.createElement('td');
-                nameCell.textContent = field.name;
-                nameCell.style.fontWeight = '500';
+                // CRLF 필드 특수 처리
+                const isCRLFField = field.name.toLowerCase().match(/crlf|cr_lf|newline|eol/);
                 
-                // 크기 셀
-                const sizeCell = document.createElement('td');
-                sizeCell.textContent = field.size + ' bytes';
-                sizeCell.style.color = '#6c757d';
-                sizeCell.style.fontSize = '13px';
-                
-                // 입력값 셀
-                const inputCell = document.createElement('td');
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.id = 'gen-field-' + index;
-                input.className = 'field-input generate-field-input';
-                input.dataset.fieldName = field.name;
-                input.dataset.fieldSize = field.size;
-                input.dataset.fieldIndex = index;
-                input.placeholder = field.size + '자 입력';
-                
-                // CRLF 필드 자동 설정 (recognizeCRLF가 true이고 필드명이 CRLF 관련일 때)
-                const isCRLFField = field.name.toLowerCase().match(/crlf|cr_lf|newline/);
-                if (recognizeCRLF && isCRLFField) {
-                    input.value = '\\r\\n';
-                    input.disabled = true;
-                    input.title = '개행문자 (자동 설정)';
-                }
-                
-                inputCell.appendChild(input);
-                
-                // 미리보기 셀
-                const previewCell = document.createElement('td');
-                const preview = document.createElement('span');
-                preview.className = 'field-preview';
-                preview.id = 'preview-field-' + index;
-                preview.dataset.fieldSize = field.size;
-                
-                if (recognizeCRLF && isCRLFField) {
-                    preview.textContent = '\\r\\n';
-                    preview.classList.add('filled');
+                if (isCRLFField && recognizeCRLF) {
+                    // 자동 설정 필드
+                    tr.innerHTML = `
+                        <td>
+                            <span class="field-name">${field.name}</span>
+                            <span class="field-tag auto-tag">자동</span>
+                        </td>
+                        <td class="field-size">${field.size}</td>
+                        <td>
+                            <input type="text" 
+                                   class="field-input auto-field generate-field-input"
+                                   value="\\r\\n"
+                                   data-field="${field.name}"
+                                   data-size="${field.size}"
+                                   data-index="${index}"
+                                   data-field-name="${field.name}"
+                                   data-field-size="${field.size}"
+                                   data-field-index="${index}"
+                                   id="gen-field-${index}"
+                                   disabled
+                                   readonly />
+                        </td>
+                        <td class="preview-cell">
+                            <code class="preview-text" id="preview-field-${index}" data-field-size="${field.size}">\\r\\n</code>
+                        </td>
+                    `;
                 } else {
-                    preview.textContent = '_'.repeat(Math.min(field.size, 20)) + (field.size > 20 ? '...' : '');
+                    // 일반 입력 필드
+                    const isNumeric = isNumericField(field.name);
+                    
+                    tr.innerHTML = `
+                        <td>
+                            <span class="field-name">${field.name}</span>
+                            ${isNumeric ? '<span class="field-tag numeric-tag">숫자</span>' : ''}
+                        </td>
+                        <td class="field-size">${field.size}</td>
+                        <td>
+                            <input type="text"
+                                   class="field-input generate-field-input"
+                                   data-field="${field.name}"
+                                   data-size="${field.size}"
+                                   data-index="${index}"
+                                   data-field-name="${field.name}"
+                                   data-field-size="${field.size}"
+                                   data-field-index="${index}"
+                                   id="gen-field-${index}"
+                                   maxlength="${field.size}"
+                                   placeholder="최대 ${field.size}자"
+                                   ${isNumeric ? 'inputmode="numeric"' : ''} />
+                            <div class="input-meta">
+                                <span class="char-counter">
+                                    <span class="current-length" id="char-count-${index}">0</span>/${field.size}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="preview-cell">
+                            <code class="preview-text" id="preview-field-${index}" data-field-size="${field.size}"></code>
+                        </td>
+                    `;
+                    
+                    // 입력 이벤트 바인딩을 위해 setTimeout 사용 (DOM에 추가된 후 실행)
+                    setTimeout(function() {
+                        const input = document.getElementById('gen-field-' + index);
+                        const charCountEl = document.getElementById('char-count-' + index);
+                        const previewEl = document.getElementById('preview-field-' + index);
+                        
+                        if (input) {
+                            input.addEventListener('input', function() {
+                                const value = this.value;
+                                const size = parseInt(this.dataset.fieldSize);
+                                
+                                // 글자 수 카운터 업데이트
+                                if (charCountEl) {
+                                    charCountEl.textContent = value.length;
+                                }
+                                
+                                // 미리보기 업데이트
+                                if (previewEl) {
+                                    previewEl.classList.remove('filled', 'padded', 'over');
+                                    
+                                    if (value.length === 0) {
+                                        previewEl.textContent = '';
+                                    } else if (value.length < size) {
+                                        // 패딩 표시
+                                        const padded = value + '░'.repeat(size - value.length);
+                                        previewEl.textContent = padded;
+                                        previewEl.classList.add('padded');
+                                    } else if (value.length === size) {
+                                        previewEl.textContent = value;
+                                        previewEl.classList.add('filled');
+                                    } else {
+                                        // 초과
+                                        previewEl.textContent = value + ' (초과!)';
+                                        previewEl.classList.add('over');
+                                    }
+                                }
+                            });
+                        }
+                    }, 0);
                 }
                 
-                previewCell.appendChild(preview);
-                
-                // 입력 이벤트 - 미리보기 업데이트
-                input.addEventListener('input', function() {
-                    const value = this.value;
-                    const size = parseInt(this.dataset.fieldSize);
-                    const previewEl = document.getElementById('preview-field-' + this.dataset.fieldIndex);
-                    
-                    if (!previewEl) return;
-                    
-                    previewEl.classList.remove('filled', 'padded', 'over');
-                    
-                    if (value.length === 0) {
-                        previewEl.textContent = '_'.repeat(Math.min(size, 20)) + (size > 20 ? '...' : '');
-                    } else if (value.length < size) {
-                        // 패딩 표시
-                        const padded = value + '░'.repeat(size - value.length);
-                        previewEl.textContent = padded.substring(0, 20) + (padded.length > 20 ? '...' : '');
-                        previewEl.classList.add('padded');
-                    } else if (value.length === size) {
-                        previewEl.textContent = value.substring(0, 20) + (value.length > 20 ? '...' : '');
-                        previewEl.classList.add('filled');
-                    } else {
-                        // 초과
-                        previewEl.textContent = value.substring(0, 20) + '... (초과!)';
-                        previewEl.classList.add('over');
-                    }
-                });
-                
-                row.appendChild(nameCell);
-                row.appendChild(sizeCell);
-                row.appendChild(inputCell);
-                row.appendChild(previewCell);
-                
-                return row;
+                return tr;
             }
             
             /**
