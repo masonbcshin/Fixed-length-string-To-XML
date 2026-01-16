@@ -6976,76 +6976,252 @@ T000000000200000000000000003000`
              * @param {Array} xmlSpec - XML 규격 배열
              */
             function attachXMLFormEvents(xmlSpec) {
-                // 입력 필드 이벤트 리스너
-                const inputs = document.querySelectorAll('#xml-form-fields-body .xml-field-input');
-                inputs.forEach(function(input) {
-                    input.addEventListener('input', function() {
-                        const value = this.value;
-                        const size = parseInt(this.dataset.size);
-                        const type = this.dataset.type;
-                        const row = this.closest('tr');
+                // 실시간 입력 처리 (이벤트 위임)
+                document.getElementById('xml-generate-form-container').addEventListener('input', function(e) {
+                    if (e.target.classList.contains('xml-field-input')) {
+                        const input = e.target;
+                        const fieldType = input.dataset.type;
+                        const fieldSize = parseInt(input.dataset.size);
+                        const value = input.value;
                         
-                        // 글자 수 카운터 업데이트
-                        const charCountEl = row.querySelector('.current-length');
-                        if (charCountEl) {
-                            charCountEl.textContent = value.length;
+                        // 글자 수 카운터
+                        const row = input.closest('tr');
+                        const currentLength = row.querySelector('.current-length');
+                        
+                        currentLength.textContent = value.length;
+                        
+                        if (value.length > fieldSize) {
+                            currentLength.style.color = '#dc3545';
+                            input.style.borderColor = '#dc3545';
+                        } else if (value.length === fieldSize) {
+                            currentLength.style.color = '#28a745';
+                            input.style.borderColor = '#28a745';
+                        } else {
+                            currentLength.style.color = '#6c757d';
+                            input.style.borderColor = '#ced4da';
                         }
                         
-                        // 미리보기 업데이트
-                        const previewEl = row.querySelector('.preview-text');
-                        if (previewEl) {
-                            previewEl.classList.remove('filled', 'padded', 'over');
-                            
-                            if (value.length === 0) {
-                                previewEl.textContent = '';
-                            } else if (value.length < size) {
-                                // 패딩 표시 (타입에 따라 다름: N은 왼쪽 0, X/A는 오른쪽 공백)
-                                let padded;
-                                if (type === 'N') {
-                                    padded = '0'.repeat(size - value.length) + value;
-                                } else {
-                                    padded = value + '░'.repeat(size - value.length);
-                                }
-                                previewEl.textContent = padded;
-                                previewEl.classList.add('padded');
-                            } else if (value.length === size) {
-                                previewEl.textContent = value;
-                                previewEl.classList.add('filled');
-                            } else {
-                                previewEl.textContent = value.substring(0, size) + '...';
-                                previewEl.classList.add('over');
-                            }
+                        // 타입 검증
+                        if (fieldType === 'N' && value && !/^[0-9]*$/.test(value)) {
+                            input.style.borderColor = '#ffc107';
+                            input.setCustomValidity('숫자만 입력 가능합니다');
+                        } else {
+                            input.setCustomValidity('');
                         }
-                    });
+                        
+                        // 패딩 미리보기
+                        const paddedValue = padValueByType(value, fieldSize, fieldType);
+                        const previewCell = row.querySelector('.preview-text');
+                        previewCell.textContent = paddedValue;
+                    }
                 });
                 
                 // 미리보기 버튼
                 document.getElementById('xml-preview-telegram-btn').addEventListener('click', function() {
-                    const result = generateXMLTelegram(xmlSpec);
+                    const inputs = document.querySelectorAll('.xml-field-input');
+                    let telegram = '';
+                    
+                    inputs.forEach(function(input) {
+                        const fieldType = input.dataset.type;
+                        const fieldSize = parseInt(input.dataset.size);
+                        const value = input.value;
+                        
+                        const paddedValue = padValueByType(value, fieldSize, fieldType);
+                        telegram += paddedValue;
+                    });
+                    
                     const previewBox = document.getElementById('xml-telegram-preview-box');
                     
                     previewBox.innerHTML = 
-                        '<div class="preview-header">' +
-                        '  <strong>📋 미리보기</strong>' +
-                        '  <span class="preview-length">' + result.raw.length + ' bytes</span>' +
-                        '</div>' +
-                        '<div class="preview-content">' +
-                        '  <code>' + escapeHtml(result.display) + '</code>' +
+                        '<div class="preview-success">' +
+                        '  <div class="preview-header">' +
+                        '    <h5>👁️ 생성된 전문 미리보기</h5>' +
+                        '    <button class="copy-preview-btn" data-telegram="' + escapeHtml(telegram) + '">' +
+                        '      📋 복사' +
+                        '    </button>' +
+                        '  </div>' +
+                        '  <div class="preview-content">' +
+                        '    <pre class="telegram-display">' + escapeForDisplay(telegram) + '</pre>' +
+                        '  </div>' +
+                        '  <div class="preview-info">' +
+                        '    <div class="info-item">' +
+                        '      <span class="info-label">길이:</span>' +
+                        '      <span class="info-value">' + telegram.length + ' bytes</span>' +
+                        '    </div>' +
+                        '    <div class="info-item">' +
+                        '      <span class="info-label">HEX:</span>' +
+                        '      <span class="info-value hex-value">' + toHexPreview(telegram) + '</span>' +
+                        '    </div>' +
+                        '  </div>' +
                         '</div>';
+                    
                     previewBox.style.display = 'block';
                 });
                 
                 // 레코드 추가 버튼
                 document.getElementById('xml-add-to-list-btn').addEventListener('click', function() {
-                    const result = generateXMLTelegram(xmlSpec);
-                    addXMLGeneratedRecord(result.raw);
-                    showTemporaryMessage('✓ 레코드가 추가되었습니다 (' + result.raw.length + ' bytes)');
+                    const inputs = document.querySelectorAll('.xml-field-input');
+                    let telegram = '';
+                    const fieldData = [];
+                    
+                    inputs.forEach(function(input) {
+                        const fieldId = input.dataset.field;
+                        const fieldType = input.dataset.type;
+                        const fieldSize = parseInt(input.dataset.size);
+                        const value = input.value;
+                        const paddedValue = padValueByType(value, fieldSize, fieldType);
+                        
+                        telegram += paddedValue;
+                        
+                        fieldData.push({
+                            name: fieldId,
+                            type: fieldType,
+                            size: fieldSize,
+                            value: value,
+                            padded: paddedValue
+                        });
+                    });
+                    
+                    const record = {
+                        id: Date.now(),
+                        structName: 'XML 전문',
+                        telegram: telegram,
+                        fieldData: fieldData,
+                        timestamp: new Date().toLocaleString('ko-KR'),
+                        length: telegram.length
+                    };
+                    
+                    addXMLRecordToList(record);
+                    
+                    const shouldReset = confirm('레코드가 추가되었습니다.\n입력 폼을 초기화하시겠습니까?');
+                    if (shouldReset) {
+                        resetXMLForm();
+                    }
                 });
                 
                 // 초기화 버튼
                 document.getElementById('xml-reset-form-btn').addEventListener('click', function() {
                     if (confirm('입력한 내용을 모두 초기화하시겠습니까?')) {
-                        resetXMLGenerateForm();
+                        resetXMLForm();
+                    }
+                });
+            }
+            
+            /**
+             * 타입에 따른 패딩 처리 함수
+             * @param {string} value - 입력값
+             * @param {number} size - 필드 크기
+             * @param {string} type - 필드 타입 (N: 숫자, X: 문자)
+             * @returns {string} 패딩된 값
+             */
+            function padValueByType(value, size, type) {
+                if (value.length > size) {
+                    return value.substring(0, size);
+                }
+                if (value.length < size) {
+                    // N 타입: 좌측 0 패딩
+                    if (type === 'N') {
+                        return value.padStart(size, '0');
+                    }
+                    // X 타입: 우측 공백 패딩
+                    return value.padEnd(size, ' ');
+                }
+                return value;
+            }
+            
+            /**
+             * XML 폼 초기화 함수
+             */
+            function resetXMLForm() {
+                document.querySelectorAll('.xml-field-input').forEach(function(input) {
+                    input.value = '';
+                    input.style.borderColor = '#ced4da';
+                });
+                document.querySelectorAll('.current-length').forEach(function(span) {
+                    span.textContent = '0';
+                    span.style.color = '#6c757d';
+                });
+                document.querySelectorAll('.preview-text').forEach(function(code) {
+                    code.textContent = '';
+                });
+                document.getElementById('xml-telegram-preview-box').style.display = 'none';
+            }
+            
+            /**
+             * XML 레코드를 목록에 추가하는 함수
+             * @param {Object} record - 레코드 객체
+             */
+            function addXMLRecordToList(record) {
+                const area = document.getElementById('xml-generated-records-area');
+                
+                // 첫 번째 레코드인 경우 헤더 추가
+                if (area.children.length === 0) {
+                    const header = document.createElement('div');
+                    header.className = 'generated-records-header';
+                    header.innerHTML = 
+                        '<h5>📦 생성된 레코드</h5>' +
+                        '<div class="header-actions">' +
+                        '  <button id="xml-copy-all-records-new" class="btn-secondary btn-sm">전체 복사</button>' +
+                        '  <button id="xml-clear-all-records-new" class="btn-danger btn-sm">전체 삭제</button>' +
+                        '</div>';
+                    area.appendChild(header);
+                    
+                    // 전체 복사 이벤트
+                    document.getElementById('xml-copy-all-records-new').addEventListener('click', function() {
+                        const records = area.querySelectorAll('.record-text');
+                        let allRecords = '';
+                        records.forEach(function(r) {
+                            allRecords += r.textContent + '\n';
+                        });
+                        navigator.clipboard.writeText(allRecords.trim()).then(function() {
+                            showTemporaryMessage('전체 레코드가 복사되었습니다.');
+                        });
+                    });
+                    
+                    // 전체 삭제 이벤트
+                    document.getElementById('xml-clear-all-records-new').addEventListener('click', function() {
+                        if (confirm('모든 생성된 레코드를 삭제하시겠습니까?')) {
+                            area.innerHTML = '';
+                            showTemporaryMessage('모든 레코드가 삭제되었습니다.');
+                        }
+                    });
+                }
+                
+                // 레코드 아이템 생성
+                const recordItem = document.createElement('div');
+                recordItem.className = 'record-item';
+                
+                const recordIndex = area.querySelectorAll('.record-item').length + 1;
+                
+                recordItem.innerHTML = 
+                    '<div class="record-header">' +
+                    '  <span class="record-number">#' + recordIndex + '</span>' +
+                    '  <span class="record-timestamp">' + record.timestamp + '</span>' +
+                    '  <span class="record-size">' + record.length + ' bytes</span>' +
+                    '</div>' +
+                    '<code class="record-text">' + escapeHtml(record.telegram) + '</code>' +
+                    '<div class="record-actions">' +
+                    '  <button class="xml-copy-record-btn-new btn-secondary btn-xs">복사</button>' +
+                    '  <button class="xml-delete-record-btn-new btn-danger btn-xs">삭제</button>' +
+                    '</div>';
+                
+                area.appendChild(recordItem);
+                
+                // 복사 버튼 이벤트
+                recordItem.querySelector('.xml-copy-record-btn-new').addEventListener('click', function() {
+                    navigator.clipboard.writeText(record.telegram).then(function() {
+                        showTemporaryMessage('레코드가 복사되었습니다.');
+                    });
+                });
+                
+                // 삭제 버튼 이벤트
+                recordItem.querySelector('.xml-delete-record-btn-new').addEventListener('click', function() {
+                    recordItem.remove();
+                    showTemporaryMessage('레코드가 삭제되었습니다.');
+                    
+                    // 모든 레코드가 삭제되면 헤더도 삭제
+                    if (area.querySelectorAll('.record-item').length === 0) {
+                        area.innerHTML = '';
                     }
                 });
             }
