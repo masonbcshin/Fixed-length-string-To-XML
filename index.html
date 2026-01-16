@@ -915,6 +915,14 @@
             font-style: italic;
         }
 
+        /* CRLF 필드 값 표시 스타일 */
+        .crlf-value {
+            background: #e3f2fd !important;
+            font-family: 'Courier New', monospace;
+            color: #1565c0;
+            font-weight: bold;
+        }
+
         /* 신규 레코드 폼 필드 입력 스타일 */
         .new-field-input {
             width: 100%;
@@ -1611,6 +1619,42 @@
             background: #5a32a3;
         }
 
+        /* 연속 데이터 테스트 케이스 버튼 스타일 */
+        .test-modal .test-buttons button[data-case="continuous"] {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .test-modal .test-buttons button[data-case="continuous"]:hover {
+            background: #138496;
+        }
+
+        .test-modal .test-buttons button[data-case="continuous_multi"] {
+            background: #20c997;
+            color: white;
+        }
+
+        .test-modal .test-buttons button[data-case="continuous_multi"]:hover {
+            background: #1aa179;
+        }
+
+        /* 테스트 그룹 스타일 */
+        .test-modal .test-group {
+            margin-bottom: 20px;
+        }
+
+        .test-modal .test-group h5 {
+            margin: 0 0 10px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e0e0e0;
+            color: #495057;
+            font-size: 14px;
+        }
+
+        .test-modal .test-group:last-child {
+            margin-bottom: 0;
+        }
+
         /* 다크모드 - 테스트 모달 */
         body.dark-mode .test-modal .test-content {
             background: #2d2d2d;
@@ -1782,12 +1826,26 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
             <div class="test-content">
                 <button class="close-test">✕</button>
                 <h4>🧪 테스트 케이스 선택</h4>
-                <div class="test-buttons">
-                    <button data-case="normal">✅ 정상 데이터</button>
-                    <button data-case="short">⚠️ 길이 부족</button>
-                    <button data-case="long">📏 길이 초과</button>
-                    <button data-case="mismatch">❌ 매칭 실패</button>
-                    <button data-case="mixed">🔀 혼합</button>
+                
+                <!-- 개행 인식 ON 테스트 (라인 단위 파싱) -->
+                <div class="test-group">
+                    <h5>📄 개행 인식 ON (라인 단위)</h5>
+                    <div class="test-buttons">
+                        <button data-case="normal">✅ 정상 데이터</button>
+                        <button data-case="short">⚠️ 길이 부족</button>
+                        <button data-case="long">📏 길이 초과</button>
+                        <button data-case="mismatch">❌ 매칭 실패</button>
+                        <button data-case="mixed">🔀 혼합</button>
+                    </div>
+                </div>
+                
+                <!-- 개행 인식 OFF 테스트 (연속 데이터 파싱) -->
+                <div class="test-group">
+                    <h5>🔗 개행 인식 OFF (연속 데이터)</h5>
+                    <div class="test-buttons">
+                        <button data-case="continuous">📦 연속 데이터</button>
+                        <button data-case="continuous_multi">🔄 연속 다중 레코드</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2526,12 +2584,28 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
         /**
          * =====================================================
-         * 구조체 데이터 파싱 함수 (메인)
-         * 옵션에 따라 라인 기반 또는 연속 데이터 파싱으로 분기
+         * 구조체 데이터 파싱 함수 (메인 진입점)
          * =====================================================
-         * @param {string} dataText - 통 데이터 텍스트
-         * @param {Array} structDefs - 구조체 정의 배열
-         * @returns {Object} { records: [...], stats: {...} } 형식의 파싱 결과
+         * 
+         * [기능 설명]
+         * 개행문자 인식 옵션(recognize-crlf)에 따라 파싱 모드를 결정합니다.
+         * 
+         * [파싱 모드]
+         * 1. 라인 기반 파싱 (개행 인식 ON)
+         *    - 각 줄을 독립적인 레코드로 처리
+         *    - 줄 끝에 CRLF(2 bytes) 자동 추가
+         *    - 길이 부족 시 다음 라인 침범 안 함
+         * 
+         * 2. 연속 데이터 파싱 (개행 인식 OFF)
+         *    - 모든 줄바꿈 제거 후 연속 데이터로 처리
+         *    - 구분값(kubun) 기반으로 레코드 분리
+         *    - CRLF 필드 없는 구조체 사용
+         * 
+         * @param {string} dataText - 파싱할 통 데이터 텍스트
+         * @param {Array} structDefs - 구조체 정의 배열 [{name, kubun, fields, totalSize}, ...]
+         * @returns {Object} 파싱 결과
+         *   - records: 파싱된 레코드 배열
+         *   - stats: 통계 정보 {totalBytes, parsedBytes, recordCount, errorBytes, mode}
          */
         function parseStructData(dataText, structDefs) {
             // 입력값 유효성 검사
@@ -2560,10 +2634,27 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
         /**
          * =====================================================
-         * 라인 기반 파싱 함수
-         * 개행문자를 인식하여 레코드를 분리하고 파싱
+         * 라인 기반 파싱 함수 (개행 인식 ON 모드)
          * =====================================================
-         * @param {string} dataText - 통 데이터 텍스트
+         * 
+         * [처리 흐름]
+         * 1. 이스케이프 처리 (\\r\\n → \r\n)
+         * 2. 줄 단위 분리 (CRLF/LF 기준)
+         * 3. 각 라인별 구조체 매칭 (구분값 기반)
+         * 4. 필드별 데이터 추출
+         * 5. 길이 검증 (부족/초과 시 경고)
+         * 
+         * [특징]
+         * - 각 라인은 독립적으로 처리 (다음 라인 침범 안 함)
+         * - 라인 끝에 CRLF(2 bytes) 자동 추가됨
+         * - 매칭 실패 시 에러 레코드로 기록
+         * - 길이 부족 시 경고만 표시하고 파싱은 진행
+         * 
+         * [에러 처리]
+         * - 구조체 매칭 실패: 에러 레코드 생성, 다음 라인으로 진행
+         * - 길이 부족/초과: 콘솔 경고, 가능한 만큼 파싱
+         * 
+         * @param {string} dataText - 통 데이터 텍스트 (줄바꿈 포함)
          * @param {Array} structDefs - 구조체 정의 배열
          * @returns {Object} { records: [...], stats: {...} } 형식의 파싱 결과
          */
@@ -2741,11 +2832,33 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
         /**
          * =====================================================
-         * 연속 데이터 파싱 함수
-         * 개행문자를 무시하고 연속된 데이터로 파싱
+         * 연속 데이터 파싱 함수 (개행 인식 OFF 모드)
          * =====================================================
-         * @param {string} dataText - 통 데이터 텍스트
-         * @param {Array} structDefs - 구조체 정의 배열
+         * 
+         * [처리 흐름]
+         * 1. 전처리: 모든 줄바꿈 제거 (\r, \n)
+         * 2. 현재 위치에서 구조체 매칭 (구분값 기반)
+         * 3. 매칭 성공: 필드별 데이터 추출, 구조체 크기만큼 이동
+         * 4. 매칭 실패: 1바이트 스킵, 에러 바이트 카운트 증가
+         * 5. 데이터 끝까지 반복
+         * 
+         * [특징]
+         * - 줄바꿈이 완전히 무시됨
+         * - 구조체에 CRLF 필드가 없어야 함
+         * - 구분값으로 레코드 시작점 탐지
+         * - 연속된 여러 레코드 자동 분리
+         * 
+         * [에러 처리]
+         * - 구조체 매칭 실패: 1바이트 스킵 후 재시도
+         * - 에러 바이트 수 통계에 누적
+         * - 과도한 에러 로그 방지 (최대 10개까지만 출력)
+         * 
+         * [사용 예시]
+         * - CRLF 없는 구조체: "H881234567D1234567890123456..." 형태
+         * - 구분값 H, D, T 등으로 레코드 분리
+         * 
+         * @param {string} dataText - 통 데이터 텍스트 (줄바꿈 포함 가능)
+         * @param {Array} structDefs - 구조체 정의 배열 (CRLF 필드 없음)
          * @returns {Object} { records: [...], stats: {...} } 형식의 파싱 결과
          */
         function parseContinuous(dataText, structDefs) {
@@ -3013,6 +3126,51 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
         /**
          * =====================================================
+         * escapeHtml(text)
+         * =====================================================
+         * HTML 특수문자를 이스케이프 처리 (XSS 방지)
+         * 
+         * @param {string} text - 이스케이프할 텍스트
+         * @returns {string} 이스케이프된 텍스트
+         */
+        function escapeHtml(text) {
+            if (typeof text !== 'string') return text;
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        /**
+         * =====================================================
+         * formatFieldValue(value, isCRLFField)
+         * =====================================================
+         * 필드 값을 표시용으로 포맷팅
+         * - CRLF 필드: 특수문자를 이스케이프 시퀀스로 표시 (\r\n)
+         * - 일반 필드: 공백 여부만 확인
+         * 
+         * @param {string} value - 필드 값
+         * @param {boolean} isCRLFField - CRLF 필드 여부
+         * @returns {string} 포맷팅된 값
+         */
+        function formatFieldValue(value, isCRLFField) {
+            if (typeof value !== 'string') {
+                return value;
+            }
+            
+            // CRLF 필드인 경우 특수문자를 이스케이프 표시
+            if (isCRLFField) {
+                // \r\n → "\\r\\n" 형태로 표시
+                return value
+                    .replace(/\r/g, '\\r')
+                    .replace(/\n/g, '\\n');
+            }
+            
+            // 일반 필드: 그대로 반환
+            return value;
+        }
+
+        /**
+         * =====================================================
          * createLengthBadge(record, structDefs, mode)
          * =====================================================
          * 길이 검증 뱃지 HTML을 생성
@@ -3125,35 +3283,65 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 return;
             }
 
-            // 3. 레코드별 그룹화 (recordIndex 기준) - 에러 레코드 별도 처리
+            /**
+             * 3. 레코드별 그룹화 (recordIndex 기준)
+             * 
+             * [최적화된 그룹화 로직]
+             * - 한 번의 순회로 레코드와 필드를 동시에 그룹화
+             * - 에러 레코드는 즉시 DOM에 추가
+             * - 정상 레코드는 Map에 필드 배열과 함께 저장
+             */
             const recordMap = new Map();
+            const errorCards = [];  // 에러 카드 별도 수집
+            
             records.forEach(function(record) {
+                // 에러 레코드 처리
                 if (record.error) {
-                    // 에러 카드 표시
-                    const errorCard = document.createElement('div');
-                    errorCard.className = 'error-record-card';
-                    errorCard.innerHTML = `
-                        <div class="error-header">
-                            <span class="error-icon">⚠️</span>
-                            <span class="error-title">라인 ${record.lineNumber} 파싱 실패</span>
-                        </div>
-                        <div class="error-body">
-                            <p class="error-message">${record.message}</p>
-                            <pre class="error-data">${record.lineData}</pre>
-                            <div class="error-info">
-                                <small>데이터 길이: ${record.lineData.length} bytes</small>
-                            </div>
-                        </div>
-                    `;
-                    fragment.appendChild(errorCard);
+                    errorCards.push(record);
                     return;
                 }
                 
-                // 정상 레코드 처리 (기존 로직)
+                // 정상 레코드: recordIndex로 그룹화, 필드 배열 수집
                 const idx = record.recordIndex;
                 if (!recordMap.has(idx)) {
-                    recordMap.set(idx, record);
+                    // 레코드 초기화 (필드 배열 포함)
+                    recordMap.set(idx, {
+                        recordIndex: record.recordIndex,
+                        lineNumber: record.lineNumber,
+                        structName: record.structName,
+                        kubun: record.kubun,
+                        fields: []  // 필드 배열 초기화
+                    });
                 }
+                
+                // 필드 추가
+                recordMap.get(idx).fields.push({
+                    fieldName: record.fieldName,
+                    fieldSize: record.fieldSize,
+                    value: record.value,
+                    startPos: record.startPos,
+                    endPos: record.endPos
+                });
+            });
+            
+            // 에러 카드 먼저 표시 (순서 보장)
+            errorCards.forEach(function(errorRecord) {
+                const errorCard = document.createElement('div');
+                errorCard.className = 'error-record-card';
+                errorCard.innerHTML = `
+                    <div class="error-header">
+                        <span class="error-icon">⚠️</span>
+                        <span class="error-title">라인 ${errorRecord.lineNumber} 파싱 실패</span>
+                    </div>
+                    <div class="error-body">
+                        <p class="error-message">${errorRecord.message}</p>
+                        <pre class="error-data">${escapeHtml(errorRecord.lineData)}</pre>
+                        <div class="error-info">
+                            <small>데이터 길이: ${errorRecord.lineData.length} bytes</small>
+                        </div>
+                    </div>
+                `;
+                fragment.appendChild(errorCard);
             });
 
             // 4. 각 레코드마다 테이블 생성
@@ -3217,18 +3405,34 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     record.fields.forEach(function(field) {
                         const tr = document.createElement('tr');
 
+                        /**
+                         * 필드 값 표시 처리
+                         * - CRLF 필드: 특수문자를 이스케이프하여 "\r\n" 형태로 표시
+                         * - 일반 필드: 그대로 표시
+                         */
+                        const isCRLFField = field.fieldName && 
+                            field.fieldName.toLowerCase().match(/crlf|cr_lf|newline/);
+                        
+                        // 값 포맷팅: 특수문자 이스케이프 (가시성 향상)
+                        const formattedValue = formatFieldValue(field.value, isCRLFField);
+
                         const values = [
                             field.fieldName,   // 필드명
                             field.fieldSize,   // 크기
                             field.startPos,    // 시작
                             field.endPos,      // 종료
-                            field.value        // 값
+                            formattedValue     // 값 (포맷팅 적용)
                         ];
 
                         values.forEach(function(value, tdIndex) {
                             const td = document.createElement('td');
                             td.textContent = value;
 
+                            // CRLF 필드에 특별 스타일 적용 (마지막 컬럼)
+                            if (tdIndex === 4 && isCRLFField) {
+                                td.classList.add('crlf-value');
+                            }
+                            
                             // value가 공백만 있으면 class="empty-value" 추가 (마지막 컬럼)
                             if (tdIndex === 4 && typeof value === 'string' && value.trim() === '') {
                                 td.classList.add('empty-value');
@@ -3937,39 +4141,83 @@ T000000000200000000000000003000`;
                 alert('✓ 샘플 로드 완료\n\n개행문자 인식이 활성화되었습니다.\n각 레코드 끝에 자동으로 CRLF가 추가됩니다.');
             });
 
-            // 테스트 케이스 정의
+            /**
+             * =====================================================
+             * 테스트 케이스 정의
+             * =====================================================
+             * 
+             * [개행 인식 ON 모드 테스트]
+             * - normal: 정상 데이터 - 각 라인이 올바른 길이
+             * - short: 길이 부족 - 라인 길이가 구조체 정의보다 짧음
+             * - long: 길이 초과 - 라인 길이가 구조체 정의보다 김
+             * - mismatch: 매칭 실패 - 구분값에 해당하는 구조체 없음
+             * - mixed: 혼합 - 다양한 에러 상황 조합
+             * 
+             * [개행 인식 OFF 모드 테스트]
+             * - continuous: 연속 데이터 - 개행 없이 연속된 레코드
+             * - continuous_multi: 연속 다중 - 여러 타입 연속 레코드
+             * 
+             * 테스트 시 주의사항:
+             * - 개행 인식 ON: 각 줄 끝에 CRLF(2 bytes) 자동 추가
+             * - 개행 인식 OFF: 모든 줄바꿈 제거 후 연속 파싱
+             */
             const testCases = {
+                // ========== 개행 인식 ON 테스트 케이스 ==========
                 normal: {
-                    name: '정상 데이터',
+                    name: '정상 데이터 (개행 ON)',
+                    description: '각 라인 독립 파싱, CRLF 필드 정확히 표시, 길이 뱃지 녹색',
+                    mode: 'line-by-line',
                     data: `H881234567
 D123456789012345600000000000000001000
 D987654321098765400000000000000002000
 T000000000200000000000000003000`
                 },
                 short: {
-                    name: '길이 부족',
+                    name: '길이 부족 (개행 ON)',
+                    description: '경고 표시, 다음 라인 침범 안 함, 에러 카드 표시',
+                    mode: 'line-by-line',
                     data: `H88123
 D12345678901234560000000000000000100
 T00000000020000000000000000300`
                 },
                 long: {
-                    name: '길이 초과',
+                    name: '길이 초과 (개행 ON)',
+                    description: '길이 초과 경고 표시',
+                    mode: 'line-by-line',
                     data: `H88123456789999
 D123456789012345600000000000000001000`
                 },
                 mismatch: {
-                    name: '매칭 실패',
+                    name: '매칭 실패 (개행 ON)',
+                    description: '에러 카드로 표시, 다음 라인 정상 파싱',
+                    mode: 'line-by-line',
                     data: `X1234567890
 D123456789012345600000000000000001000`
                 },
                 mixed: {
-                    name: '혼합',
+                    name: '혼합 테스트 (개행 ON)',
+                    description: '정상/부족/초과/매칭실패 혼합',
+                    mode: 'line-by-line',
                     data: `H881234567
 D123456789012345600000000000000001000
 X9999999999
 D12345
 H88123456789999
 T000000000200000000000000003000`
+                },
+                
+                // ========== 개행 인식 OFF 테스트 케이스 ==========
+                continuous: {
+                    name: '연속 데이터 (개행 OFF)',
+                    description: '구분값으로 자동 분리, 줄바꿈 완전 무시',
+                    mode: 'continuous',
+                    data: `H881234567D123456789012345600000000000000001000D987654321098765400000000000000002000T000000000200000000000000003000`
+                },
+                continuous_multi: {
+                    name: '연속 다중 레코드 (개행 OFF)',
+                    description: 'H-D-D-T 순서 연속, 여러 레코드 파싱',
+                    mode: 'continuous',
+                    data: `H881234567D123456789012345600000000000000001000T0000000001000000000000000010H991234567D987654321098765400000000000000002000T0000000001000000000000000020`
                 }
             };
 
@@ -3996,7 +4244,12 @@ T000000000200000000000000003000`
                 }
             });
 
-            // 테스트 케이스 버튼 클릭 이벤트
+            /**
+             * 테스트 케이스 버튼 클릭 이벤트 핸들러
+             * - 테스트 케이스 mode에 따라 개행 인식 옵션 자동 설정
+             * - line-by-line: 개행 인식 ON (각 줄 독립 파싱)
+             * - continuous: 개행 인식 OFF (연속 데이터 파싱)
+             */
             testButtons.forEach(function(button) {
                 button.addEventListener('click', function() {
                     const caseType = this.getAttribute('data-case');
@@ -4004,8 +4257,11 @@ T000000000200000000000000003000`
                     
                     if (!testCase) return;
 
-                    // 1. recognize-crlf 체크박스 자동 체크
-                    document.getElementById('recognize-crlf').checked = true;
+                    // 1. 테스트 케이스 모드에 따라 개행 인식 체크박스 설정
+                    // line-by-line 모드 = 개행 인식 ON
+                    // continuous 모드 = 개행 인식 OFF
+                    const isLineByLineMode = testCase.mode === 'line-by-line';
+                    document.getElementById('recognize-crlf').checked = isLineByLineMode;
                     
                     // 2. 기존 모든 구조체 카드 삭제
                     structContainer.innerHTML = '';
@@ -4013,39 +4269,73 @@ T000000000200000000000000003000`
                     // 3. structCardIndex = 0 리셋
                     structCardIndex = 0;
 
-                    // 4. 구조체 3개 추가 (기본 구조체)
-                    const sampleStructs = [
-                        {
-                            name: 'DHF_H',
-                            kubun: 'H',
-                            definition: `typedef struct{
-  char record_kubun[1];
-  char bank_cd[2];
-  char cust_id[7];
-  char crlf[2];
+                    // 4. 구조체 정의 설정
+                    // 개행 인식 ON: CRLF 필드 포함
+                    // 개행 인식 OFF: CRLF 필드 제외 (연속 데이터이므로)
+                    const sampleStructs = isLineByLineMode 
+                        ? [
+                            // === 개행 인식 ON용 구조체 (CRLF 필드 포함) ===
+                            {
+                                name: 'DHF_H',
+                                kubun: 'H',
+                                definition: `typedef struct{
+  char record_kubun[1];  // 레코드 구분값 'H'
+  char bank_cd[2];       // 은행 코드
+  char cust_id[7];       // 고객 ID
+  char crlf[2];          // 개행문자 (CRLF)
 } DHF_H;`
-                        },
-                        {
-                            name: 'DHF_D',
-                            kubun: 'D',
-                            definition: `typedef struct{
-  char record_kubun[1];
-  char acno[16];
-  char amt[20];
-  char crlf[2];
+                            },
+                            {
+                                name: 'DHF_D',
+                                kubun: 'D',
+                                definition: `typedef struct{
+  char record_kubun[1];  // 레코드 구분값 'D'
+  char acno[16];         // 계좌번호
+  char amt[20];          // 금액
+  char crlf[2];          // 개행문자 (CRLF)
 } DHF_D;`
-                        },
-                        {
-                            name: 'DHF_T',
-                            kubun: 'T',
-                            definition: `typedef struct{
-  char record_kubun[1];
-  char tot_cnt[10];
-  char tot_amt[20];
-  char crlf[2];
+                            },
+                            {
+                                name: 'DHF_T',
+                                kubun: 'T',
+                                definition: `typedef struct{
+  char record_kubun[1];  // 레코드 구분값 'T'
+  char tot_cnt[10];      // 총 건수
+  char tot_amt[20];      // 총 금액
+  char crlf[2];          // 개행문자 (CRLF)
 } DHF_T;`
-                        }
-                    ];
+                            }
+                        ]
+                        : [
+                            // === 개행 인식 OFF용 구조체 (CRLF 필드 제외) ===
+                            {
+                                name: 'DHF_H',
+                                kubun: 'H',
+                                definition: `typedef struct{
+  char record_kubun[1];  // 레코드 구분값 'H'
+  char bank_cd[2];       // 은행 코드
+  char cust_id[7];       // 고객 ID
+} DHF_H;  // 총 10 bytes (개행 없음)`
+                            },
+                            {
+                                name: 'DHF_D',
+                                kubun: 'D',
+                                definition: `typedef struct{
+  char record_kubun[1];  // 레코드 구분값 'D'
+  char acno[16];         // 계좌번호
+  char amt[20];          // 금액
+} DHF_D;  // 총 37 bytes (개행 없음)`
+                            },
+                            {
+                                name: 'DHF_T',
+                                kubun: 'T',
+                                definition: `typedef struct{
+  char record_kubun[1];  // 레코드 구분값 'T'
+  char tot_cnt[10];      // 총 건수
+  char tot_amt[20];      // 총 금액
+} DHF_T;  // 총 31 bytes (개행 없음)`
+                            }
+                        ];
 
                     // 각 샘플 구조체마다 카드 생성
                     sampleStructs.forEach(function(sample) {
@@ -4065,8 +4355,15 @@ T000000000200000000000000003000`
                     // 6. 모달 닫기
                     testModal.classList.remove('show');
                     
-                    // 7. 완료 메시지 표시
-                    alert('✓ 테스트 케이스 로드 완료: ' + testCase.name + '\n\n개행문자 인식이 활성화되었습니다.');
+                    // 7. 완료 메시지 표시 (모드 정보 포함)
+                    const modeInfo = isLineByLineMode 
+                        ? '개행문자 인식이 활성화되었습니다.\n각 레코드 끝에 CRLF(2 bytes)가 있습니다.'
+                        : '개행문자 인식이 비활성화되었습니다.\n연속 데이터로 파싱됩니다.';
+                    
+                    alert('✓ 테스트 케이스 로드 완료\n\n' +
+                          '테스트: ' + testCase.name + '\n' +
+                          '설명: ' + (testCase.description || '') + '\n\n' +
+                          modeInfo);
                 });
             });
 
@@ -4567,9 +4864,24 @@ T000000000200000000000000003000`
                 }
             });
 
-            // =========================================
-            // 개행문자 인식 (CRLF) 체크박스 change 이벤트
-            // =========================================
+            /**
+             * =====================================================
+             * 개행문자 인식 (CRLF) 체크박스 변경 이벤트
+             * =====================================================
+             * 
+             * [옵션 전환 동작]
+             * - 체크(ON): 라인 기반 파싱 모드
+             *   → 각 줄을 독립 레코드로 처리
+             *   → CRLF(2 bytes)가 레코드 끝에 자동 추가
+             * 
+             * - 해제(OFF): 연속 데이터 파싱 모드
+             *   → 모든 줄바꿈 제거 후 연속 파싱
+             *   → 구분값 기반 레코드 분리
+             * 
+             * [사용자 확인]
+             * - 기존 데이터/결과가 있으면 재파싱 확인
+             * - 취소 시 체크 상태 롤백
+             */
             document.getElementById('recognize-crlf').addEventListener('change', function(e) {
                 const isChecked = e.target.checked;
                 const hasData = document.getElementById('struct-data').value.trim().length > 0;
