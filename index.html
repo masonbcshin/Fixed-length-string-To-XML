@@ -1473,6 +1473,74 @@
 
         /**
          * =====================================================
+         * 값 패딩 함수
+         * 값을 지정된 크기에 맞게 패딩 (공백으로 채움)
+         * =====================================================
+         * @param {string} value - 패딩할 값
+         * @param {number} size - 목표 크기
+         * @param {string} fieldName - 필드명 (로깅용)
+         * @returns {string} 패딩된 값
+         */
+        function padValue(value, size, fieldName) {
+            // 값이 없으면 공백으로 채움
+            if (value === null || value === undefined) {
+                value = '';
+            }
+            
+            // 문자열로 변환
+            value = String(value);
+            
+            // 값이 size보다 크면 자르고 경고
+            if (value.length > size) {
+                console.warn('padValue: 필드 "' + fieldName + '"의 값이 크기(' + size + ')를 초과합니다. 값을 자릅니다.');
+                return value.substring(0, size);
+            }
+            
+            // 값이 size보다 작으면 공백으로 패딩 (우측 패딩)
+            return value.padEnd(size, ' ');
+        }
+
+        /**
+         * =====================================================
+         * 통전문 생성 함수 (29단계)
+         * 필드 배열을 받아서 통전문 문자열 생성
+         * CRLF 필드는 개행 인식 옵션에 따라 자동 처리
+         * =====================================================
+         * @param {Array} fields - 필드 배열 [{name, value, size}, ...]
+         * @returns {string} 생성된 통전문 문자열
+         */
+        function generateTelegram(fields) {
+            // 개행문자 인식 옵션 확인
+            const recognizeCRLF = document.getElementById('recognize-crlf').checked;
+            
+            // 결과 통전문 문자열
+            let telegram = '';
+            
+            // 각 필드 처리
+            for (let i = 0; i < fields.length; i++) {
+                const field = fields[i];
+                
+                // CRLF 필드 여부 확인
+                if (field.name && field.name.toLowerCase().match(/crlf|cr_lf|newline/)) {
+                    // CRLF 필드 자동 처리
+                    if (recognizeCRLF) {
+                        telegram += '\r\n';  // 무조건 CRLF
+                    } else {
+                        // 개행 인식 비활성화 시에도 필드는 채워야 함
+                        telegram += '  ';    // 공백 2개
+                        console.warn('CRLF 필드를 공백으로 채웁니다 (개행 인식 비활성화됨)');
+                    }
+                } else {
+                    // 일반 필드 처리
+                    telegram += padValue(field.value, field.size, field.name);
+                }
+            }
+            
+            return telegram;
+        }
+
+        /**
+         * =====================================================
          * C 구조체 정의 파싱 함수
          * 구조체 정의 문자열을 파싱하여 구조체 배열로 변환
          * =====================================================
