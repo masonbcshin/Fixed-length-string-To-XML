@@ -2705,6 +2705,247 @@
         body.dark-mode .help-tip strong {
             color: #ffc107;
         }
+
+        /* =====================================================
+         * 전체 내보내기 모달 스타일
+         * ===================================================== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.2s;
+        }
+
+        .modal-container {
+            background: white;
+            width: 700px;
+            max-height: 90vh;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+        }
+
+        .modal-close-btn {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .modal-close-btn:hover {
+            opacity: 0.8;
+        }
+
+        .modal-body {
+            padding: 25px;
+            max-height: calc(90vh - 160px);
+            overflow-y: auto;
+        }
+
+        .modal-description {
+            color: #495057;
+            margin-bottom: 20px;
+        }
+
+        .export-format-select > label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .format-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .format-option {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .format-option:hover {
+            background: #e9ecef;
+        }
+
+        .format-option.selected {
+            background: #e7f3ff;
+            border-color: #007bff;
+        }
+
+        .format-option input[type="radio"] {
+            width: 20px;
+            height: 20px;
+        }
+
+        .option-text {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .option-text strong {
+            color: #495057;
+        }
+
+        .option-text small {
+            color: #6c757d;
+        }
+
+        .export-preview > label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        #export-preview-area {
+            width: 100%;
+            font-family: monospace;
+            font-size: 13px;
+            padding: 15px;
+            border: 2px solid #ced4da;
+            border-radius: 6px;
+            background: #f8f9fa;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+
+        .preview-stats {
+            margin-top: 10px;
+            color: #6c757d;
+            text-align: right;
+        }
+
+        .modal-footer {
+            background: #f8f9fa;
+            padding: 20px 25px;
+            display: flex;
+            gap: 12px;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .modal-footer button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .modal-footer .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .modal-footer .btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .modal-footer .btn-secondary {
+            background: #28a745;
+            color: white;
+        }
+
+        .modal-footer .btn-secondary:hover {
+            background: #1e7e34;
+        }
+
+        .modal-footer .btn-cancel {
+            background: #6c757d;
+            color: white;
+            flex: 0.5;
+        }
+
+        .modal-footer .btn-cancel:hover {
+            background: #545b62;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 다크모드 - 내보내기 모달 */
+        body.dark-mode .modal-container {
+            background: #2d2d2d;
+        }
+
+        body.dark-mode .modal-body {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .modal-description {
+            color: #b0b0b0;
+        }
+
+        body.dark-mode .format-option {
+            background: #3d3d3d;
+            border-color: #4d4d4d;
+        }
+
+        body.dark-mode .format-option:hover {
+            background: #4d4d4d;
+        }
+
+        body.dark-mode .format-option.selected {
+            background: #1a365d;
+            border-color: #4a90d9;
+        }
+
+        body.dark-mode .option-text strong {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .option-text small {
+            color: #a0a0a0;
+        }
+
+        body.dark-mode #export-preview-area {
+            background: #3d3d3d;
+            border-color: #4d4d4d;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .modal-footer {
+            background: #252525;
+            border-top-color: #4d4d4d;
+        }
+
+        body.dark-mode .preview-stats {
+            color: #a0a0a0;
+        }
     </style>
 </head>
 <body>
@@ -6680,13 +6921,7 @@ T000000000200000000000000003000`
                             showTemporaryMessage('내보낼 레코드가 없습니다.');
                             return;
                         }
-                        let allRecords = '';
-                        window.generatedRecords.forEach(function(r) {
-                            allRecords += r.telegram + '\n';
-                        });
-                        navigator.clipboard.writeText(allRecords.trim()).then(function() {
-                            showTemporaryMessage('전체 레코드가 클립보드에 복사되었습니다.');
-                        });
+                        showExportModal();
                     });
                     
                     // 전체 삭제 버튼 이벤트
@@ -6872,6 +7107,202 @@ T000000000200000000000000003000`
                 const numberSpan = card.querySelector('.record-number')
                 numberSpan.textContent = `#${index + 1}`
               })
+            }
+            
+            // =========================================
+            // 전체 내보내기 모달 관련 함수들
+            // =========================================
+            
+            /**
+             * 전체 내보내기 모달 표시
+             */
+            function showExportModal() {
+                const modal = document.createElement('div');
+                modal.className = 'modal-overlay';
+                modal.innerHTML = `
+                    <div class="modal-container">
+                        <div class="modal-header">
+                            <h3>💾 전체 내보내기</h3>
+                            <button class="modal-close-btn">✕</button>
+                        </div>
+                        
+                        <div class="modal-body">
+                            <p class="modal-description">
+                                총 <strong>${window.generatedRecords.length}개</strong>의 레코드를 내보냅니다
+                            </p>
+                            
+                            <div class="export-format-select">
+                                <label>내보내기 형식</label>
+                                <div class="format-options">
+                                    <label class="format-option selected">
+                                        <input type="radio" name="export-format" value="continuous" checked>
+                                        <span class="option-text">
+                                            <strong>연속 데이터</strong>
+                                            <small>모든 레코드를 줄바꿈 없이 연결</small>
+                                        </span>
+                                    </label>
+                                    
+                                    <label class="format-option">
+                                        <input type="radio" name="export-format" value="lines">
+                                        <span class="option-text">
+                                            <strong>줄바꿈 구분</strong>
+                                            <small>각 레코드를 줄바꿈으로 구분</small>
+                                        </span>
+                                    </label>
+                                    
+                                    <label class="format-option">
+                                        <input type="radio" name="export-format" value="hex">
+                                        <span class="option-text">
+                                            <strong>HEX 형식</strong>
+                                            <small>16진수로 변환하여 표시</small>
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="export-preview">
+                                <label>미리보기</label>
+                                <textarea id="export-preview-area" readonly rows="12"></textarea>
+                                <div class="preview-stats">
+                                    <span id="export-total-bytes">0 bytes</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="modal-footer">
+                            <button id="download-export-btn" class="btn-primary">
+                                ⬇️ 파일 다운로드
+                            </button>
+                            <button id="copy-export-btn" class="btn-secondary">
+                                📋 클립보드 복사
+                            </button>
+                            <button class="modal-close-btn btn-cancel">
+                                취소
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                // 포맷 옵션 선택 스타일 처리
+                modal.querySelectorAll('.format-option').forEach(option => {
+                    option.addEventListener('click', function() {
+                        modal.querySelectorAll('.format-option').forEach(opt => opt.classList.remove('selected'));
+                        this.classList.add('selected');
+                        this.querySelector('input[type="radio"]').checked = true;
+                        updateExportPreview();
+                    });
+                });
+                
+                // 포맷 변경 시 미리보기 업데이트
+                modal.querySelectorAll('input[name="export-format"]').forEach(radio => {
+                    radio.addEventListener('change', updateExportPreview);
+                });
+                
+                // 초기 미리보기
+                updateExportPreview();
+                
+                // 닫기 버튼들
+                modal.querySelectorAll('.modal-close-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        modal.remove();
+                    });
+                });
+                
+                // 오버레이 클릭으로 닫기
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        modal.remove();
+                    }
+                });
+                
+                // 다운로드
+                modal.querySelector('#download-export-btn').addEventListener('click', () => {
+                    const format = modal.querySelector('input[name="export-format"]:checked').value;
+                    const data = generateExportData(format);
+                    const filename = `telegrams_${new Date().getTime()}.txt`;
+                    downloadFile(data, filename);
+                });
+                
+                // 복사
+                modal.querySelector('#copy-export-btn').addEventListener('click', () => {
+                    const textarea = modal.querySelector('#export-preview-area');
+                    textarea.select();
+                    document.execCommand('copy');
+                    
+                    const btn = modal.querySelector('#copy-export-btn');
+                    const originalText = btn.textContent;
+                    btn.textContent = '✓ 복사됨';
+                    btn.style.backgroundColor = '#1e7e34';
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.style.backgroundColor = '';
+                    }, 2000);
+                });
+            }
+            
+            /**
+             * 내보내기 미리보기 업데이트
+             */
+            function updateExportPreview() {
+                const format = document.querySelector('input[name="export-format"]:checked').value;
+                const data = generateExportData(format);
+                
+                document.getElementById('export-preview-area').value = data;
+                document.getElementById('export-total-bytes').textContent = `${data.length} bytes`;
+            }
+            
+            /**
+             * 내보내기 데이터 생성
+             */
+            function generateExportData(format) {
+                const records = window.generatedRecords.slice().reverse(); // 원래 순서로
+                const telegrams = records.map(r => r.telegram);
+                
+                switch(format) {
+                    case 'continuous':
+                        return telegrams.join('');
+                        
+                    case 'lines':
+                        return telegrams.join('\n');
+                        
+                    case 'hex':
+                        return telegrams.map((t, i) => {
+                            const hex = toHexString(t);
+                            return `레코드 #${i+1}:\n${hex}`;
+                        }).join('\n\n');
+                        
+                    default:
+                        return telegrams.join('');
+                }
+            }
+            
+            /**
+             * 문자열을 HEX 문자열로 변환
+             */
+            function toHexString(str) {
+                return Array.from(str)
+                    .map((c, i) => {
+                        const hex = c.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase();
+                        return (i > 0 && i % 16 === 0) ? '\n' + hex : hex;
+                    })
+                    .join(' ');
+            }
+            
+            /**
+             * 파일 다운로드
+             */
+            function downloadFile(content, filename) {
+                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
             }
             
             /**
