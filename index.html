@@ -495,6 +495,80 @@
         }
 
         /* =====================================================
+         * 전문 생성 모드 스타일
+         * ===================================================== */
+        .generate-intro {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+
+        .generate-intro h4 {
+            margin: 0 0 8px 0;
+            font-size: 20px;
+        }
+
+        .generate-intro p {
+            margin: 0;
+            opacity: 0.95;
+            font-size: 14px;
+        }
+
+        .struct-selector {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 25px;
+            background: #f8f9fa;
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+
+        .struct-selector label {
+            font-weight: bold;
+            min-width: 140px;
+            color: #495057;
+        }
+
+        .form-select {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ced4da;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .form-select:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        .primary-btn {
+            padding: 10px 24px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .primary-btn:hover:not(:disabled) {
+            background: #0056b3;
+        }
+
+        .primary-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        /* =====================================================
          * 구조체 정의 영역
          * ===================================================== */
         #add-struct-btn {
@@ -1862,7 +1936,30 @@
 
         <!-- 생성 모드 컨텐츠 -->
         <div id="generate-mode-content" class="sub-mode-content">
-            <!-- 여기에 생성 UI 추가됨 -->
+          
+          <div class="generate-intro">
+            <h4>✏️ 전문 생성</h4>
+            <p>정의된 구조체를 선택하고 각 필드에 값을 입력하여 통전문을 생성합니다.</p>
+          </div>
+          
+          <div class="struct-selector">
+            <label for="generate-struct-select">생성할 구조체 선택</label>
+            <select id="generate-struct-select" class="form-select">
+              <option value="">구조체를 먼저 정의하세요</option>
+            </select>
+            <button id="load-generate-form-btn" class="primary-btn" disabled>
+              폼 불러오기
+            </button>
+          </div>
+          
+          <div id="generate-form-container" style="display: none;">
+            <!-- 입력 폼이 여기 동적 생성됨 -->
+          </div>
+          
+          <div id="generated-records-area">
+            <!-- 생성된 레코드 목록 -->
+          </div>
+          
         </div>
 
         <div id="struct-result-container"></div>
