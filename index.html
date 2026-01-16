@@ -703,6 +703,50 @@
             background: #e0e0e0;
         }
 
+        /* 파싱 설정 정보 스타일 */
+        .parse-settings-info {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .parse-settings-info h4 {
+            margin: 0 0 12px 0;
+            color: #495057;
+            font-size: 15px;
+        }
+
+        .setting-item {
+            display: flex;
+            margin-bottom: 8px;
+        }
+
+        .setting-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .setting-label {
+            font-weight: bold;
+            width: 150px;
+        }
+
+        .setting-value {
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+
+        .setting-value.enabled {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .setting-value.disabled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
         /* 파싱 통계 스타일 */
         .parse-stats {
             background: #e3f2fd;
@@ -948,6 +992,29 @@
 
         body.dark-mode .record-header h3 {
             color: #e0e0e0;
+        }
+
+        body.dark-mode .parse-settings-info {
+            background: #2d2d3d;
+            border-color: #4a4a5a;
+        }
+
+        body.dark-mode .parse-settings-info h4 {
+            color: #b0b0c0;
+        }
+
+        body.dark-mode .setting-label {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .setting-value.enabled {
+            background: #1e4620;
+            color: #a3d9a5;
+        }
+
+        body.dark-mode .setting-value.disabled {
+            background: #4a2020;
+            color: #f5c6cb;
         }
 
         body.dark-mode .parse-stats {
@@ -2086,8 +2153,25 @@
 
             const { records, stats } = parseResult;
 
+            // 파싱 설정 정보 가져오기
+            const recognizeCRLF = document.getElementById('recognize-crlf').checked;
+
             // DocumentFragment 생성 - DOM 조작 최적화
             const fragment = document.createDocumentFragment();
+
+            // 파싱 설정 정보 표시
+            const settingsDiv = document.createElement('div');
+            settingsDiv.className = 'parse-settings-info';
+            settingsDiv.innerHTML = `
+                <h4>⚙️ 파싱 설정</h4>
+                <div class="setting-item">
+                    <span class="setting-label">개행문자 인식:</span>
+                    <span class="setting-value ${recognizeCRLF ? 'enabled' : 'disabled'}">
+                        ${recognizeCRLF ? '✓ 활성 (각 레코드 +2 bytes)' : '✗ 비활성'}
+                    </span>
+                </div>
+            `;
+            fragment.appendChild(settingsDiv);
 
             // 2. 통계 정보 표시
             if (stats) {
