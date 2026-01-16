@@ -2777,7 +2777,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
          * @returns {string} 패딩된 값
          */
         function padValue(value, size, fieldName) {
-            // 값이 없으면 공백으로 채움
+            // 값이 없으면 빈 문자열로 설정
             if (value === null || value === undefined) {
                 value = '';
             }
@@ -2785,14 +2785,24 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
             // 문자열로 변환
             value = String(value);
             
-            // 값이 size보다 크면 자르고 경고
+            // 값이 크기보다 크면 자르기
             if (value.length > size) {
                 console.warn('padValue: 필드 "' + fieldName + '"의 값이 크기(' + size + ')를 초과합니다. 값을 자릅니다.');
                 return value.substring(0, size);
             }
             
-            // 값이 size보다 작으면 공백으로 패딩 (우측 패딩)
-            return value.padEnd(size, ' ');
+            // 값이 크기보다 작으면 패딩
+            if (value.length < size) {
+                // 숫자 필드: 좌측 0 패딩
+                if (isNumericField(fieldName)) {
+                    return value.padStart(size, '0');
+                }
+                // 문자 필드: 우측 공백 패딩
+                return value.padEnd(size, ' ');
+            }
+            
+            // 정확히 일치
+            return value;
         }
 
         /**
@@ -5842,6 +5852,64 @@ T000000000200000000000000003000`
                         }
                         
                         showTemporaryMessage('폼이 초기화되었습니다.');
+                    });
+                }
+                
+                // 실시간 입력 처리 (이벤트 위임)
+                const formContainer = document.getElementById('generate-form-container');
+                if (formContainer) {
+                    formContainer.addEventListener('input', function(e) {
+                        if (e.target.classList.contains('field-input') && !e.target.disabled) {
+                            const input = e.target;
+                            const fieldName = input.dataset.field;
+                            const fieldSize = parseInt(input.dataset.size);
+                            const value = input.value;
+                            
+                            // 1. 글자 수 카운터 업데이트
+                            const row = input.closest('tr');
+                            const currentLength = row.querySelector('.current-length');
+                            
+                            if (currentLength) {
+                                currentLength.textContent = value.length;
+                                
+                                // 색상 변경
+                                if (value.length > fieldSize) {
+                                    currentLength.style.color = '#dc3545';
+                                    input.style.borderColor = '#dc3545';
+                                    input.style.backgroundColor = '#fff5f5';
+                                } else if (value.length === fieldSize) {
+                                    currentLength.style.color = '#28a745';
+                                    input.style.borderColor = '#28a745';
+                                    input.style.backgroundColor = '#f0fff4';
+                                } else {
+                                    currentLength.style.color = '#6c757d';
+                                    input.style.borderColor = '#ced4da';
+                                    input.style.backgroundColor = '#fff';
+                                }
+                            }
+                            
+                            // 2. 숫자 필드 검증
+                            if (isNumericField(fieldName)) {
+                                if (value && !/^[0-9]*$/.test(value)) {
+                                    input.setCustomValidity('숫자만 입력 가능합니다');
+                                    input.style.borderColor = '#ffc107';
+                                } else {
+                                    input.setCustomValidity('');
+                                }
+                            }
+                            
+                            // 3. 패딩 미리보기
+                            const paddedValue = padValue(value, fieldSize, fieldName);
+                            const previewCell = row.querySelector('.preview-text');
+                            if (previewCell) {
+                                previewCell.textContent = paddedValue;
+                            }
+                            
+                            // 4. 길이 초과 시 경고 표시 (자동 자르기 대신)
+                            // if (value.length > fieldSize) {
+                            //     input.value = value.substring(0, fieldSize);
+                            // }
+                        }
                     });
                 }
             }
