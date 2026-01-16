@@ -6926,10 +6926,29 @@ T000000000200000000000000003000`
                     
                     // 전체 삭제 버튼 이벤트
                     document.getElementById('clear-all-records-btn').addEventListener('click', function() {
-                        if (confirm('모든 생성된 레코드를 삭제하시겠습니까?')) {
-                            container.innerHTML = '';
-                            window.generatedRecords = [];
-                            showTemporaryMessage('모든 레코드가 삭제되었습니다.');
+                        const count = window.generatedRecords?.length || 0;
+                        
+                        if (count === 0) {
+                            alert('삭제할 레코드가 없습니다');
+                            return;
+                        }
+                        
+                        if (confirm(`${count}개의 레코드를 모두 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
+                            // 애니메이션과 함께 삭제
+                            const recordItems = document.querySelectorAll('.record-item');
+                            
+                            recordItems.forEach((item, index) => {
+                                setTimeout(() => {
+                                    item.style.opacity = '0';
+                                    item.style.transform = 'translateX(-100%)';
+                                }, index * 50);
+                            });
+                            
+                            setTimeout(() => {
+                                document.getElementById('generated-records-area').innerHTML = '';
+                                window.generatedRecords = [];
+                                showTemporaryMessage('✓ 모든 레코드가 삭제되었습니다');
+                            }, recordItems.length * 50 + 300);
                         }
                     });
                 }
