@@ -1708,6 +1708,10 @@
                         <input type="checkbox" id="recognize-crlf">
                         개행문자 인식 (CRLF)
                     </label>
+                    <label class="option-checkbox">
+                        <input type="checkbox" id="debug-mode">
+                        🔍 디버그 모드
+                    </label>
                     <button id="add-struct-btn">+ 구조체 추가 <span class="shortcut-hint">(Ctrl+N)</span></button>
                 </div>
             </div>
@@ -2564,6 +2568,8 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
          * @returns {Object} { records: [...], stats: {...} } 형식의 파싱 결과
          */
         function parseLineByLine(dataText, structDefs) {
+            const isDebugMode = document.getElementById('debug-mode')?.checked;
+            
             // 1. 이스케이프 처리
             let processedText = dataText
                 .replace(/\\r\\n/g, '\r\n')
@@ -2576,6 +2582,25 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 .filter(line => line.length > 0);  // 빈 줄 제거
 
             console.log(`라인 기반 파싱: 총 ${lines.length}개 라인`);
+            
+            // 디버그 모드: 초기 정보 로깅
+            if (isDebugMode) {
+                console.group('🔍 파싱 디버그 - Line By Line 모드');
+                console.log('📋 모드:', 'line-by-line');
+                console.log('📊 전체 라인 수:', lines.length);
+                console.log('📐 정의된 구조체:', structDefs.map(s => `${s.name}(구분값:${s.kubun})`).join(', '));
+                console.log('---');
+                
+                lines.forEach((line, i) => {
+                    console.log(`📝 라인 ${i+1}:`, {
+                        length: line.length,
+                        kubun: line[0] || '(없음)',
+                        preview: line.substring(0, 30) + (line.length > 30 ? '...' : ''),
+                        hex: Array.from(line.substring(0, 10)).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ')
+                    });
+                });
+                console.log('---');
+            }
 
             // 3. 변수 초기화
             const records = [];
@@ -2594,6 +2619,12 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 if (!matched) {
                     console.warn(`라인 ${lineIndex + 1}: 매칭 실패 - "${line.substring(0, 20)}..."`);
                     errorLines++;
+                    
+                    // 디버그: 매칭 실패 상세 정보
+                    if (isDebugMode) {
+                        console.warn(`  ❌ 구분값 '${line[0]}'에 해당하는 구조체 없음`);
+                        console.warn(`  📋 등록된 구분값들:`, structDefs.map(s => s.kubun));
+                    }
 
                     // 에러 레코드 추가
                     records.push({
@@ -2605,9 +2636,23 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     return;  // 다음 라인으로
                 }
 
+                // 디버그: 매칭된 구조체 정보
+                if (isDebugMode) {
+                    console.group(`✅ 라인 ${lineIndex + 1} → ${matched.name}`);
+                    console.log('📌 구분값:', matched.kubun);
+                    console.log('📏 필드 수:', matched.fields.length);
+                }
+
                 // 길이 검증
                 const expectedSize = matched.totalSize;
                 const actualSize = line.length + 2;  // CRLF 포함
+
+                // 디버그: 길이 비교
+                if (isDebugMode) {
+                    const lengthStatus = actualSize === expectedSize ? '✅ 일치' : 
+                                        actualSize < expectedSize ? '⚠️ 부족' : '⚠️ 초과';
+                    console.log(`📐 길이 비교: 예상=${expectedSize}, 실제=${actualSize} ${lengthStatus}`);
+                }
 
                 if (actualSize < expectedSize) {
                     console.warn(
@@ -2626,10 +2671,23 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
                 // 필드별 파싱
                 let fieldOffset = 0;
+                
+                // 디버그: 필드 파싱 시작
+                if (isDebugMode) {
+                    console.log('📋 필드별 추출:');
+                }
+                
                 matched.fields.forEach(field => {
                     const startPos = fieldOffset;
                     const endPos = startPos + field.size;
                     const value = lineWithCRLF.substring(startPos, endPos);
+                    
+                    // 디버그: 각 필드 값 로깅
+                    if (isDebugMode) {
+                        const hexValue = Array.from(value).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
+                        const displayValue = value.replace(/\r/g, '\\r').replace(/\n/g, '\\n');
+                        console.log(`  📍 ${field.name}[${field.size}]: "${displayValue}" | HEX: ${hexValue}`);
+                    }
 
                     records.push({
                         recordIndex,
@@ -2645,6 +2703,11 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
                     fieldOffset += field.size;
                 });
+                
+                // 디버그: 그룹 종료
+                if (isDebugMode) {
+                    console.groupEnd();
+                }
 
                 parsedBytes += Math.min(actualSize, expectedSize);
                 recordIndex++;
@@ -2658,6 +2721,19 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 errorLines,
                 mode: 'line-by-line'
             };
+            
+            // 디버그: 최종 통계 로깅
+            if (isDebugMode) {
+                console.log('---');
+                console.log('📊 파싱 완료 통계:', {
+                    모드: stats.mode,
+                    전체바이트: stats.totalBytes,
+                    파싱바이트: stats.parsedBytes,
+                    레코드수: stats.recordCount,
+                    에러라인: stats.errorLines
+                });
+                console.groupEnd();
+            }
 
             // 6. 반환
             return { records, stats };
@@ -2673,9 +2749,22 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
          * @returns {Object} { records: [...], stats: {...} } 형식의 파싱 결과
          */
         function parseContinuous(dataText, structDefs) {
+            const isDebugMode = document.getElementById('debug-mode')?.checked;
+            
             // 1. 전처리: 모든 개행 제거
             const processedData = dataText.replace(/[\r\n]/g, '');
             console.log(`연속 파싱: 총 ${processedData.length} bytes`);
+            
+            // 디버그 모드: 초기 정보 로깅
+            if (isDebugMode) {
+                console.group('🔍 파싱 디버그 - Continuous 모드');
+                console.log('📋 모드:', 'continuous');
+                console.log('📊 전체 데이터 길이:', processedData.length, 'bytes');
+                console.log('📐 정의된 구조체:', structDefs.map(s => `${s.name}(구분값:${s.kubun}, 크기:${s.totalSize})`).join(', '));
+                console.log('📝 데이터 미리보기:', processedData.substring(0, 50) + (processedData.length > 50 ? '...' : ''));
+                console.log('📝 HEX 미리보기:', Array.from(processedData.substring(0, 20)).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' '));
+                console.log('---');
+            }
 
             // 2. 변수 초기화
             const records = [];
@@ -2691,9 +2780,26 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 const matched = findStructByKubun(remainingData, structDefs);
 
                 if (!matched) {
+                    // 디버그: 매칭 실패 정보
+                    if (isDebugMode && errorBytes < 10) { // 너무 많은 로그 방지
+                        console.warn(`  ❌ 위치 ${currentPos}: 구분값 '${remainingData[0]}'에 매칭 실패, 1바이트 스킵`);
+                    }
                     errorBytes++;
                     currentPos++;
                     continue;
+                }
+                
+                // 디버그: 매칭된 구조체 정보
+                if (isDebugMode) {
+                    console.group(`✅ 레코드 ${recordIndex + 1} (위치: ${currentPos}) → ${matched.name}`);
+                    console.log('📌 구분값:', matched.kubun);
+                    console.log('📏 구조체 크기:', matched.totalSize, 'bytes');
+                    
+                    // 길이 비교
+                    const remainingLength = processedData.length - currentPos;
+                    const lengthStatus = remainingLength >= matched.totalSize ? '✅ 충분' : '⚠️ 부족';
+                    console.log(`📐 길이 비교: 필요=${matched.totalSize}, 남은 데이터=${remainingLength} ${lengthStatus}`);
+                    console.log('📋 필드별 추출:');
                 }
 
                 // 필드 파싱
@@ -2702,6 +2808,13 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     const startPos = currentPos + fieldOffset;
                     const endPos = startPos + field.size;
                     const value = processedData.substring(startPos, endPos);
+                    
+                    // 디버그: 각 필드 값 로깅
+                    if (isDebugMode) {
+                        const hexValue = Array.from(value).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
+                        const displayValue = value.replace(/\r/g, '\\r').replace(/\n/g, '\\n');
+                        console.log(`  📍 ${field.name}[${field.size}]: "${displayValue}" | HEX: ${hexValue}`);
+                    }
 
                     records.push({
                         recordIndex,
@@ -2716,6 +2829,11 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
                     fieldOffset += field.size;
                 });
+                
+                // 디버그: 그룹 종료
+                if (isDebugMode) {
+                    console.groupEnd();
+                }
 
                 currentPos += matched.totalSize;
                 recordIndex++;
@@ -2729,6 +2847,22 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 errorBytes,
                 mode: 'continuous'
             };
+            
+            // 디버그: 최종 통계 로깅
+            if (isDebugMode) {
+                console.log('---');
+                console.log('📊 파싱 완료 통계:', {
+                    모드: stats.mode,
+                    전체바이트: stats.totalBytes,
+                    파싱바이트: stats.parsedBytes,
+                    레코드수: stats.recordCount,
+                    에러바이트: stats.errorBytes
+                });
+                if (errorBytes > 0) {
+                    console.warn(`⚠️ ${errorBytes}바이트가 매칭되지 않았습니다.`);
+                }
+                console.groupEnd();
+            }
 
             // 5. 반환
             return { records, stats };
