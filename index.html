@@ -6780,84 +6780,98 @@ T000000000200000000000000003000`
                     window.generatedRecords = [];
                 }
                 window.generatedRecords.unshift(record);
-                
-                // 버튼 이벤트 바인딩
-                bindRecordCardEvents(recordCard, record);
             }
             
-            /**
-             * 레코드 카드 이벤트 바인딩
-             */
-            function bindRecordCardEvents(card, record) {
-                // 복사 버튼
-                card.querySelector('.copy-record-btn').addEventListener('click', function() {
-                    navigator.clipboard.writeText(record.telegram).then(function() {
-                        showTemporaryMessage('레코드가 복사되었습니다.');
-                    });
-                });
+            // =========================================
+            // 레코드 카드 이벤트 (이벤트 위임)
+            // =========================================
+            document.addEventListener('click', function(e) {
+              
+              // 복사 버튼
+              if (e.target.classList.contains('copy-record-btn')) {
+                const recordId = parseInt(e.target.dataset.id)
+                const record = window.generatedRecords.find(r => r.id === recordId)
                 
-                // 상세보기 버튼
-                card.querySelector('.view-detail-btn').addEventListener('click', function() {
-                    const detail = card.querySelector('.record-detail');
-                    if (detail.style.display === 'none') {
-                        detail.style.display = 'block';
-                        this.textContent = '🔼';
-                        this.title = '접기';
-                    } else {
-                        detail.style.display = 'none';
-                        this.textContent = '👁️';
-                        this.title = '상세보기';
-                    }
-                });
-                
-                // 삭제 버튼
-                card.querySelector('.delete-record-btn').addEventListener('click', function() {
-                    const recordId = card.dataset.id;
-                    card.remove();
+                if (record) {
+                  navigator.clipboard.writeText(record.telegram).then(() => {
+                    const originalText = e.target.textContent
+                    e.target.textContent = '✓'
+                    e.target.style.backgroundColor = 'rgba(40,167,69,0.3)'
                     
-                    // 전역 저장소에서 삭제
-                    if (window.generatedRecords) {
-                        window.generatedRecords = window.generatedRecords.filter(r => r.id !== recordId);
+                    setTimeout(() => {
+                      e.target.textContent = originalText
+                      e.target.style.backgroundColor = ''
+                    }, 2000)
+                  }).catch(err => {
+                    alert('복사 실패: ' + err.message)
+                  })
+                }
+              }
+              
+              // 상세보기 토글
+              if (e.target.classList.contains('view-detail-btn')) {
+                const recordId = e.target.dataset.id
+                const recordCard = document.querySelector(`.record-item[data-id="${recordId}"]`)
+                const detailDiv = recordCard.querySelector('.record-detail')
+                
+                if (detailDiv.style.display === 'none') {
+                  detailDiv.style.display = 'block'
+                  e.target.textContent = '🔼'
+                  e.target.title = '상세닫기'
+                } else {
+                  detailDiv.style.display = 'none'
+                  e.target.textContent = '👁️'
+                  e.target.title = '상세보기'
+                }
+              }
+              
+              // 삭제 버튼
+              if (e.target.classList.contains('delete-record-btn')) {
+                const recordId = parseInt(e.target.dataset.id)
+                
+                if (confirm('이 레코드를 삭제하시겠습니까?')) {
+                  // DOM에서 제거
+                  const recordCard = document.querySelector(`.record-item[data-id="${recordId}"]`)
+                  recordCard.style.opacity = '0'
+                  recordCard.style.transform = 'translateX(-100%)'
+                  
+                  setTimeout(() => {
+                    recordCard.remove()
+                    
+                    // 배열에서 제거
+                    const index = window.generatedRecords.findIndex(r => r.id === recordId)
+                    if (index > -1) {
+                      window.generatedRecords.splice(index, 1)
                     }
                     
                     // 카운트 업데이트
-                    updateRecordCount();
+                    updateRecordCount()
                     
-                    // 레코드가 모두 삭제되면 컨테이너 초기화
-                    const container = document.getElementById('generated-records-area');
-                    if (container.querySelectorAll('.record-item').length === 0) {
-                        container.innerHTML = '';
+                    // 번호 재정렬
+                    reindexRecords()
+                    
+                    // 목록이 비었으면 헤더도 제거
+                    if (window.generatedRecords.length === 0) {
+                      document.getElementById('generated-records-area').innerHTML = ''
                     }
-                    
-                    // 레코드 번호 재정렬
-                    updateRecordNumbers();
-                    
-                    showTemporaryMessage('레코드가 삭제되었습니다.');
-                });
-            }
-            
-            /**
-             * 레코드 카운트 업데이트
-             */
-            function updateRecordCount() {
-                const badge = document.querySelector('.record-count-badge');
-                if (badge) {
-                    const count = document.querySelectorAll('#records-list .record-item').length;
-                    badge.textContent = count + '개';
+                  }, 300)
                 }
-            }
+              }
+            })
             
-            /**
-             * 레코드 번호 업데이트
-             */
-            function updateRecordNumbers() {
-                const records = document.querySelectorAll('.record-item');
-                records.forEach(function(item, idx) {
-                    const numSpan = item.querySelector('.record-number');
-                    if (numSpan) {
-                        numSpan.textContent = '#' + (idx + 1);
-                    }
-                });
+            function updateRecordCount() {
+              const badge = document.querySelector('.record-count-badge')
+              if (badge) {
+                const count = document.querySelectorAll('.record-item').length
+                badge.textContent = `${count}개`
+              }
+            }
+
+            function reindexRecords() {
+              document.querySelectorAll('.record-item').forEach((card, index) => {
+                const numberSpan = card.querySelector('.record-number')
+                numberSpan.textContent = `#${index + 1}`
+              })
             }
             
             /**
