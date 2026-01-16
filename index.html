@@ -786,6 +786,54 @@
             color: #333;
         }
 
+        /* 에러 레코드 카드 스타일 */
+        .error-record-card {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .error-record-card .error-header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            align-items: center;
+        }
+
+        .error-record-card .error-icon {
+            font-size: 24px;
+        }
+
+        .error-record-card .error-title {
+            color: #856404;
+            font-size: 16px;
+        }
+
+        .error-record-card .error-body .error-message {
+            color: #856404;
+            margin: 0 0 10px 0;
+        }
+
+        .error-record-card .error-data {
+            background: #fff;
+            padding: 10px;
+            border: 1px solid #ffc107;
+            font-family: monospace;
+            overflow-x: auto;
+            border-radius: 4px;
+            margin: 0 0 10px 0;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .error-record-card .error-info {
+            color: #856404;
+            font-size: 12px;
+        }
+
         /* 레코드 헤더 스타일 */
         .record-header {
             display: flex;
@@ -1080,6 +1128,30 @@
         body.dark-mode .stats-grid > div {
             background: #1a1a2e;
             color: #e0e0e0;
+        }
+
+        /* 다크모드 에러 레코드 카드 스타일 */
+        body.dark-mode .error-record-card {
+            background: #3d3520;
+            border-color: #a68307;
+        }
+
+        body.dark-mode .error-record-card .error-title {
+            color: #ffc107;
+        }
+
+        body.dark-mode .error-record-card .error-body .error-message {
+            color: #ffd54f;
+        }
+
+        body.dark-mode .error-record-card .error-data {
+            background: #2a2a3e;
+            border-color: #a68307;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .error-record-card .error-info {
+            color: #ffd54f;
         }
 
         body.dark-mode .error-message {
@@ -2658,9 +2730,31 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 return;
             }
 
-            // 3. 레코드별 그룹화 (recordIndex 기준)
+            // 3. 레코드별 그룹화 (recordIndex 기준) - 에러 레코드 별도 처리
             const recordMap = new Map();
             records.forEach(function(record) {
+                if (record.error) {
+                    // 에러 카드 표시
+                    const errorCard = document.createElement('div');
+                    errorCard.className = 'error-record-card';
+                    errorCard.innerHTML = `
+                        <div class="error-header">
+                            <span class="error-icon">⚠️</span>
+                            <span class="error-title">라인 ${record.lineNumber} 파싱 실패</span>
+                        </div>
+                        <div class="error-body">
+                            <p class="error-message">${record.message}</p>
+                            <pre class="error-data">${record.lineData}</pre>
+                            <div class="error-info">
+                                <small>데이터 길이: ${record.lineData.length} bytes</small>
+                            </div>
+                        </div>
+                    `;
+                    fragment.appendChild(errorCard);
+                    return;
+                }
+                
+                // 정상 레코드 처리 (기존 로직)
                 const idx = record.recordIndex;
                 if (!recordMap.has(idx)) {
                     recordMap.set(idx, record);
