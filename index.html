@@ -1194,6 +1194,170 @@
                 transform: translateX(0);
             }
         }
+
+        /* =====================================================
+         * 도움말 아이콘 및 모달 스타일
+         * ===================================================== */
+        .help-icon {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 14px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+        }
+
+        .help-icon:hover {
+            background: #138496;
+        }
+
+        .help-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 10000;
+        }
+
+        .help-modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .help-modal .help-content {
+            background: white;
+            width: 600px;
+            max-width: 90%;
+            max-height: 80vh;
+            padding: 30px;
+            border-radius: 8px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .help-modal .help-content h3 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .help-modal .help-content h4 {
+            margin-top: 15px;
+            margin-bottom: 10px;
+            color: #444;
+        }
+
+        .help-modal .close-help {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .help-modal .close-help:hover {
+            background: #5a6268;
+        }
+
+        .help-section {
+            margin-bottom: 20px;
+        }
+
+        .help-section ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .help-section li {
+            margin-bottom: 5px;
+            line-height: 1.5;
+        }
+
+        .help-section code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .help-example {
+            background: #f8f9fa;
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            margin-top: 10px;
+            overflow-x: auto;
+        }
+
+        .help-tip {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            margin-top: 20px;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .help-tip strong {
+            color: #856404;
+        }
+
+        /* 다크모드 - 도움말 모달 */
+        body.dark-mode .help-modal .help-content {
+            background: #2d2d2d;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .help-modal .help-content h3,
+        body.dark-mode .help-modal .help-content h4 {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .help-section code {
+            background: #3d3d3d;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .help-example {
+            background: #1e1e1e;
+            border-color: #444;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .help-tip {
+            background: #3d3520;
+            border-left-color: #ffc107;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .help-tip strong {
+            color: #ffc107;
+        }
     </style>
 </head>
 <body>
@@ -1269,7 +1433,10 @@
 
         <div id="struct-input-section">
             <div class="section-header">
-                <h3>C 구조체 정의</h3>
+                <h3>
+                    C 구조체 정의
+                    <button class="help-icon" id="crlf-help">❓</button>
+                </h3>
                 <div class="header-options">
                     <label class="option-checkbox">
                         <input type="checkbox" id="recognize-crlf">
@@ -1300,6 +1467,44 @@
         </div>
 
         <div id="struct-result-container"></div>
+
+        <!-- 개행문자 인식 도움말 모달 -->
+        <div class="help-modal" id="crlf-help-modal">
+            <div class="help-content">
+                <button class="close-help">✕</button>
+                <h3>💡 개행문자 인식 옵션 설명</h3>
+                
+                <div class="help-section">
+                    <h4>✓ 체크 시 (권장)</h4>
+                    <ul>
+                        <li>C 구조체에 <code>crlf[2]</code> 필드가 있는 경우 사용</li>
+                        <li>각 레코드 끝에 자동으로 <code>\r\n</code> (2 bytes) 추가</li>
+                        <li>textarea에 줄바꿈으로 레코드 구분</li>
+                    </ul>
+                    
+                    <pre class="help-example">예시:
+H881234567
+D123456789012345600000000000000001000
+       ↓
+H881234567\r\n  (12 bytes)
+D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
+                </div>
+                
+                <div class="help-section">
+                    <h4>✗ 체크 해제 시</h4>
+                    <ul>
+                        <li>구조체에 CRLF 필드가 없는 경우</li>
+                        <li>모든 줄바꿈 제거 후 연속 데이터로 처리</li>
+                        <li>구분값으로 레코드 자동 인식</li>
+                    </ul>
+                </div>
+                
+                <div class="help-tip">
+                    <strong>💡 팁:</strong> 일반적인 전문 파일은 개행문자를 포함합니다.
+                    확실하지 않다면 체크 상태로 두세요.
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -3694,6 +3899,39 @@ T000000000200000000000000003000`;
                     }, 300);
                 }, 3000);
             }
+
+            // =========================================
+            // 도움말 모달 이벤트 핸들러
+            // =========================================
+            const crlfHelpBtn = document.getElementById('crlf-help');
+            const crlfHelpModal = document.getElementById('crlf-help-modal');
+            const closeHelpBtn = crlfHelpModal.querySelector('.close-help');
+
+            // 도움말 아이콘 클릭 시 모달 표시
+            crlfHelpBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                crlfHelpModal.classList.add('show');
+            });
+
+            // 닫기 버튼 클릭 시 모달 닫기
+            closeHelpBtn.addEventListener('click', function() {
+                crlfHelpModal.classList.remove('show');
+            });
+
+            // 모달 배경 클릭 시 닫기
+            crlfHelpModal.addEventListener('click', function(e) {
+                if (e.target === crlfHelpModal) {
+                    crlfHelpModal.classList.remove('show');
+                }
+            });
+
+            // ESC 키로 모달 닫기
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && crlfHelpModal.classList.contains('show')) {
+                    crlfHelpModal.classList.remove('show');
+                }
+            });
         });
     </script>
 </body>
