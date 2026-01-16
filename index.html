@@ -1062,7 +1062,7 @@
         }
 
         .preview-error h5 {
-            margin: 0 0 10px 0;
+            margin: 0 0 12px 0;
             color: #721c24;
         }
 
@@ -1107,47 +1107,42 @@
         }
 
         .telegram-display {
-            font-family: 'Consolas', 'Monaco', monospace;
+            font-family: 'Courier New', monospace;
             font-size: 14px;
             background: white;
             padding: 15px;
-            border-radius: 4px;
-            border: 1px solid #ced4da;
-            word-break: break-all;
-            white-space: pre-wrap;
+            border-radius: 6px;
+            border: 2px solid #0c5460;
+            white-space: pre;
             margin: 0;
-            max-height: 300px;
-            overflow-y: auto;
+            overflow-x: auto;
         }
 
         .preview-info {
+            background: #bee5eb;
             padding: 15px 20px;
-            background: rgba(255, 255, 255, 0.5);
-            border-top: 1px solid #bee5eb;
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
         }
 
         .preview-info .info-item {
-            display: inline-block;
-            margin-right: 25px;
-            margin-bottom: 5px;
+            display: flex;
+            gap: 8px;
         }
 
         .preview-info .info-label {
             font-weight: bold;
             color: #0c5460;
-            margin-right: 5px;
         }
 
         .preview-info .info-value {
-            color: #155724;
+            color: #0c5460;
         }
 
         .preview-info .hex-value {
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 12px;
-            background: #e2e3e5;
-            padding: 2px 6px;
-            border-radius: 3px;
+            font-family: monospace;
+            font-size: 13px;
         }
 
         /* =====================================================
