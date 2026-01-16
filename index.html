@@ -1021,11 +1021,8 @@
         }
 
         .preview-box {
-            margin: 20px;
-            padding: 20px;
-            background: #f8f9fa;
-            border: 2px solid #dee2e6;
-            border-radius: 8px;
+            margin-top: 20px;
+            border-top: 3px solid #17a2b8;
         }
 
         .preview-box h5 {
@@ -1048,6 +1045,109 @@
             margin-top: 10px;
             font-size: 13px;
             color: #6c757d;
+        }
+
+        .preview-success {
+            background: #d1ecf1;
+            border: 2px solid #17a2b8;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .preview-error {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .preview-error h5 {
+            margin: 0 0 10px 0;
+            color: #721c24;
+        }
+
+        .preview-error ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #721c24;
+        }
+
+        .preview-header {
+            background: #17a2b8;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preview-header h5 {
+            margin: 0;
+            color: white;
+        }
+
+        .copy-preview-btn {
+            background: white;
+            color: #17a2b8;
+            padding: 6px 14px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .copy-preview-btn:hover {
+            background: #f8f9fa;
+            transform: translateY(-1px);
+        }
+
+        .preview-content {
+            padding: 20px;
+        }
+
+        .telegram-display {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #ced4da;
+            word-break: break-all;
+            white-space: pre-wrap;
+            margin: 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .preview-info {
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.5);
+            border-top: 1px solid #bee5eb;
+        }
+
+        .preview-info .info-item {
+            display: inline-block;
+            margin-right: 25px;
+            margin-bottom: 5px;
+        }
+
+        .preview-info .info-label {
+            font-weight: bold;
+            color: #0c5460;
+            margin-right: 5px;
+        }
+
+        .preview-info .info-value {
+            color: #155724;
+        }
+
+        .preview-info .hex-value {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            background: #e2e3e5;
+            padding: 2px 6px;
+            border-radius: 3px;
         }
 
         /* =====================================================
@@ -3815,6 +3915,43 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
         /**
          * =====================================================
+         * escapeForDisplay(str)
+         * =====================================================
+         * 문자열의 특수문자를 표시용 이스케이프 시퀀스로 변환
+         * 
+         * @param {string} str - 변환할 문자열
+         * @returns {string} 이스케이프된 문자열
+         */
+        function escapeForDisplay(str) {
+            if (typeof str !== 'string') return str;
+            return str
+                .replace(/\r/g, '\\r')
+                .replace(/\n/g, '\\n')
+                .replace(/\t/g, '\\t');
+        }
+
+        /**
+         * =====================================================
+         * toHexPreview(str)
+         * =====================================================
+         * 문자열의 앞부분을 HEX로 변환하여 미리보기 생성
+         * 
+         * @param {string} str - 변환할 문자열
+         * @returns {string} HEX 미리보기 문자열 (최대 16바이트)
+         */
+        function toHexPreview(str) {
+            if (typeof str !== 'string') return '';
+            const hex = Array.from(str.substring(0, 16))
+                .map(function(c) {
+                    return c.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase();
+                })
+                .join(' ');
+            
+            return hex + (str.length > 16 ? ' ...' : '');
+        }
+
+        /**
+         * =====================================================
          * formatFieldValue(value, isCRLFField)
          * =====================================================
          * 필드 값을 표시용으로 포맷팅
@@ -4679,6 +4816,30 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                             structCardIndex = 0;
                         }
                     }
+                }
+            });
+
+            // =========================================
+            // 미리보기 복사 버튼 이벤트 위임
+            // =========================================
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('copy-preview-btn')) {
+                    const telegram = e.target.dataset.telegram;
+                    // HTML 엔티티 디코딩
+                    const textarea = document.createElement('textarea');
+                    textarea.innerHTML = telegram;
+                    const decodedTelegram = textarea.value;
+                    
+                    navigator.clipboard.writeText(decodedTelegram).then(function() {
+                        e.target.textContent = '✓ 복사됨';
+                        setTimeout(function() {
+                            e.target.textContent = '📋 복사';
+                        }, 2000);
+                    }).catch(function(err) {
+                        console.error('복사 실패:', err);
+                        // 폴백: 수동 복사 안내
+                        alert('자동 복사에 실패했습니다. 텍스트를 직접 선택하여 복사해주세요.');
+                    });
                 }
             });
 
@@ -5807,13 +5968,75 @@ T000000000200000000000000003000`
                 const previewBtn = document.getElementById('preview-telegram-btn');
                 if (previewBtn) {
                     previewBtn.addEventListener('click', function() {
-                        const previewBox = document.getElementById('telegram-preview-box');
-                        const telegram = buildTelegramFromForm(structDef);
+                        const inputs = document.querySelectorAll('.field-input');
+                        let telegram = '';
+                        const errors = [];
                         
-                        previewBox.innerHTML = '<h5>📄 전문 미리보기</h5>' +
-                            '<div class="telegram-preview-content">' + 
-                            telegram.display + '</div>' +
-                            '<div class="preview-info">총 ' + telegram.raw.length + ' bytes</div>';
+                        // 각 필드 값 수집 및 패딩
+                        inputs.forEach(function(input, index) {
+                            const fieldName = input.dataset.field;
+                            const fieldSize = parseInt(input.dataset.size);
+                            let value = input.value;
+                            
+                            // CRLF 필드 처리
+                            if (input.disabled) {
+                                value = '\r\n';
+                            }
+                            
+                            // 필수 필드 검증 (구분값)
+                            if (fieldName && fieldName.toLowerCase().match(/kubun|type|구분/) && !value && !input.disabled) {
+                                errors.push('"' + fieldName + '" 필드는 필수입니다');
+                            }
+                            
+                            // 패딩 적용
+                            const paddedValue = padValue(value, fieldSize, fieldName);
+                            telegram += paddedValue;
+                        });
+                        
+                        // 미리보기 박스 표시
+                        const previewBox = document.getElementById('telegram-preview-box');
+                        
+                        if (errors.length > 0) {
+                            previewBox.innerHTML = 
+                                '<div class="preview-error">' +
+                                '  <h5>⚠️ 입력 오류</h5>' +
+                                '  <ul>' +
+                                errors.map(function(err) { return '<li>' + err + '</li>'; }).join('') +
+                                '  </ul>' +
+                                '</div>';
+                        } else {
+                            const recognizeCRLF = document.getElementById('recognize-crlf').checked;
+                            const escapedTelegram = escapeHtml(telegram);
+                            
+                            previewBox.innerHTML = 
+                                '<div class="preview-success">' +
+                                '  <div class="preview-header">' +
+                                '    <h5>👁️ 생성된 전문 미리보기</h5>' +
+                                '    <button class="copy-preview-btn" data-telegram="' + escapedTelegram + '">' +
+                                '      📋 복사' +
+                                '    </button>' +
+                                '  </div>' +
+                                '  <div class="preview-content">' +
+                                '    <pre class="telegram-display">' + escapeForDisplay(telegram) + '</pre>' +
+                                '  </div>' +
+                                '  <div class="preview-info">' +
+                                '    <div class="info-item">' +
+                                '      <span class="info-label">길이:</span>' +
+                                '      <span class="info-value">' + telegram.length + ' bytes</span>' +
+                                '    </div>' +
+                                '    <div class="info-item">' +
+                                '      <span class="info-label">HEX:</span>' +
+                                '      <span class="info-value hex-value">' + toHexPreview(telegram) + '</span>' +
+                                '    </div>' +
+                                (recognizeCRLF ? 
+                                '    <div class="info-item">' +
+                                '      <span class="info-label">CRLF:</span>' +
+                                '      <span class="info-value">포함 (2 bytes)</span>' +
+                                '    </div>' : '') +
+                                '  </div>' +
+                                '</div>';
+                        }
+                        
                         previewBox.style.display = 'block';
                     });
                 }
