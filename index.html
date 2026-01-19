@@ -3703,8 +3703,27 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 
                 for (let i = 0; i < str.length; i++) {
                     const char = str[i];
-                    const code = char.charCodeAt(0);
+                    let code = char.charCodeAt(0);
                     
+                    // ============================================
+                    // 유니코드 전각 문자를 반각(ASCII)으로 정규화
+                    // 한글 IME 상태에서 영문 입력 시 전각으로 들어올 수 있음
+                    // ============================================
+                    // 전각 공백 (U+3000) → 반각 공백
+                    if (code === 0x3000) {
+                        code = 0x20;
+                    }
+                    // 전각 ASCII (U+FF01~U+FF5E) → 반각 ASCII (0x21~0x7E)
+                    else if (code >= 0xFF01 && code <= 0xFF5E) {
+                        code = code - 0xFF01 + 0x21;
+                    }
+                    // 전각 숫자 0-9 (U+FF10~U+FF19) → 반각 숫자 (별도 처리 불필요, 위에서 처리됨)
+                    // 전각 대문자 A-Z (U+FF21~U+FF3A) → 반각 대문자 (별도 처리 불필요, 위에서 처리됨)
+                    // 전각 소문자 a-z (U+FF41~U+FF5A) → 반각 소문자 (별도 처리 불필요, 위에서 처리됨)
+                    
+                    // ============================================
+                    // 정규화된 코드로 KSC-5601 인코딩
+                    // ============================================
                     // 공백 → 전각 공백 (0xA1A1)
                     if (code === 0x20) {
                         result.push(0xA1);
@@ -7042,6 +7061,63 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 // 디코딩해서 원본 확인
                 const decoded = KSC5601.decode(parsed[1].value);
                 if (decoded !== '홍길동') return 'name 디코딩 실패 (결과: ' + decoded + ')';
+                
+                return true;
+            });
+
+            // =========================================
+            // 테스트 케이스 13: 유니코드 전각 문자 처리
+            // =========================================
+            test('KSC-5601 인코딩 - 전각 영문자 정규화', function() {
+                // 전각 K (U+FF2B) 입력 시 반각 K로 정규화 후 KSC-5601 인코딩
+                const fullwidthK = String.fromCharCode(0xFF2B); // 'Ｋ'
+                const encoded = KSC5601.encode(fullwidthK);
+                
+                // 반각 K와 동일하게 A3CB로 인코딩되어야 함
+                if (encoded.length !== 2) return '인코딩 길이 불일치 (예상: 2, 실제: ' + encoded.length + ')';
+                if (encoded[0] !== 0xA3) return '첫 번째 바이트 불일치 (예상: A3, 실제: ' + encoded[0].toString(16) + ')';
+                if (encoded[1] !== 0xCB) return '두 번째 바이트 불일치 (예상: CB, 실제: ' + encoded[1].toString(16) + ')';
+                
+                return true;
+            });
+
+            test('KSC-5601 인코딩 - 전각 숫자 정규화', function() {
+                // 전각 1 (U+FF11) 입력 시 반각 1로 정규화 후 KSC-5601 인코딩
+                const fullwidth1 = String.fromCharCode(0xFF11); // '１'
+                const encoded = KSC5601.encode(fullwidth1);
+                
+                // 반각 1과 동일하게 A3B1로 인코딩되어야 함
+                if (encoded.length !== 2) return '인코딩 길이 불일치';
+                if (encoded[0] !== 0xA3 || encoded[1] !== 0xB1) return '인코딩 값 불일치';
+                
+                return true;
+            });
+
+            test('KSC-5601 인코딩 - 전각 공백 정규화', function() {
+                // 전각 공백 (U+3000) 입력 시 KSC-5601 전각 공백으로 인코딩
+                const fullwidthSpace = String.fromCharCode(0x3000); // '　'
+                const encoded = KSC5601.encode(fullwidthSpace);
+                
+                // A1A1 (KSC-5601 전각 공백)로 인코딩되어야 함
+                if (encoded.length !== 2) return '인코딩 길이 불일치';
+                if (encoded[0] !== 0xA1 || encoded[1] !== 0xA1) return '인코딩 값 불일치';
+                
+                return true;
+            });
+
+            test('KSC-5601 인코딩 - 반각/전각 혼합', function() {
+                // 반각 'A' + 전각 'Ｂ' (U+FF22) + 한글 '가'
+                const mixed = 'A' + String.fromCharCode(0xFF22) + '가';
+                const encoded = KSC5601.encode(mixed);
+                
+                // 3문자 = 6바이트
+                if (encoded.length !== 6) return '인코딩 길이 불일치 (예상: 6, 실제: ' + encoded.length + ')';
+                // A: A3C1
+                if (encoded[0] !== 0xA3 || encoded[1] !== 0xC1) return 'A 인코딩 실패';
+                // B: A3C2
+                if (encoded[2] !== 0xA3 || encoded[3] !== 0xC2) return 'B 인코딩 실패';
+                // 가: B0A1
+                if (encoded[4] !== 0xB0 || encoded[5] !== 0xA1) return '가 인코딩 실패';
                 
                 return true;
             });
