@@ -6071,13 +6071,18 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 const statsDiv = document.createElement('div');
                 statsDiv.className = 'parse-stats';
 
+                // 모드에 따라 에러 통계 표시 (line-by-line: errorLines, continuous: errorBytes)
+                const errorDisplay = stats.mode === 'line-by-line' 
+                    ? `${stats.errorLines || 0} lines`
+                    : `${stats.errorBytes || 0} bytes`;
+
                 statsDiv.innerHTML = `
                     <h3>📊 파싱 통계</h3>
                     <div class="stats-grid">
                         <div>전체: ${stats.totalBytes} bytes</div>
                         <div>파싱: ${stats.parsedBytes} bytes (${percent}%)</div>
                         <div>레코드: ${stats.recordCount}개</div>
-                        <div>오류: ${stats.errorBytes} bytes</div>
+                        <div>오류: ${errorDisplay}</div>
                     </div>
                 `;
 
