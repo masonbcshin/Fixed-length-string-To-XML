@@ -559,11 +559,17 @@
             border-radius: 6px;
             font-size: 14px;
             background: white;
+            color: #333;
         }
 
         .form-select:focus {
             border-color: #007bff;
             outline: none;
+        }
+
+        .form-select option {
+            color: #333;
+            background: white;
         }
 
         .primary-btn {
@@ -809,6 +815,7 @@
             background: white;
             border: 1px solid #dee2e6;
             border-top: none;
+            color: #333;
         }
 
         .record-item .record-info {
@@ -1058,12 +1065,14 @@
             border: 2px solid #dee2e6;
             border-radius: 6px;
             padding: 15px;
+            color: #333;
         }
 
         .telegram-text {
             margin: 0;
             font-family: 'Courier New', monospace;
             font-size: 14px;
+            color: #333;
             color: #495057;
             overflow-x: auto;
             white-space: pre;
@@ -1174,11 +1183,13 @@
             text-align: left;
             font-weight: bold;
             border-bottom: 2px solid #dee2e6;
+            color: #333;
         }
 
         .input-form-table td {
             padding: 12px;
             border-bottom: 1px solid #dee2e6;
+            color: #333;
         }
 
         .input-form-table .field-input {
@@ -1189,6 +1200,8 @@
             font-family: 'Consolas', 'Monaco', monospace;
             font-size: 14px;
             box-sizing: border-box;
+            color: #333;
+            background: white;
         }
 
         .input-form-table .field-input:focus {
@@ -1373,12 +1386,15 @@
             font-size: 14px;
             transition: border 0.2s;
             box-sizing: border-box;
+            color: #333;
+            background: white;
         }
 
         .input-form-table .field-input:focus {
             border-color: #007bff;
             outline: none;
             background: #f0f8ff;
+            color: #333;
         }
 
         .input-form-table .field-input.auto-field {
@@ -3084,6 +3100,138 @@
 
         body.dark-mode .preview-stats {
             color: #a0a0a0;
+        }
+
+        /* =====================================================
+         * 다크모드 - 생성 모드 폼 스타일
+         * ===================================================== */
+        body.dark-mode .struct-selector {
+            background: #2d2d44;
+            border-color: #3d3d5c;
+        }
+
+        body.dark-mode .struct-selector label {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .form-select {
+            background: #2d2d44;
+            border-color: #3d3d5c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .form-select option {
+            background: #2d2d44;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .generate-form {
+            border-color: #4a90d9;
+        }
+
+        body.dark-mode .form-header {
+            background: #1e3a5f;
+            border-bottom-color: #4a90d9;
+        }
+
+        body.dark-mode .form-title h4 {
+            color: #64b5f6;
+        }
+
+        body.dark-mode .input-form-table th {
+            background: #3d3d5c;
+            color: #e0e0e0;
+            border-bottom-color: #4d4d6c;
+        }
+
+        body.dark-mode .input-form-table td {
+            color: #e0e0e0;
+            border-bottom-color: #3d3d5c;
+        }
+
+        body.dark-mode .input-form-table .field-input {
+            background: #2d2d44;
+            border-color: #3d3d5c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .input-form-table .field-input:focus {
+            background: #35355c;
+            border-color: #64b5f6;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .input-form-table .field-input.auto-field {
+            background: #1a1a2e;
+            color: #888;
+        }
+
+        body.dark-mode .field-name {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .field-size {
+            color: #aaa;
+        }
+
+        body.dark-mode .char-counter {
+            color: #aaa;
+        }
+
+        body.dark-mode .preview-cell {
+            background: #1a1a2e;
+            color: #aaa;
+        }
+
+        body.dark-mode .generate-fields-form {
+            background: #2d2d44;
+            border-color: #3d3d5c;
+        }
+
+        body.dark-mode .generate-form-actions {
+            background: #2d2d44;
+            border-color: #3d3d5c;
+        }
+
+        body.dark-mode .form-info small {
+            color: #aaa;
+        }
+
+        /* 다크모드 - 생성된 레코드 영역 */
+        body.dark-mode .record-item {
+            background: #2d2d44;
+            border-color: #3d3d5c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode #generated-records-area .record-item {
+            background: #2d2d44;
+            border-color: #4a90d9;
+        }
+
+        body.dark-mode .telegram-box {
+            background: #1a1a2e;
+            border-color: #3d3d5c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .telegram-text {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .record-detail {
+            background: #1a1a2e;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .generated-record-item {
+            background: #2d2d44;
+            border-color: #3d3d5c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .generated-record-item:hover {
+            background: #35355c;
         }
     </style>
 </head>
