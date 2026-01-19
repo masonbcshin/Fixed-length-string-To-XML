@@ -6267,12 +6267,18 @@ T000000000200000000000000003000`
                     </div>
                 `;
 
-                // struct-definitions-area 앞에 삽입
+                // DOM에 삽입할 위치 찾기
+                let inserted = false;
+                
+                // 1순위: struct-definitions-area 앞에 삽입
                 const inputSection = document.getElementById('struct-definitions-area');
                 if (inputSection && inputSection.parentNode) {
                     inputSection.parentNode.insertBefore(notification, inputSection);
-                } else {
-                    // fallback: struct-tab 맨 앞에 추가
+                    inserted = true;
+                }
+                
+                // 2순위: struct-tab에 추가
+                if (!inserted) {
                     const structTab = document.getElementById('struct-tab');
                     if (structTab) {
                         if (structTab.firstChild) {
@@ -6280,20 +6286,33 @@ T000000000200000000000000003000`
                         } else {
                             structTab.appendChild(notification);
                         }
+                        inserted = true;
                     }
                 }
+                
+                // 3순위: body에 추가 (최후의 fallback)
+                if (!inserted) {
+                    document.body.appendChild(notification);
+                    inserted = true;
+                }
 
-                // 복원 버튼 이벤트
-                document.getElementById('restore-yes').addEventListener('click', function() {
-                    doRestore(data);
-                    notification.remove();
-                });
+                // 알림 내부의 버튼에 이벤트 연결 (notification 내부에서 찾기)
+                const restoreYesBtn = notification.querySelector('#restore-yes');
+                const restoreNoBtn = notification.querySelector('#restore-no');
+                
+                if (restoreYesBtn) {
+                    restoreYesBtn.addEventListener('click', function() {
+                        doRestore(data);
+                        notification.remove();
+                    });
+                }
 
-                // 무시 버튼 이벤트
-                document.getElementById('restore-no').addEventListener('click', function() {
-                    notification.remove();
-                    localStorage.removeItem(STORAGE_KEY); // 저장된 데이터 삭제
-                });
+                if (restoreNoBtn) {
+                    restoreNoBtn.addEventListener('click', function() {
+                        notification.remove();
+                        localStorage.removeItem(STORAGE_KEY); // 저장된 데이터 삭제
+                    });
+                }
             }
 
             /**
