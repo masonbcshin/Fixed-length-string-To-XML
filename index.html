@@ -5719,7 +5719,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
             
             // 입력창에 적용 버튼 이벤트
             document.getElementById('apply-xml-to-input').addEventListener('click', function() {
-                const telegramInput = document.getElementById('telegram');
+                const telegramInput = document.getElementById('telegram-input');
                 if (telegramInput) {
                     telegramInput.value = regeneratedData;
                     showTemporaryMessage('✓ 통데이터 입력창에 적용되었습니다.');
