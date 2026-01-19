@@ -4416,12 +4416,76 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
          * @param {Array} xmlSpec - parseXMLSpec의 결과 배열
          * @returns {Array} 파싱된 결과 배열
          */
+        /**
+         * 입력 데이터가 이미 KSC-5601로 인코딩된 Latin1인지 유니코드인지 감지
+         * @param {string} str - 검사할 문자열
+         * @returns {boolean} true면 Latin1 (이미 인코딩됨), false면 유니코드
+         */
+        function isLatin1Encoded(str) {
+            // 문자열 내 모든 문자가 0x00-0xFF 범위인지 확인
+            for (let i = 0; i < str.length; i++) {
+                if (str.charCodeAt(i) > 0xFF) {
+                    return false; // 유니코드 문자 발견
+                }
+            }
+            return true;
+        }
+
+        /**
+         * 유니코드 문자열을 KSC-5601 인코딩된 Latin1 문자열로 변환
+         * FULL 타입이 아닌 필드는 그대로 유지, FULL 타입만 변환
+         * @param {string} telegramString - 원본 통전문
+         * @param {Array} xmlSpec - XML 규격 배열
+         * @returns {string} 변환된 통전문 (Latin1)
+         */
+        function convertToKSC5601Telegram(telegramString, xmlSpec) {
+            let result = '';
+            let unicodePos = 0;
+            
+            for (let i = 0; i < xmlSpec.length; i++) {
+                const spec = xmlSpec[i];
+                
+                if (spec.type === 'FULL') {
+                    // FULL 타입: 유니코드 문자를 KSC-5601 바이트로 변환
+                    // 바이트 크기 / 2 = 문자 수 (모든 문자가 2바이트)
+                    const charCount = Math.floor(spec.size / 2);
+                    const unicodeValue = telegramString.substring(unicodePos, unicodePos + charCount);
+                    
+                    // KSC-5601로 인코딩 후 패딩
+                    const encoded = KSC5601.padToByteSize(unicodeValue, spec.size);
+                    result += encoded;
+                    
+                    unicodePos += unicodeValue.length;
+                } else {
+                    // 일반 타입: 그대로 추출
+                    const value = telegramString.substring(unicodePos, unicodePos + spec.size);
+                    result += value;
+                    unicodePos += spec.size;
+                }
+            }
+            
+            return result;
+        }
+
         function parseTelegram(telegramString, xmlSpec) {
             // 현재 위치 초기화
             let currentPos = 0;
 
             // 빈 결과 배열 생성
             const result = [];
+            
+            // 입력 데이터가 유니코드인지 이미 인코딩된 Latin1인지 감지
+            const isEncoded = isLatin1Encoded(telegramString);
+            
+            // 유니코드 입력인 경우 FULL 타입 필드가 있으면 변환 필요
+            let processedTelegram = telegramString;
+            const hasFullType = xmlSpec.some(spec => spec.type === 'FULL');
+            
+            if (!isEncoded && hasFullType) {
+                // 유니코드 입력 + FULL 타입 존재: 변환 수행
+                processedTelegram = convertToKSC5601Telegram(telegramString, xmlSpec);
+                console.log('parseTelegram: 유니코드 입력을 KSC-5601로 변환했습니다.');
+            }
 
             // xmlSpec 배열 순회
             for (let i = 0; i < xmlSpec.length; i++) {
@@ -4432,7 +4496,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 const endPos = currentPos + spec.size;
 
                 // substring으로 값 추출 (인덱스 범위 초과해도 오류 없이 처리됨)
-                const value = telegramString.substring(startPos, endPos);
+                const value = processedTelegram.substring(startPos, endPos);
 
                 // 결과 배열에 추가
                 result.push({
@@ -4449,9 +4513,9 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
             }
 
             // 통전문 전체 길이와 예상 길이 비교
-            if (telegramString.length !== currentPos) {
+            if (processedTelegram.length !== currentPos) {
                 console.warn(
-                    `parseTelegram: 통전문 길이(${telegramString.length})와 예상 길이(${currentPos})가 일치하지 않습니다.`
+                    `parseTelegram: 통전문 길이(${processedTelegram.length})와 예상 길이(${currentPos})가 일치하지 않습니다.`
                 );
             }
 
@@ -6942,6 +7006,46 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 return true;
             });
 
+            // =========================================
+            // 테스트 케이스 12: 유니코드 입력 감지 및 변환
+            // =========================================
+            test('Latin1 인코딩 감지 - 이미 인코딩됨', function() {
+                // KSC-5601로 인코딩된 Latin1 문자열
+                const encoded = String.fromCharCode(0xB0, 0xA1, 0xB0, 0xA2); // '가각'
+                if (!isLatin1Encoded(encoded)) return 'Latin1을 유니코드로 잘못 감지';
+                return true;
+            });
+
+            test('Latin1 인코딩 감지 - 유니코드', function() {
+                // 유니코드 한글
+                const unicode = '홍길동';
+                if (isLatin1Encoded(unicode)) return '유니코드를 Latin1으로 잘못 감지';
+                return true;
+            });
+
+            test('유니코드 FULL 타입 파싱', function() {
+                const xml = `<packet>
+                    <col id="code" type="X" size="4" />
+                    <col id="name" type="FULL" size="6" />
+                </packet>`;
+                // 유니코드로 직접 입력: "TEST" + "홍길동"
+                const telegram = 'TEST홍길동';
+                
+                const spec = parseXMLSpec(xml);
+                const parsed = parseTelegram(telegram, spec);
+                
+                if (parsed.length !== 2) return '필드 개수 불일치';
+                if (parsed[0].value !== 'TEST') return 'code 값 불일치';
+                // FULL 필드는 KSC-5601로 변환되어 6바이트여야 함
+                if (parsed[1].value.length !== 6) return 'name 바이트 길이 불일치 (예상: 6, 실제: ' + parsed[1].value.length + ')';
+                
+                // 디코딩해서 원본 확인
+                const decoded = KSC5601.decode(parsed[1].value);
+                if (decoded !== '홍길동') return 'name 디코딩 실패 (결과: ' + decoded + ')';
+                
+                return true;
+            });
+
             return { passed: passed, failed: failed, results: results };
         }
 
@@ -7157,9 +7261,16 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 
                 // 통전문 샘플 설정 (65 bytes: 55 + 10bytes FULL)
                 // FULL 타입 필드는 KSC-5601 2바이트 완성형 인코딩
-                // 'TEST' → A3D4 A3C5 A3D3 A3D4 (8bytes) + A1A1 (2bytes 전각 공백) = 10bytes
-                const kscTest = String.fromCharCode(0xA3, 0xD4, 0xA3, 0xC5, 0xA3, 0xD3, 0xA3, 0xD4, 0xA1, 0xA1);
-                const sampleTelegram = 'HEADER01123456789012000000000100000Hong Gil Dong       ' + kscTest;
+                // 'OK테스트' (영문2 + 한글3 = 5글자) = 10bytes
+                // O→A3CF, K→A3CB, 테→C5D7, 스→BDBA, 트→C6AE
+                const kscMixed = String.fromCharCode(
+                    0xA3, 0xCF,  // O (전각)
+                    0xA3, 0xCB,  // K (전각)
+                    0xC5, 0xD7,  // 테
+                    0xBD, 0xBA,  // 스
+                    0xC6, 0xAE   // 트
+                );
+                const sampleTelegram = 'HEADER01123456789012000000000100000Hong Gil Dong       ' + kscMixed;
                 
                 document.getElementById('xml-input').value = sampleXml;
                 document.getElementById('telegram-input').value = sampleTelegram;
