@@ -6439,15 +6439,20 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         const size = field.fieldSize;
                         const fieldName = field.fieldName || '';
                         
-                        // CRLF 필드 처리
+                        // CRLF 필드 여부 확인
                         const isCRLFField = fieldName.toLowerCase().match(/crlf|cr_lf|newline/);
                         
-                        if (isCRLFField && recognizeCRLF) {
-                            // CRLF 필드: 원본 값 유지 (이스케이프 시퀀스를 실제 문자로)
-                            if (value === '\\r\\n' || value === '\r\n') {
+                        if (isCRLFField) {
+                            if (recognizeCRLF) {
+                                // 개행문자 인식 활성화: 무조건 실제 \r\n 개행문자로 변환
                                 value = '\r\n';
                             } else {
-                                value = field.value || '\r\n';
+                                // 개행문자 인식 비활성화: 일반 필드처럼 패딩 처리
+                                if (value.length < size) {
+                                    value = value + ' '.repeat(size - value.length);
+                                } else if (value.length > size) {
+                                    value = value.substring(0, size);
+                                }
                             }
                         } else {
                             // 일반 필드: 패딩 처리
