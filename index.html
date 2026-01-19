@@ -3085,6 +3085,253 @@
         body.dark-mode .preview-stats {
             color: #a0a0a0;
         }
+
+        /* =====================================================
+         * 파싱 결과 수정/반영 기능 스타일
+         * ===================================================== */
+        
+        /* 편집 가능한 값 셀 */
+        .editable-value {
+            cursor: text;
+            padding: 6px 10px !important;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            min-height: 20px;
+            position: relative;
+        }
+        
+        .editable-value:hover {
+            background: #e7f3ff !important;
+            box-shadow: inset 0 0 0 2px #007bff40;
+        }
+        
+        .editable-value:focus {
+            outline: none;
+            background: #fff !important;
+            box-shadow: inset 0 0 0 2px #007bff;
+        }
+        
+        .editable-value.modified {
+            background: #fff3cd !important;
+            border-left: 3px solid #ffc107;
+        }
+        
+        .editable-value.modified:hover {
+            background: #ffe69c !important;
+        }
+        
+        body.dark-mode .editable-value:hover {
+            background: #1a3a5c !important;
+        }
+        
+        body.dark-mode .editable-value:focus {
+            background: #1e2a3a !important;
+        }
+        
+        body.dark-mode .editable-value.modified {
+            background: #3d3500 !important;
+            border-left-color: #ffc107;
+        }
+        
+        /* 편집 불가 표시 (FULL 타입 등) */
+        .readonly-value {
+            background: #f0f0f0;
+            color: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        body.dark-mode .readonly-value {
+            background: #2a2a2a;
+            color: #888;
+        }
+        
+        /* 수정 반영 버튼 그룹 */
+        .reflect-changes-container {
+            margin-top: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+        
+        body.dark-mode .reflect-changes-container {
+            background: linear-gradient(135deg, #2d2d2d, #1a1a1a);
+            border-color: #404040;
+        }
+        
+        .reflect-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .reflect-info .modified-count {
+            background: #ffc107;
+            color: #333;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        
+        .reflect-info .modified-count.no-changes {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .reflect-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-reflect {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn-reflect:hover {
+            background: linear-gradient(135deg, #218838, #1aa179);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+        
+        .btn-reflect:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-reset-changes {
+            padding: 10px 20px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-reset-changes:hover {
+            background: #5a6268;
+        }
+        
+        /* 재생성된 통데이터 결과 영역 */
+        .regenerated-data-container {
+            margin-top: 20px;
+            padding: 20px;
+            background: #d4edda;
+            border: 2px solid #28a745;
+            border-radius: 8px;
+        }
+        
+        body.dark-mode .regenerated-data-container {
+            background: #1a3a1a;
+            border-color: #28a745;
+        }
+        
+        .regenerated-data-container h4 {
+            margin: 0 0 15px 0;
+            color: #155724;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        body.dark-mode .regenerated-data-container h4 {
+            color: #a3d9a5;
+        }
+        
+        .regenerated-data-content {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            word-break: break-all;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #c3e6cb;
+        }
+        
+        body.dark-mode .regenerated-data-content {
+            background: #1a1a1a;
+            border-color: #28a745;
+            color: #e0e0e0;
+        }
+        
+        .regenerated-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn-copy-regenerated {
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn-copy-regenerated:hover {
+            background: #0056b3;
+        }
+        
+        .btn-apply-to-input {
+            padding: 8px 16px;
+            background: #17a2b8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn-apply-to-input:hover {
+            background: #138496;
+        }
+        
+        /* 필드 편집 힌트 */
+        .edit-hint {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        body.dark-mode .edit-hint {
+            background: #2a2a2a;
+            color: #a0a0a0;
+        }
+        
+        .edit-hint .hint-icon {
+            color: #17a2b8;
+        }
     </style>
 </head>
 <body>
@@ -5120,6 +5367,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
          * =====================================================
          * XML 파싱 결과 표시 함수
          * DocumentFragment를 사용하여 DOM 조작 최적화
+         * 편집 가능한 값 셀 및 통데이터 재생성 기능 포함
          * =====================================================
          * @param {Array} parsedData - parseTelegram의 결과 배열
          */
@@ -5130,8 +5378,18 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
             // 2. innerHTML 초기화
             container.innerHTML = '';
 
+            // 원본 데이터 저장 (재생성 시 사용)
+            window.xmlParsedDataOriginal = JSON.parse(JSON.stringify(parsedData));
+            window.xmlParsedDataCurrent = parsedData;
+
             // DocumentFragment 생성 - DOM 조작 최적화
             const fragment = document.createDocumentFragment();
+
+            // 편집 힌트 추가
+            const hintDiv = document.createElement('div');
+            hintDiv.className = 'edit-hint';
+            hintDiv.innerHTML = '<span class="hint-icon">💡</span> <span>값 셀을 클릭하여 직접 수정할 수 있습니다. FULL 타입(KSC-5601)은 수정이 제한됩니다.</span>';
+            fragment.appendChild(hintDiv);
 
             // 3. table 요소 생성
             const table = document.createElement('table');
@@ -5157,6 +5415,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
             parsedData.forEach(function(item, index) {
                 // tr 생성
                 const tr = document.createElement('tr');
+                tr.setAttribute('data-field-index', index);
 
                 // FULL 타입인 경우 값을 KSC-5601 디코딩
                 let displayValue = item.value;
@@ -5184,32 +5443,101 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 values.forEach(function(value, tdIndex) {
                     const td = document.createElement('td');
                     
-                    // FULL 타입의 값 컬럼: 디코딩된 값과 HEX를 함께 표시
-                    if (tdIndex === 6 && item.type === 'FULL' && decodedValue) {
-                        // 디코딩된 한글 텍스트 표시
-                        const decodedSpan = document.createElement('span');
-                        decodedSpan.textContent = decodedValue;
-                        decodedSpan.style.fontWeight = 'bold';
-                        decodedSpan.style.color = '#6f42c1';
-                        td.appendChild(decodedSpan);
+                    // 값 컬럼 (마지막 컬럼)
+                    if (tdIndex === 6) {
+                        // FULL 타입: 편집 불가 (인코딩 문제)
+                        if (item.type === 'FULL') {
+                            td.classList.add('readonly-value');
+                            if (decodedValue) {
+                                // 디코딩된 한글 텍스트 표시
+                                const decodedSpan = document.createElement('span');
+                                decodedSpan.textContent = decodedValue;
+                                decodedSpan.style.fontWeight = 'bold';
+                                decodedSpan.style.color = '#6f42c1';
+                                td.appendChild(decodedSpan);
+                                
+                                // HEX 값 (작은 글씨로)
+                                const hexSpan = document.createElement('small');
+                                hexSpan.style.display = 'block';
+                                hexSpan.style.color = '#666';
+                                hexSpan.style.fontSize = '11px';
+                                const hexValue = Array.from(item.value.substring(0, 20))
+                                    .map(c => c.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase())
+                                    .join(' ');
+                                hexSpan.textContent = 'HEX: ' + hexValue + (item.value.length > 20 ? '...' : '');
+                                td.appendChild(hexSpan);
+                                
+                                // FULL 타입 편집 불가 안내
+                                const infoSpan = document.createElement('small');
+                                infoSpan.style.display = 'block';
+                                infoSpan.style.color = '#999';
+                                infoSpan.style.fontSize = '10px';
+                                infoSpan.textContent = '(FULL 타입: 편집 불가)';
+                                td.appendChild(infoSpan);
+                            } else {
+                                td.textContent = value;
+                            }
+                        } else {
+                            // 일반 타입: 편집 가능
+                            td.classList.add('editable-value');
+                            td.setAttribute('contenteditable', 'true');
+                            td.setAttribute('data-field-index', index);
+                            td.setAttribute('data-original-value', value);
+                            td.setAttribute('data-field-size', item.size);
+                            td.setAttribute('data-field-type', item.type);
+                            td.textContent = value;
+                            
+                            // 수정 감지 이벤트
+                            td.addEventListener('input', function() {
+                                const originalValue = this.getAttribute('data-original-value');
+                                const currentValue = this.textContent;
+                                
+                                if (currentValue !== originalValue) {
+                                    this.classList.add('modified');
+                                    // 현재 파싱 데이터 업데이트
+                                    const fieldIndex = parseInt(this.getAttribute('data-field-index'));
+                                    window.xmlParsedDataCurrent[fieldIndex].value = currentValue;
+                                } else {
+                                    this.classList.remove('modified');
+                                }
+                                
+                                // 수정 카운터 업데이트
+                                updateXMLModifiedCount();
+                            });
+                            
+                            // 포커스 아웃 시 길이 검증
+                            td.addEventListener('blur', function() {
+                                const fieldSize = parseInt(this.getAttribute('data-field-size'));
+                                const fieldType = this.getAttribute('data-field-type');
+                                let currentValue = this.textContent;
+                                
+                                // 길이 초과 시 자르기
+                                if (currentValue.length > fieldSize) {
+                                    currentValue = currentValue.substring(0, fieldSize);
+                                    this.textContent = currentValue;
+                                }
+                                
+                                // N 타입이면서 숫자가 아닌 경우 경고
+                                if (fieldType === 'N' && currentValue && !/^[0-9]*$/.test(currentValue)) {
+                                    this.style.borderColor = '#ffc107';
+                                    this.title = '숫자 타입 필드입니다. 숫자만 입력하세요.';
+                                } else {
+                                    this.style.borderColor = '';
+                                    this.title = '';
+                                }
+                                
+                                // 현재 파싱 데이터 업데이트
+                                const fieldIndex = parseInt(this.getAttribute('data-field-index'));
+                                window.xmlParsedDataCurrent[fieldIndex].value = currentValue;
+                            });
+                        }
                         
-                        // HEX 값 (작은 글씨로)
-                        const hexSpan = document.createElement('small');
-                        hexSpan.style.display = 'block';
-                        hexSpan.style.color = '#666';
-                        hexSpan.style.fontSize = '11px';
-                        const hexValue = Array.from(item.value.substring(0, 20))
-                            .map(c => c.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase())
-                            .join(' ');
-                        hexSpan.textContent = 'HEX: ' + hexValue + (item.value.length > 20 ? '...' : '');
-                        td.appendChild(hexSpan);
+                        // value가 공백만 있으면 class="empty-value" 추가
+                        if (typeof value === 'string' && value.trim() === '') {
+                            td.classList.add('empty-value');
+                        }
                     } else {
                         td.textContent = value;
-                    }
-
-                    // value가 공백만 있으면 class="empty-value" 추가 (마지막 td, 즉 value 컬럼)
-                    if (tdIndex === 6 && typeof value === 'string' && value.trim() === '') {
-                        td.classList.add('empty-value');
                     }
 
                     tr.appendChild(td);
@@ -5228,9 +5556,178 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
             wrapper.className = 'table-wrapper';
             wrapper.appendChild(table);
 
-            // 9. fragment에 추가 후 한 번에 DOM 업데이트
+            // 9. fragment에 추가
             fragment.appendChild(wrapper);
+
+            // 10. 수정 반영 컨트롤 추가
+            const reflectContainer = document.createElement('div');
+            reflectContainer.className = 'reflect-changes-container';
+            reflectContainer.id = 'xml-reflect-container';
+            reflectContainer.innerHTML = `
+                <div class="reflect-info">
+                    <span>수정된 필드:</span>
+                    <span class="modified-count no-changes" id="xml-modified-count">0개</span>
+                </div>
+                <div class="reflect-buttons">
+                    <button class="btn-reset-changes" id="xml-reset-changes-btn" disabled>
+                        ↩️ 원래대로
+                    </button>
+                    <button class="btn-reflect" id="xml-reflect-btn" disabled>
+                        ✅ 통데이터 재생성
+                    </button>
+                </div>
+            `;
+            fragment.appendChild(reflectContainer);
+
+            // 11. 재생성된 통데이터 표시 영역 (초기에는 숨김)
+            const regeneratedContainer = document.createElement('div');
+            regeneratedContainer.className = 'regenerated-data-container';
+            regeneratedContainer.id = 'xml-regenerated-container';
+            regeneratedContainer.style.display = 'none';
+            fragment.appendChild(regeneratedContainer);
+
+            // 12. 한 번에 DOM 업데이트
             container.appendChild(fragment);
+
+            // 13. 버튼 이벤트 연결
+            attachXMLReflectEvents();
+        }
+
+        /**
+         * XML 파싱 결과 수정 카운터 업데이트
+         */
+        function updateXMLModifiedCount() {
+            const modifiedCells = document.querySelectorAll('#result-table .editable-value.modified');
+            const countSpan = document.getElementById('xml-modified-count');
+            const reflectBtn = document.getElementById('xml-reflect-btn');
+            const resetBtn = document.getElementById('xml-reset-changes-btn');
+            
+            if (countSpan) {
+                countSpan.textContent = modifiedCells.length + '개';
+                
+                if (modifiedCells.length > 0) {
+                    countSpan.classList.remove('no-changes');
+                    reflectBtn.disabled = false;
+                    resetBtn.disabled = false;
+                } else {
+                    countSpan.classList.add('no-changes');
+                    reflectBtn.disabled = true;
+                    resetBtn.disabled = true;
+                }
+            }
+        }
+
+        /**
+         * XML 파싱 결과 수정 반영 이벤트 연결
+         */
+        function attachXMLReflectEvents() {
+            // 원래대로 버튼
+            const resetBtn = document.getElementById('xml-reset-changes-btn');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', function() {
+                    // 원본 데이터로 복원
+                    window.xmlParsedDataCurrent = JSON.parse(JSON.stringify(window.xmlParsedDataOriginal));
+                    
+                    // 수정된 셀 초기화
+                    const modifiedCells = document.querySelectorAll('#result-table .editable-value.modified');
+                    modifiedCells.forEach(function(cell) {
+                        const originalValue = cell.getAttribute('data-original-value');
+                        cell.textContent = originalValue;
+                        cell.classList.remove('modified');
+                    });
+                    
+                    // 카운터 업데이트
+                    updateXMLModifiedCount();
+                    
+                    // 재생성 결과 숨기기
+                    document.getElementById('xml-regenerated-container').style.display = 'none';
+                    
+                    showTemporaryMessage('✓ 원래 값으로 복원되었습니다.');
+                });
+            }
+            
+            // 통데이터 재생성 버튼
+            const reflectBtn = document.getElementById('xml-reflect-btn');
+            if (reflectBtn) {
+                reflectBtn.addEventListener('click', function() {
+                    regenerateXMLTelegram();
+                });
+            }
+        }
+
+        /**
+         * XML 파싱 결과를 기반으로 통데이터 재생성
+         */
+        function regenerateXMLTelegram() {
+            const parsedData = window.xmlParsedDataCurrent;
+            
+            if (!parsedData || parsedData.length === 0) {
+                showTemporaryMessage('재생성할 데이터가 없습니다.');
+                return;
+            }
+            
+            let regeneratedData = '';
+            
+            // 각 필드를 순서대로 조합
+            parsedData.forEach(function(field) {
+                let value = field.value || '';
+                const size = field.size;
+                const type = field.type;
+                
+                // 패딩 처리
+                if (value.length < size) {
+                    if (type === 'N') {
+                        // 숫자 타입: 왼쪽 0 패딩
+                        value = '0'.repeat(size - value.length) + value;
+                    } else {
+                        // 문자 타입: 오른쪽 공백 패딩
+                        value = value + ' '.repeat(size - value.length);
+                    }
+                } else if (value.length > size) {
+                    // 길이 초과 시 자르기
+                    value = value.substring(0, size);
+                }
+                
+                regeneratedData += value;
+            });
+            
+            // 결과 표시
+            const container = document.getElementById('xml-regenerated-container');
+            container.style.display = 'block';
+            container.innerHTML = `
+                <h4>✅ 재생성된 통데이터</h4>
+                <div class="regenerated-data-content" id="xml-regenerated-data">${escapeHtml(regeneratedData)}</div>
+                <div style="margin-top: 10px; font-size: 13px; color: #666;">
+                    총 ${regeneratedData.length} bytes
+                </div>
+                <div class="regenerated-actions">
+                    <button class="btn-copy-regenerated" id="copy-xml-regenerated">
+                        📋 클립보드에 복사
+                    </button>
+                    <button class="btn-apply-to-input" id="apply-xml-to-input">
+                        📥 입력창에 적용
+                    </button>
+                </div>
+            `;
+            
+            // 복사 버튼 이벤트
+            document.getElementById('copy-xml-regenerated').addEventListener('click', function() {
+                navigator.clipboard.writeText(regeneratedData).then(function() {
+                    showTemporaryMessage('✓ 클립보드에 복사되었습니다.');
+                });
+            });
+            
+            // 입력창에 적용 버튼 이벤트
+            document.getElementById('apply-xml-to-input').addEventListener('click', function() {
+                const telegramInput = document.getElementById('telegram');
+                if (telegramInput) {
+                    telegramInput.value = regeneratedData;
+                    showTemporaryMessage('✓ 통데이터 입력창에 적용되었습니다.');
+                }
+            });
+            
+            // 스크롤 이동
+            container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
         /**
@@ -5389,6 +5886,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
          * =====================================================
          * 구조체 파싱 결과 표시 함수
          * DocumentFragment를 사용하여 DOM 조작 최적화
+         * 편집 가능한 값 셀 및 통데이터 재생성 기능 포함
          * =====================================================
          * @param {Object} parseResult - { records, stats, structDefs } 형식의 파싱 결과
          *   - records: 레코드 배열 (각 레코드: { recordIndex, structName, kubun, fields })
@@ -5472,6 +5970,12 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 return;
             }
 
+            // 편집 힌트 추가
+            const hintDiv = document.createElement('div');
+            hintDiv.className = 'edit-hint';
+            hintDiv.innerHTML = '<span class="hint-icon">💡</span> <span>값 셀을 클릭하여 직접 수정할 수 있습니다. CRLF 필드는 수정이 제한됩니다.</span>';
+            fragment.appendChild(hintDiv);
+
             /**
              * 3. 레코드별 그룹화 (recordIndex 기준)
              * 
@@ -5512,6 +6016,11 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     endPos: record.endPos
                 });
             });
+
+            // 원본 데이터 저장 (재생성 시 사용)
+            window.structParsedDataOriginal = JSON.parse(JSON.stringify(Array.from(recordMap.values())));
+            window.structParsedDataCurrent = Array.from(recordMap.values());
+            window.structParseStats = stats;
             
             // 에러 카드 먼저 표시 (순서 보장)
             errorCards.forEach(function(errorRecord) {
@@ -5534,10 +6043,13 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
             });
 
             // 4. 각 레코드마다 테이블 생성
+            let globalFieldIndex = 0;  // 전역 필드 인덱스 (수정 추적용)
+            
             recordMap.forEach(function(record, recordIndex) {
                 // 그룹 컨테이너 생성
                 const groupDiv = document.createElement('div');
                 groupDiv.className = 'struct-result-group';
+                groupDiv.setAttribute('data-record-index', recordIndex);
 
                 // 레코드 헤더 생성
                 const headerDiv = document.createElement('div');
@@ -5573,7 +6085,8 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
                 // 테이블 생성
                 const table = document.createElement('table');
-                table.className = 'result-table';
+                table.className = 'result-table struct-editable-table';
+                table.setAttribute('data-record-index', recordIndex);
 
                 // thead 생성
                 const thead = document.createElement('thead');
@@ -5593,8 +6106,10 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
                 // 해당 레코드의 모든 필드를 행으로 추가
                 if (record.fields && record.fields.length > 0) {
-                    record.fields.forEach(function(field) {
+                    record.fields.forEach(function(field, fieldIndex) {
                         const tr = document.createElement('tr');
+                        tr.setAttribute('data-record-index', recordIndex);
+                        tr.setAttribute('data-field-index', fieldIndex);
 
                         /**
                          * 필드 값 표시 처리
@@ -5617,22 +6132,82 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
                         values.forEach(function(value, tdIndex) {
                             const td = document.createElement('td');
-                            td.textContent = value;
 
-                            // CRLF 필드에 특별 스타일 적용 (마지막 컬럼)
-                            if (tdIndex === 4 && isCRLFField) {
-                                td.classList.add('crlf-value');
-                            }
-                            
-                            // value가 공백만 있으면 class="empty-value" 추가 (마지막 컬럼)
-                            if (tdIndex === 4 && typeof value === 'string' && value.trim() === '') {
-                                td.classList.add('empty-value');
+                            // 값 컬럼 (마지막 컬럼)
+                            if (tdIndex === 4) {
+                                // CRLF 필드: 편집 불가
+                                if (isCRLFField) {
+                                    td.classList.add('readonly-value');
+                                    td.classList.add('crlf-value');
+                                    td.textContent = value;
+                                    td.title = 'CRLF 필드: 편집 불가';
+                                } else {
+                                    // 일반 필드: 편집 가능
+                                    td.classList.add('editable-value');
+                                    td.setAttribute('contenteditable', 'true');
+                                    td.setAttribute('data-record-index', recordIndex);
+                                    td.setAttribute('data-field-index', fieldIndex);
+                                    td.setAttribute('data-original-value', field.value);
+                                    td.setAttribute('data-field-size', field.fieldSize);
+                                    td.setAttribute('data-field-name', field.fieldName);
+                                    td.textContent = value;
+                                    
+                                    // 수정 감지 이벤트
+                                    td.addEventListener('input', function() {
+                                        const originalValue = this.getAttribute('data-original-value');
+                                        const currentValue = this.textContent;
+                                        
+                                        if (currentValue !== originalValue) {
+                                            this.classList.add('modified');
+                                            // 현재 파싱 데이터 업데이트
+                                            const recIdx = parseInt(this.getAttribute('data-record-index'));
+                                            const fldIdx = parseInt(this.getAttribute('data-field-index'));
+                                            if (window.structParsedDataCurrent[recIdx] && 
+                                                window.structParsedDataCurrent[recIdx].fields[fldIdx]) {
+                                                window.structParsedDataCurrent[recIdx].fields[fldIdx].value = currentValue;
+                                            }
+                                        } else {
+                                            this.classList.remove('modified');
+                                        }
+                                        
+                                        // 수정 카운터 업데이트
+                                        updateStructModifiedCount();
+                                    });
+                                    
+                                    // 포커스 아웃 시 길이 검증
+                                    td.addEventListener('blur', function() {
+                                        const fieldSize = parseInt(this.getAttribute('data-field-size'));
+                                        let currentValue = this.textContent;
+                                        
+                                        // 길이 초과 시 자르기
+                                        if (currentValue.length > fieldSize) {
+                                            currentValue = currentValue.substring(0, fieldSize);
+                                            this.textContent = currentValue;
+                                        }
+                                        
+                                        // 현재 파싱 데이터 업데이트
+                                        const recIdx = parseInt(this.getAttribute('data-record-index'));
+                                        const fldIdx = parseInt(this.getAttribute('data-field-index'));
+                                        if (window.structParsedDataCurrent[recIdx] && 
+                                            window.structParsedDataCurrent[recIdx].fields[fldIdx]) {
+                                            window.structParsedDataCurrent[recIdx].fields[fldIdx].value = currentValue;
+                                        }
+                                    });
+                                }
+                                
+                                // value가 공백만 있으면 class="empty-value" 추가
+                                if (typeof value === 'string' && value.trim() === '') {
+                                    td.classList.add('empty-value');
+                                }
+                            } else {
+                                td.textContent = value;
                             }
 
                             tr.appendChild(td);
                         });
 
                         tbody.appendChild(tr);
+                        globalFieldIndex++;
                     });
                 }
 
@@ -5650,8 +6225,213 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 fragment.appendChild(groupDiv);
             });
 
+            // 5. 수정 반영 컨트롤 추가
+            const reflectContainer = document.createElement('div');
+            reflectContainer.className = 'reflect-changes-container';
+            reflectContainer.id = 'struct-reflect-container';
+            reflectContainer.innerHTML = `
+                <div class="reflect-info">
+                    <span>수정된 필드:</span>
+                    <span class="modified-count no-changes" id="struct-modified-count">0개</span>
+                </div>
+                <div class="reflect-buttons">
+                    <button class="btn-reset-changes" id="struct-reset-changes-btn" disabled>
+                        ↩️ 원래대로
+                    </button>
+                    <button class="btn-reflect" id="struct-reflect-btn" disabled>
+                        ✅ 통데이터 재생성
+                    </button>
+                </div>
+            `;
+            fragment.appendChild(reflectContainer);
+
+            // 6. 재생성된 통데이터 표시 영역 (초기에는 숨김)
+            const regeneratedContainer = document.createElement('div');
+            regeneratedContainer.className = 'regenerated-data-container';
+            regeneratedContainer.id = 'struct-regenerated-container';
+            regeneratedContainer.style.display = 'none';
+            fragment.appendChild(regeneratedContainer);
+
             // 한 번에 DOM 업데이트
             container.appendChild(fragment);
+
+            // 7. 버튼 이벤트 연결
+            attachStructReflectEvents();
+        }
+
+        /**
+         * 구조체 파싱 결과 수정 카운터 업데이트
+         */
+        function updateStructModifiedCount() {
+            const modifiedCells = document.querySelectorAll('.struct-editable-table .editable-value.modified');
+            const countSpan = document.getElementById('struct-modified-count');
+            const reflectBtn = document.getElementById('struct-reflect-btn');
+            const resetBtn = document.getElementById('struct-reset-changes-btn');
+            
+            if (countSpan) {
+                countSpan.textContent = modifiedCells.length + '개';
+                
+                if (modifiedCells.length > 0) {
+                    countSpan.classList.remove('no-changes');
+                    reflectBtn.disabled = false;
+                    resetBtn.disabled = false;
+                } else {
+                    countSpan.classList.add('no-changes');
+                    reflectBtn.disabled = true;
+                    resetBtn.disabled = true;
+                }
+            }
+        }
+
+        /**
+         * 구조체 파싱 결과 수정 반영 이벤트 연결
+         */
+        function attachStructReflectEvents() {
+            // 원래대로 버튼
+            const resetBtn = document.getElementById('struct-reset-changes-btn');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', function() {
+                    // 원본 데이터로 복원
+                    window.structParsedDataCurrent = JSON.parse(JSON.stringify(window.structParsedDataOriginal));
+                    
+                    // 수정된 셀 초기화
+                    const modifiedCells = document.querySelectorAll('.struct-editable-table .editable-value.modified');
+                    modifiedCells.forEach(function(cell) {
+                        const originalValue = cell.getAttribute('data-original-value');
+                        cell.textContent = originalValue;
+                        cell.classList.remove('modified');
+                    });
+                    
+                    // 카운터 업데이트
+                    updateStructModifiedCount();
+                    
+                    // 재생성 결과 숨기기
+                    document.getElementById('struct-regenerated-container').style.display = 'none';
+                    
+                    showTemporaryMessage('✓ 원래 값으로 복원되었습니다.');
+                });
+            }
+            
+            // 통데이터 재생성 버튼
+            const reflectBtn = document.getElementById('struct-reflect-btn');
+            if (reflectBtn) {
+                reflectBtn.addEventListener('click', function() {
+                    regenerateStructTelegram();
+                });
+            }
+        }
+
+        /**
+         * 구조체 파싱 결과를 기반으로 통데이터 재생성
+         */
+        function regenerateStructTelegram() {
+            const parsedData = window.structParsedDataCurrent;
+            const stats = window.structParseStats;
+            
+            if (!parsedData || parsedData.length === 0) {
+                showTemporaryMessage('재생성할 데이터가 없습니다.');
+                return;
+            }
+            
+            const recognizeCRLF = document.getElementById('recognize-crlf').checked;
+            const isLineByLine = stats && stats.mode === 'line-by-line';
+            
+            let regeneratedData = '';
+            
+            // 각 레코드를 순서대로 조합
+            parsedData.forEach(function(record, recordIdx) {
+                let recordData = '';
+                
+                if (record.fields && record.fields.length > 0) {
+                    record.fields.forEach(function(field) {
+                        let value = field.value || '';
+                        const size = field.fieldSize;
+                        const fieldName = field.fieldName || '';
+                        
+                        // CRLF 필드 처리
+                        const isCRLFField = fieldName.toLowerCase().match(/crlf|cr_lf|newline/);
+                        
+                        if (isCRLFField && recognizeCRLF) {
+                            // CRLF 필드: 원본 값 유지 (이스케이프 시퀀스를 실제 문자로)
+                            if (value === '\\r\\n' || value === '\r\n') {
+                                value = '\r\n';
+                            } else {
+                                value = field.value || '\r\n';
+                            }
+                        } else {
+                            // 일반 필드: 패딩 처리
+                            if (value.length < size) {
+                                // 오른쪽 공백 패딩
+                                value = value + ' '.repeat(size - value.length);
+                            } else if (value.length > size) {
+                                // 길이 초과 시 자르기
+                                value = value.substring(0, size);
+                            }
+                        }
+                        
+                        recordData += value;
+                    });
+                }
+                
+                regeneratedData += recordData;
+                
+                // 라인 단위 모드에서는 각 레코드 끝에 개행 추가 (마지막 레코드 제외, CRLF가 없는 경우)
+                if (isLineByLine && recordIdx < parsedData.length - 1) {
+                    // 레코드 끝에 CRLF가 이미 있는지 확인
+                    if (!recordData.endsWith('\r\n') && !recordData.endsWith('\n')) {
+                        regeneratedData += '\r\n';
+                    }
+                }
+            });
+            
+            // 결과 표시
+            const container = document.getElementById('struct-regenerated-container');
+            container.style.display = 'block';
+            
+            // 표시용 데이터 (이스케이프 시퀀스 처리)
+            const displayData = regeneratedData
+                .replace(/\r/g, '\\r')
+                .replace(/\n/g, '\\n');
+            
+            container.innerHTML = `
+                <h4>✅ 재생성된 통데이터</h4>
+                <div class="regenerated-data-content" id="struct-regenerated-data">${escapeHtml(displayData)}</div>
+                <div style="margin-top: 10px; font-size: 13px; color: #666;">
+                    총 ${regeneratedData.length} bytes | ${parsedData.length}개 레코드
+                </div>
+                <div class="regenerated-actions">
+                    <button class="btn-copy-regenerated" id="copy-struct-regenerated">
+                        📋 클립보드에 복사
+                    </button>
+                    <button class="btn-apply-to-input" id="apply-struct-to-input">
+                        📥 입력창에 적용
+                    </button>
+                </div>
+            `;
+            
+            // 원본 데이터 저장 (복사용)
+            container.setAttribute('data-raw-value', regeneratedData);
+            
+            // 복사 버튼 이벤트
+            document.getElementById('copy-struct-regenerated').addEventListener('click', function() {
+                const rawValue = document.getElementById('struct-regenerated-container').getAttribute('data-raw-value');
+                navigator.clipboard.writeText(rawValue).then(function() {
+                    showTemporaryMessage('✓ 클립보드에 복사되었습니다.');
+                });
+            });
+            
+            // 입력창에 적용 버튼 이벤트
+            document.getElementById('apply-struct-to-input').addEventListener('click', function() {
+                const rawValue = document.getElementById('struct-regenerated-container').getAttribute('data-raw-value');
+                const dataInput = document.getElementById('struct-data');
+                if (dataInput) {
+                    dataInput.value = rawValue;
+                    showTemporaryMessage('✓ 통데이터 입력창에 적용되었습니다.');
+                }
+            });
+            
+            // 스크롤 이동
+            container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
         /**
