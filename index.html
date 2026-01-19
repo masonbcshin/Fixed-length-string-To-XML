@@ -7870,10 +7870,18 @@ T000000000200000000000000003000`
                             const hexStr = Array.from(paddedValue)
                                 .map(c => c.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase())
                                 .join(' ');
+                            // KSC-5601 디코딩 시도
+                            let decoded = '';
+                            try {
+                                decoded = KSC5601.decode(paddedValue);
+                            } catch(e) {
+                                decoded = value;
+                            }
                             fieldPreviews.push({
                                 id: fieldId,
                                 type: 'FULL',
                                 original: value,
+                                decoded: decoded,
                                 hex: hexStr,
                                 bytes: paddedValue.length
                             });
@@ -7882,28 +7890,44 @@ T000000000200000000000000003000`
                     
                     const previewBox = document.getElementById('xml-telegram-preview-box');
                     
-                    // 전체 HEX 생성
-                    const fullHex = Array.from(telegram)
-                        .map(c => c.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase())
-                        .join(' ');
+                    // 전체 HEX 생성 (한 줄에 16바이트씩)
+                    const hexBytes = Array.from(telegram)
+                        .map(c => c.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase());
+                    let fullHex = '';
+                    for (let i = 0; i < hexBytes.length; i += 16) {
+                        fullHex += hexBytes.slice(i, i + 16).join(' ') + '\n';
+                    }
+                    fullHex = fullHex.trim();
                     
                     // FULL 타입 필드 상세 정보 HTML
                     let fullFieldsHtml = '';
                     if (hasFull && fieldPreviews.length > 0) {
                         fullFieldsHtml = 
-                            '<div class="full-fields-detail" style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 6px;">' +
-                            '  <h6 style="margin: 0 0 10px 0; color: #6f42c1;">📦 FULL 타입 필드 상세</h6>';
+                            '<div class="full-fields-detail" style="margin-top: 15px; padding: 10px; background: #f0e6ff; border-radius: 6px; border: 1px solid #d4b8ff;">' +
+                            '  <h6 style="margin: 0 0 10px 0; color: #6f42c1;">📦 FULL 타입 필드 (KSC-5601 2바이트 완성형)</h6>';
                         
                         fieldPreviews.forEach(function(fp) {
                             fullFieldsHtml += 
-                                '<div style="margin-bottom: 8px; font-size: 13px;">' +
-                                '  <strong>' + fp.id + '</strong> (' + fp.bytes + ' bytes)<br>' +
-                                '  <span style="color: #666;">원본:</span> ' + (fp.original || '(비어있음)') + '<br>' +
-                                '  <span style="color: #666;">HEX:</span> <code style="font-size: 11px; background: #e9ecef; padding: 2px 4px;">' + fp.hex + '</code>' +
+                                '<div style="margin-bottom: 8px; font-size: 13px; padding: 8px; background: white; border-radius: 4px;">' +
+                                '  <strong style="color: #6f42c1;">' + fp.id + '</strong> (' + fp.bytes + ' bytes)<br>' +
+                                '  <span style="color: #666;">입력값:</span> ' + escapeHtml(fp.original || '(비어있음)') + '<br>' +
+                                '  <span style="color: #666;">디코딩:</span> <span style="color: #28a745;">' + escapeHtml(fp.decoded) + '</span><br>' +
+                                '  <span style="color: #666;">HEX:</span> <code style="font-size: 11px; background: #e9ecef; padding: 2px 4px; word-break: break-all;">' + fp.hex + '</code>' +
                                 '</div>';
                         });
                         
                         fullFieldsHtml += '</div>';
+                    }
+                    
+                    // 통데이터 표시 (FULL 타입은 디코딩된 텍스트로 치환)
+                    let displayTelegram = telegram;
+                    if (hasFull) {
+                        // FULL 타입 바이트를 디코딩된 텍스트로 치환하여 표시
+                        try {
+                            displayTelegram = KSC5601.decode(telegram);
+                        } catch(e) {
+                            displayTelegram = escapeForDisplay(telegram);
+                        }
                     }
                     
                     previewBox.innerHTML = 
@@ -7915,11 +7939,10 @@ T000000000200000000000000003000`
                         '    </button>' +
                         '  </div>' +
                         '  <div class="preview-content">' +
-                        '    <div style="margin-bottom: 10px;">' +
-                        '      <strong>HEX 표현:</strong>' +
-                        '    </div>' +
-                        '    <pre class="telegram-display" style="word-break: break-all; white-space: pre-wrap; font-size: 12px;">' + fullHex + '</pre>' +
-                        (hasFull ? '' : '    <div style="margin-top: 10px;"><strong>텍스트:</strong></div><pre class="telegram-display">' + escapeForDisplay(telegram) + '</pre>') +
+                        '    <div style="margin-bottom: 5px;"><strong>📄 통데이터 (디코딩):</strong></div>' +
+                        '    <pre class="telegram-display" style="margin-bottom: 15px;">' + escapeHtml(displayTelegram) + '</pre>' +
+                        '    <div style="margin-bottom: 5px;"><strong>🔢 HEX 표현:</strong></div>' +
+                        '    <pre class="telegram-display" style="word-break: break-all; white-space: pre-wrap; font-size: 11px; background: #f8f9fa; color: #495057;">' + fullHex + '</pre>' +
                         fullFieldsHtml +
                         '  </div>' +
                         '  <div class="preview-info">' +
