@@ -6241,9 +6241,10 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 </packet>`;
                 
                 // 통전문 샘플 설정 (65 bytes: 55 + 10bytes FULL)
-                // FULL 타입 필드는 KSC-5601 인코딩된 바이트로 구성
-                // 실제 KSC-5601 바이트 예시: "TEST" + 6바이트 공백 패딩
-                const sampleTelegram = 'HEADER01123456789012000000000100000Hong Gil Dong       TEST      ';
+                // FULL 타입 필드는 KSC-5601 2바이트 완성형 인코딩
+                // 'TEST' → A3D4 A3C5 A3D3 A3D4 (8bytes) + A1A1 (2bytes 전각 공백) = 10bytes
+                const kscTest = String.fromCharCode(0xA3, 0xD4, 0xA3, 0xC5, 0xA3, 0xD3, 0xA3, 0xD4, 0xA1, 0xA1);
+                const sampleTelegram = 'HEADER01123456789012000000000100000Hong Gil Dong       ' + kscTest;
                 
                 document.getElementById('xml-input').value = sampleXml;
                 document.getElementById('telegram-input').value = sampleTelegram;
@@ -7851,37 +7852,80 @@ T000000000200000000000000003000`
                 document.getElementById('xml-preview-telegram-btn').addEventListener('click', function() {
                     const inputs = document.querySelectorAll('.xml-field-input');
                     let telegram = '';
+                    let hasFull = false;
+                    const fieldPreviews = [];
                     
                     inputs.forEach(function(input) {
+                        const fieldId = input.dataset.field;
                         const fieldType = input.dataset.type;
                         const fieldSize = parseInt(input.dataset.size);
                         const value = input.value;
                         
                         const paddedValue = padValueByType(value, fieldSize, fieldType);
                         telegram += paddedValue;
+                        
+                        if (fieldType === 'FULL') {
+                            hasFull = true;
+                            // FULL 타입: HEX와 원본 텍스트 저장
+                            const hexStr = Array.from(paddedValue)
+                                .map(c => c.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase())
+                                .join(' ');
+                            fieldPreviews.push({
+                                id: fieldId,
+                                type: 'FULL',
+                                original: value,
+                                hex: hexStr,
+                                bytes: paddedValue.length
+                            });
+                        }
                     });
                     
                     const previewBox = document.getElementById('xml-telegram-preview-box');
+                    
+                    // 전체 HEX 생성
+                    const fullHex = Array.from(telegram)
+                        .map(c => c.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase())
+                        .join(' ');
+                    
+                    // FULL 타입 필드 상세 정보 HTML
+                    let fullFieldsHtml = '';
+                    if (hasFull && fieldPreviews.length > 0) {
+                        fullFieldsHtml = 
+                            '<div class="full-fields-detail" style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 6px;">' +
+                            '  <h6 style="margin: 0 0 10px 0; color: #6f42c1;">📦 FULL 타입 필드 상세</h6>';
+                        
+                        fieldPreviews.forEach(function(fp) {
+                            fullFieldsHtml += 
+                                '<div style="margin-bottom: 8px; font-size: 13px;">' +
+                                '  <strong>' + fp.id + '</strong> (' + fp.bytes + ' bytes)<br>' +
+                                '  <span style="color: #666;">원본:</span> ' + (fp.original || '(비어있음)') + '<br>' +
+                                '  <span style="color: #666;">HEX:</span> <code style="font-size: 11px; background: #e9ecef; padding: 2px 4px;">' + fp.hex + '</code>' +
+                                '</div>';
+                        });
+                        
+                        fullFieldsHtml += '</div>';
+                    }
                     
                     previewBox.innerHTML = 
                         '<div class="preview-success">' +
                         '  <div class="preview-header">' +
                         '    <h5>👁️ 생성된 전문 미리보기</h5>' +
                         '    <button class="copy-preview-btn" data-telegram="' + escapeHtml(telegram) + '">' +
-                        '      📋 복사' +
+                        '      📋 복사 (바이너리)' +
                         '    </button>' +
                         '  </div>' +
                         '  <div class="preview-content">' +
-                        '    <pre class="telegram-display">' + escapeForDisplay(telegram) + '</pre>' +
+                        '    <div style="margin-bottom: 10px;">' +
+                        '      <strong>HEX 표현:</strong>' +
+                        '    </div>' +
+                        '    <pre class="telegram-display" style="word-break: break-all; white-space: pre-wrap; font-size: 12px;">' + fullHex + '</pre>' +
+                        (hasFull ? '' : '    <div style="margin-top: 10px;"><strong>텍스트:</strong></div><pre class="telegram-display">' + escapeForDisplay(telegram) + '</pre>') +
+                        fullFieldsHtml +
                         '  </div>' +
                         '  <div class="preview-info">' +
                         '    <div class="info-item">' +
-                        '      <span class="info-label">길이:</span>' +
+                        '      <span class="info-label">총 길이:</span>' +
                         '      <span class="info-value">' + telegram.length + ' bytes</span>' +
-                        '    </div>' +
-                        '    <div class="info-item">' +
-                        '      <span class="info-label">HEX:</span>' +
-                        '      <span class="info-value hex-value">' + toHexPreview(telegram) + '</span>' +
                         '    </div>' +
                         '  </div>' +
                         '</div>';
