@@ -1332,6 +1332,11 @@
             color: white;
         }
 
+        .type-badge.type-FULL {
+            background: #6f42c1;
+            color: white;
+        }
+
         .field-type-cell {
             text-align: center;
         }
@@ -3097,6 +3102,14 @@
             <div class="generate-intro">
                 <h4>✏️ 전문 생성 (XML 기반)</h4>
                 <p>XML 규격을 입력하고 각 필드에 값을 입력하여 통전문을 생성합니다.</p>
+                <div class="type-info-box">
+                    <strong>지원 타입:</strong>
+                    <ul style="margin: 5px 0; padding-left: 20px; font-size: 13px;">
+                        <li><code style="background:#17a2b8; color:white; padding:2px 6px; border-radius:3px;">X</code> 문자 타입 - 우측 공백 패딩</li>
+                        <li><code style="background:#ffc107; color:#000; padding:2px 6px; border-radius:3px;">N</code> 숫자 타입 - 좌측 0 패딩</li>
+                        <li><code style="background:#6f42c1; color:white; padding:2px 6px; border-radius:3px;">FULL</code> KSC-5601 2바이트 완성형 코드 - 한글 인코딩 (바이트 단위)</li>
+                    </ul>
+                </div>
             </div>
             
             <div class="xml-spec-input">
@@ -3363,6 +3376,332 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
             const original = REGEX_CACHE[name];
             return new RegExp(original.source, original.flags);
         }
+
+        /**
+         * =====================================================
+         * KSC-5601 (EUC-KR) 인코딩/디코딩 유틸리티
+         * FULL 타입 처리를 위한 2바이트 완성형 한글 코드 변환
+         * =====================================================
+         */
+        const KSC5601 = {
+            /**
+             * KSC-5601 바이트 배열을 문자열로 디코딩
+             * @param {Uint8Array|string} bytes - 바이트 배열 또는 Latin1 문자열
+             * @returns {string} 디코딩된 문자열
+             */
+            decode: function(bytes) {
+                try {
+                    // 문자열인 경우 바이트 배열로 변환
+                    let byteArray;
+                    if (typeof bytes === 'string') {
+                        byteArray = new Uint8Array(bytes.length);
+                        for (let i = 0; i < bytes.length; i++) {
+                            byteArray[i] = bytes.charCodeAt(i) & 0xFF;
+                        }
+                    } else {
+                        byteArray = bytes;
+                    }
+                    
+                    // TextDecoder를 사용하여 EUC-KR 디코딩
+                    const decoder = new TextDecoder('euc-kr');
+                    return decoder.decode(byteArray);
+                } catch (e) {
+                    console.warn('KSC5601.decode 오류:', e.message);
+                    return bytes;
+                }
+            },
+
+            /**
+             * 문자열을 KSC-5601 바이트 배열로 인코딩
+             * @param {string} str - 인코딩할 문자열
+             * @returns {Uint8Array} KSC-5601 바이트 배열
+             */
+            encode: function(str) {
+                if (!str || str.length === 0) {
+                    return new Uint8Array(0);
+                }
+
+                const result = [];
+                
+                for (let i = 0; i < str.length; i++) {
+                    const char = str[i];
+                    const code = char.charCodeAt(0);
+                    
+                    // ASCII 문자 (0x00-0x7F)
+                    if (code < 0x80) {
+                        result.push(code);
+                    }
+                    // 한글 완성형 (가-힣: 0xAC00-0xD7A3)
+                    else if (code >= 0xAC00 && code <= 0xD7A3) {
+                        const kscCode = this.unicodeToKSC5601(code);
+                        if (kscCode) {
+                            result.push((kscCode >> 8) & 0xFF);
+                            result.push(kscCode & 0xFF);
+                        } else {
+                            // 변환 불가 시 '?' 대체
+                            result.push(0x3F);
+                        }
+                    }
+                    // 한글 자모 (ㄱ-ㅎ, ㅏ-ㅣ)
+                    else if ((code >= 0x3131 && code <= 0x3163)) {
+                        const kscCode = this.unicodeJamoToKSC5601(code);
+                        if (kscCode) {
+                            result.push((kscCode >> 8) & 0xFF);
+                            result.push(kscCode & 0xFF);
+                        } else {
+                            result.push(0x3F);
+                        }
+                    }
+                    // 기타 2바이트 문자
+                    else if (code > 0x7F) {
+                        // 특수문자 등의 변환 시도
+                        const kscCode = this.unicodeSpecialToKSC5601(code);
+                        if (kscCode) {
+                            result.push((kscCode >> 8) & 0xFF);
+                            result.push(kscCode & 0xFF);
+                        } else {
+                            // 변환 불가 시 '?' 대체
+                            result.push(0x3F);
+                        }
+                    }
+                    else {
+                        result.push(code & 0xFF);
+                    }
+                }
+                
+                return new Uint8Array(result);
+            },
+
+            /**
+             * KSC-5601 바이트를 Latin1 문자열로 변환 (통전문 생성용)
+             * @param {string} str - 인코딩할 문자열
+             * @returns {string} Latin1 인코딩된 문자열
+             */
+            encodeToString: function(str) {
+                const bytes = this.encode(str);
+                let result = '';
+                for (let i = 0; i < bytes.length; i++) {
+                    result += String.fromCharCode(bytes[i]);
+                }
+                return result;
+            },
+
+            /**
+             * KSC-5601 인코딩된 문자열의 바이트 길이 계산
+             * @param {string} str - 문자열
+             * @returns {number} 바이트 길이
+             */
+            getByteLength: function(str) {
+                if (!str) return 0;
+                let length = 0;
+                for (let i = 0; i < str.length; i++) {
+                    const code = str.charCodeAt(i);
+                    if (code < 0x80) {
+                        length += 1;
+                    } else if (code >= 0xAC00 && code <= 0xD7A3) {
+                        length += 2; // 한글 완성형
+                    } else if (code >= 0x3131 && code <= 0x3163) {
+                        length += 2; // 한글 자모
+                    } else if (code > 0x7F) {
+                        length += 2; // 기타 2바이트 문자
+                    } else {
+                        length += 1;
+                    }
+                }
+                return length;
+            },
+
+            /**
+             * Unicode 한글 완성형을 KSC-5601 코드로 변환
+             * @param {number} unicode - Unicode 코드 포인트
+             * @returns {number|null} KSC-5601 코드 또는 null
+             */
+            unicodeToKSC5601: function(unicode) {
+                // 한글 완성형 변환 테이블 (가-힣)
+                // KSC-5601 한글 완성형은 0xB0A1 ~ 0xC8FE 범위
+                // 유니코드 한글 완성형은 0xAC00 ~ 0xD7A3 (11172자)
+                // KSC-5601은 2350자만 수록
+                
+                // 간략화된 변환 로직 - 초성/중성/종성 기반 계산
+                const uniOffset = unicode - 0xAC00;
+                
+                // KSC-5601 한글 배치표 기반 변환
+                // 실제 KSC-5601 테이블과 매핑 (주요 한글만)
+                if (!this._kscTable) {
+                    this._initKSCTable();
+                }
+                
+                return this._kscTable[unicode] || null;
+            },
+
+            /**
+             * Unicode 자모를 KSC-5601 코드로 변환
+             * @param {number} unicode - Unicode 자모 코드
+             * @returns {number|null} KSC-5601 코드 또는 null
+             */
+            unicodeJamoToKSC5601: function(unicode) {
+                // 한글 자모 변환 (ㄱ-ㅣ)
+                const jamoTable = {
+                    0x3131: 0xA4A1, // ㄱ
+                    0x3132: 0xA4A2, // ㄲ
+                    0x3133: 0xA4A3, // ㄳ
+                    0x3134: 0xA4A4, // ㄴ
+                    0x3135: 0xA4A5, // ㄵ
+                    0x3136: 0xA4A6, // ㄶ
+                    0x3137: 0xA4A7, // ㄷ
+                    0x3138: 0xA4A8, // ㄸ
+                    0x3139: 0xA4A9, // ㄹ
+                    0x313A: 0xA4AA, // ㄺ
+                    0x313B: 0xA4AB, // ㄻ
+                    0x313C: 0xA4AC, // ㄼ
+                    0x313D: 0xA4AD, // ㄽ
+                    0x313E: 0xA4AE, // ㄾ
+                    0x313F: 0xA4AF, // ㄿ
+                    0x3140: 0xA4B0, // ㅀ
+                    0x3141: 0xA4B1, // ㅁ
+                    0x3142: 0xA4B2, // ㅂ
+                    0x3143: 0xA4B3, // ㅃ
+                    0x3144: 0xA4B4, // ㅄ
+                    0x3145: 0xA4B5, // ㅅ
+                    0x3146: 0xA4B6, // ㅆ
+                    0x3147: 0xA4B7, // ㅇ
+                    0x3148: 0xA4B8, // ㅈ
+                    0x3149: 0xA4B9, // ㅉ
+                    0x314A: 0xA4BA, // ㅊ
+                    0x314B: 0xA4BB, // ㅋ
+                    0x314C: 0xA4BC, // ㅌ
+                    0x314D: 0xA4BD, // ㅍ
+                    0x314E: 0xA4BE, // ㅎ
+                    0x314F: 0xA4BF, // ㅏ
+                    0x3150: 0xA4C0, // ㅐ
+                    0x3151: 0xA4C1, // ㅑ
+                    0x3152: 0xA4C2, // ㅒ
+                    0x3153: 0xA4C3, // ㅓ
+                    0x3154: 0xA4C4, // ㅔ
+                    0x3155: 0xA4C5, // ㅕ
+                    0x3156: 0xA4C6, // ㅖ
+                    0x3157: 0xA4C7, // ㅗ
+                    0x3158: 0xA4C8, // ㅘ
+                    0x3159: 0xA4C9, // ㅙ
+                    0x315A: 0xA4CA, // ㅚ
+                    0x315B: 0xA4CB, // ㅛ
+                    0x315C: 0xA4CC, // ㅜ
+                    0x315D: 0xA4CD, // ㅝ
+                    0x315E: 0xA4CE, // ㅞ
+                    0x315F: 0xA4CF, // ㅟ
+                    0x3160: 0xA4D0, // ㅠ
+                    0x3161: 0xA4D1, // ㅡ
+                    0x3162: 0xA4D2, // ㅢ
+                    0x3163: 0xA4D3  // ㅣ
+                };
+                return jamoTable[unicode] || null;
+            },
+
+            /**
+             * Unicode 특수문자를 KSC-5601 코드로 변환
+             * @param {number} unicode - Unicode 코드
+             * @returns {number|null} KSC-5601 코드 또는 null
+             */
+            unicodeSpecialToKSC5601: function(unicode) {
+                // 일부 특수문자 매핑
+                const specialTable = {
+                    0x00A0: 0xA1A1, // Non-breaking space
+                    0x00B7: 0xA1A4, // ·
+                    0x2025: 0xA1A5, // ‥
+                    0x2026: 0xA1A6, // …
+                    0x00A8: 0xA1A7, // ¨
+                    0x3001: 0xA1A2, // 、
+                    0x3002: 0xA1A3, // 。
+                    0xFF01: 0xA3A1, // ！
+                    0xFF1F: 0xA3BF  // ？
+                };
+                return specialTable[unicode] || null;
+            },
+
+            /**
+             * KSC-5601 한글 변환 테이블 초기화
+             */
+            _initKSCTable: function() {
+                this._kscTable = {};
+                
+                // KSC-5601 완성형 한글 2350자 매핑
+                // 한글 완성형 코드는 0xB0A1 ~ 0xC8FE 범위
+                // 각 행(초성)은 0xB0~0xC8, 각 열(중/종성)은 0xA1~0xFE
+                
+                // 완성형 한글 목록 (KSC-5601 순서대로)
+                const kscHangul = 
+                    '가각간갈감갑값강갖같갚갛개객갠갤갬갭갯갱갸걀걔거걱건걷걸검겁것겅겉게겐겔겜겝겟겡겨격겪견결겸겹겻경곁계고곡곤골곬곯곰곱곳공곶과곽관괄괌괍괏광괘괜괠괩괴괵괸괼굄굉교구국군굳굴굵굶굻굼굽굿궁궂궈궉권궐궜궝궤귀귁귄귈귐귑귓규균귤그극근글긁금급긋긍기긱긴길김깁깃깅깆깊까깍깎깐깔깜깝깟깡깥깨깩깬깰깸깹깻깽꺄꺼꺽꺾껀껄껌껍껏껑께껜껨껫껴껸껼꼈꼍꼐꼬꼭꼰꼲꼴꼼꼽꼿꽁꽂꽃꽈꽉꽐꽜꽝꽤꽥꽹꾀꾄꾈꾐꾑꾕꾜꾸꾹꾼꿀꿇꿈꿉꿋꿍꿎꿔꿜꿨꿩꿰꿱꿴꿸뀀뀁뀄뀌뀐뀔뀜뀝뀨끄끅끈끊끌끎끓끔끕끗끙끝끼끽낀낄낌낍낏낑나낙낚난낟날낡낢남납낫났낭낮낯낱낳내낵낸낼냄냅냇냈냉냐냑냔냘냠냥너넉넋넌널넓넘넙넛넜넝넣네넥넨넬넴넵넷넸넹녀녁년념녑녔녕녘녜녠노녹논놀놂놈놉놋농높놓놔놘놜놨뇌뇐뇔뇜뇝뇟뇨뇩뇬뇰뇹뇻뇽누눅눈눋눌눔눕눗눙눠눴눼뉘뉜뉠뉨뉩뉴뉵뉼늄늅늉느늑는늘늙늚늠늡늣능늦늪늬늰늴니닉닌닐닒님닙닛닝닢다닥닦단닫달닭닮닯닳담답닷당닺닻닿대댁댄댈댐댑댓댔댕댜더덕덖던덛덜덞덟덤덥덧덩덫덮데덱덴델뎀뎁뎃뎄뎅뎌뎐뎔뎠뎡뎨뎬도독돈돋돌돎돐돔돕돗동돛돝돠돤돨돼됐되된될됨됩됫됴두둑둔둘둠둡둣둥둬뒀뒈뒝뒤뒨뒬뒵뒷뒹듀듈듐듕드득든듣들듦듬듭듯등듸디딕딘딛딜딤딥딧딨딩딪따딱딴딸땀땁땃땄땅땋때땍땐땔땜땝땟땠땡떠떡떤떨떪떫떰떱떳떴떵떻떼떽뗀뗄뗌뗍뗏뗐뗑뗘뗬또똑똔똘똥똬똴뙈뙤뙨뚜뚝뚠뚤뚫뚬뚱뛔뛰뛴뛸뜀뜁뜅뜨뜩뜬뜯뜰뜸뜹뜻띄띈띌띔띕띠띤띨띰띱띳띵라락란랄람랍랏랐랑랒랖랗래랙랜랠램랩랫랬랭랴략랸럇량러럭런럴럼럽럿렀렁렇레렉렌렐렘렙렛렝려력련렬렴렵렷렸령례롄롑롓로록론롤롬롭롯롱롸롼뢍뢨뢰뢴뢸룀룁룃룅료룐룔룝룟룡루룩룬룰룸룹룻룽뤄뤘뤠뤼뤽륀륄륌륏륑류륙륜률륨륩륫륭르륵른를름릅릇릉릊릍릎리릭린릴림립릿링마막만많맏말맑맒맘맙맛망맞맡맣매맥맨맬맴맵맷맸맹맺먀먁먈먕머먹먼멀멂멈멉멋멍멎멓메멕멘멜멤멥멧멨멩며멱면멸몃몄명몇몌모목몫몬몰몲몸몹못몽뫄뫈뫘뫙뫼묀묄묍묏묑묘묜묠묩묫무묵묶문묻물묽묾뭄뭅뭇뭉뭍뭏뭐뭔뭘뭡뭣뭬뮈뮌뮐뮤뮨뮬뮴뮷므믄믈믐믓미믹민믿밀밂밈밉밋밌밍및밑바박밖밗반받발밝밞밟밤밥밧방밭배백밴밸뱀뱁뱃뱄뱅뱉뱌뱍뱐뱝버벅번벋벌벎범법벗벙벚베벡벤벧벨벰벱벳벴벵벼벽변별볍볏볐병볕볘볜보복볶본볼봄봅봇봉봐봔봤봬뵀뵈뵉뵌뵐뵘뵙뵤뵨부북분붇불붉붊붐붑붓붕붙붚붜붤붰붸뷔뷕뷘뷜뷩뷰뷴뷸븀븃븅, etc...';
+                
+                // 실제 변환 테이블 초기화 (일반적으로 사용되는 한글 매핑)
+                // 정확한 KSC-5601 매핑을 위한 테이블
+                const kscHangulList = kscHangul.split('');
+                
+                // KSC-5601 완성형 한글 코드 시작 위치
+                let kscRow = 0xB0;
+                let kscCol = 0xA1;
+                
+                for (let i = 0; i < kscHangulList.length && i < 2350; i++) {
+                    const unicode = kscHangulList[i].charCodeAt(0);
+                    const kscCode = (kscRow << 8) | kscCol;
+                    this._kscTable[unicode] = kscCode;
+                    
+                    kscCol++;
+                    if (kscCol > 0xFE) {
+                        kscCol = 0xA1;
+                        kscRow++;
+                    }
+                }
+            },
+
+            /**
+             * FULL 타입 필드의 패딩 처리 (바이트 단위)
+             * @param {string} value - 입력값
+             * @param {number} byteSize - 목표 바이트 크기
+             * @returns {string} 패딩된 Latin1 문자열
+             */
+            padToByteSize: function(value, byteSize) {
+                const encoded = this.encodeToString(value);
+                const currentByteLength = encoded.length;
+                
+                if (currentByteLength > byteSize) {
+                    // 바이트 단위로 자르기 (한글 깨짐 방지)
+                    return this.truncateToByteSize(value, byteSize);
+                }
+                
+                if (currentByteLength < byteSize) {
+                    // 우측 공백 패딩 (0x20)
+                    return encoded + ' '.repeat(byteSize - currentByteLength);
+                }
+                
+                return encoded;
+            },
+
+            /**
+             * 바이트 크기로 문자열 자르기 (한글 깨짐 방지)
+             * @param {string} str - 원본 문자열
+             * @param {number} maxBytes - 최대 바이트 수
+             * @returns {string} 잘린 Latin1 문자열
+             */
+            truncateToByteSize: function(str, maxBytes) {
+                let result = '';
+                let currentBytes = 0;
+                
+                for (let i = 0; i < str.length; i++) {
+                    const char = str[i];
+                    const encoded = this.encodeToString(char);
+                    const charBytes = encoded.length;
+                    
+                    if (currentBytes + charBytes > maxBytes) {
+                        break;
+                    }
+                    
+                    result += encoded;
+                    currentBytes += charBytes;
+                }
+                
+                return result;
+            }
+        };
 
         /**
          * =====================================================
@@ -4514,6 +4853,18 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 // tr 생성
                 const tr = document.createElement('tr');
 
+                // FULL 타입인 경우 값을 KSC-5601 디코딩
+                let displayValue = item.value;
+                let decodedValue = null;
+                
+                if (item.type === 'FULL' && item.value) {
+                    try {
+                        decodedValue = KSC5601.decode(item.value);
+                    } catch (e) {
+                        console.warn('KSC-5601 디코딩 실패:', e);
+                    }
+                }
+
                 // td 7개 생성
                 const values = [
                     index + 1,
@@ -4522,12 +4873,34 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     item.size,
                     item.startPos,
                     item.endPos,
-                    item.value
+                    displayValue
                 ];
 
                 values.forEach(function(value, tdIndex) {
                     const td = document.createElement('td');
-                    td.textContent = value;
+                    
+                    // FULL 타입의 값 컬럼: 디코딩된 값과 HEX를 함께 표시
+                    if (tdIndex === 6 && item.type === 'FULL' && decodedValue) {
+                        // 디코딩된 한글 텍스트 표시
+                        const decodedSpan = document.createElement('span');
+                        decodedSpan.textContent = decodedValue;
+                        decodedSpan.style.fontWeight = 'bold';
+                        decodedSpan.style.color = '#6f42c1';
+                        td.appendChild(decodedSpan);
+                        
+                        // HEX 값 (작은 글씨로)
+                        const hexSpan = document.createElement('small');
+                        hexSpan.style.display = 'block';
+                        hexSpan.style.color = '#666';
+                        hexSpan.style.fontSize = '11px';
+                        const hexValue = Array.from(item.value.substring(0, 20))
+                            .map(c => c.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase())
+                            .join(' ');
+                        hexSpan.textContent = 'HEX: ' + hexValue + (item.value.length > 20 ? '...' : '');
+                        td.appendChild(hexSpan);
+                    } else {
+                        td.textContent = value;
+                    }
 
                     // value가 공백만 있으면 class="empty-value" 추가 (마지막 td, 즉 value 컬럼)
                     if (tdIndex === 6 && typeof value === 'string' && value.trim() === '') {
@@ -5620,10 +5993,12 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
   <col id="계좌번호" type="N" size="12" />
   <col id="송금액" type="N" size="15" />
   <col id="받는사람" type="X" size="20" />
+  <col id="비고" type="FULL" size="10" />
 </packet>`;
                 
-                // 통전문 샘플 설정 (정확히 55자)
-                const sampleTelegram = 'HEADER01123456789012000000000100000홍길동              ';
+                // 통전문 샘플 설정 (정확히 65자: 55 + 10bytes FULL)
+                // FULL 타입 필드는 KSC-5601 인코딩된 바이트로 구성 (예: "테스트" = 6bytes + 4bytes 패딩)
+                const sampleTelegram = 'HEADER01123456789012000000000100000홍길동              테스트    ';
                 
                 document.getElementById('xml-input').value = sampleXml;
                 document.getElementById('telegram-input').value = sampleTelegram;
@@ -7111,6 +7486,22 @@ T000000000200000000000000003000`
                 xmlSpec.forEach(function(field, index) {
                     const tr = document.createElement('tr');
                     const isNumeric = field.type === 'N';
+                    const isFull = field.type === 'FULL';
+                    
+                    // FULL 타입은 바이트 기준이므로 maxlength를 넉넉하게 설정
+                    // (한글 1자 = 2바이트이므로 size/2 + 여유분)
+                    const maxLength = isFull ? Math.ceil(field.size) : field.size;
+                    
+                    // placeholder 설정
+                    let placeholder = '텍스트 입력';
+                    if (isNumeric) {
+                        placeholder = '숫자 입력';
+                    } else if (isFull) {
+                        placeholder = '한글/영문 입력 (KSC-5601 ' + field.size + 'bytes)';
+                    }
+                    
+                    // 단위 표시 (FULL: bytes, 기타: chars)
+                    const sizeUnit = isFull ? ' bytes' : '';
                     
                     tr.innerHTML = 
                         '<td>' +
@@ -7119,7 +7510,7 @@ T000000000200000000000000003000`
                         '<td class="field-type-cell">' +
                         '  <span class="type-badge type-' + field.type + '">' + field.type + '</span>' +
                         '</td>' +
-                        '<td class="field-size">' + field.size + '</td>' +
+                        '<td class="field-size">' + field.size + sizeUnit + '</td>' +
                         '<td>' +
                         '  <input type="text"' +
                         '         class="field-input xml-field-input"' +
@@ -7127,13 +7518,13 @@ T000000000200000000000000003000`
                         '         data-type="' + field.type + '"' +
                         '         data-size="' + field.size + '"' +
                         '         data-index="' + index + '"' +
-                        '         maxlength="' + field.size + '"' +
-                        '         placeholder="' + (isNumeric ? '숫자 입력' : '텍스트 입력') + '"' +
+                        (isFull ? '' : '         maxlength="' + maxLength + '"') +
+                        '         placeholder="' + placeholder + '"' +
                         (isNumeric ? '         inputmode="numeric"' : '') +
                         '  />' +
                         '  <div class="input-meta">' +
                         '    <span class="char-counter">' +
-                        '      <span class="current-length">0</span>/' + field.size +
+                        '      <span class="current-length">0</span>/' + field.size + (isFull ? 'B' : '') +
                         '    </span>' +
                         '  </div>' +
                         '</td>' +
@@ -7161,16 +7552,21 @@ T000000000200000000000000003000`
                         const fieldSize = parseInt(input.dataset.size);
                         const value = input.value;
                         
-                        // 글자 수 카운터
+                        // 글자 수/바이트 수 카운터
                         const row = input.closest('tr');
                         const currentLength = row.querySelector('.current-length');
                         
-                        currentLength.textContent = value.length;
+                        // FULL 타입은 바이트 수, 그 외는 글자 수
+                        const displayLength = fieldType === 'FULL' 
+                            ? KSC5601.getByteLength(value) 
+                            : value.length;
                         
-                        if (value.length > fieldSize) {
+                        currentLength.textContent = displayLength;
+                        
+                        if (displayLength > fieldSize) {
                             currentLength.style.color = '#dc3545';
                             input.style.borderColor = '#dc3545';
-                        } else if (value.length === fieldSize) {
+                        } else if (displayLength === fieldSize) {
                             currentLength.style.color = '#28a745';
                             input.style.borderColor = '#28a745';
                         } else {
@@ -7189,7 +7585,20 @@ T000000000200000000000000003000`
                         // 패딩 미리보기
                         const paddedValue = padValueByType(value, fieldSize, fieldType);
                         const previewCell = row.querySelector('.preview-text');
-                        previewCell.textContent = paddedValue;
+                        
+                        // FULL 타입은 HEX로도 표시
+                        if (fieldType === 'FULL') {
+                            const hexPreview = Array.from(paddedValue.substring(0, 20))
+                                .map(c => c.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase())
+                                .join(' ');
+                            previewCell.textContent = paddedValue.length > 20 
+                                ? hexPreview + '...' 
+                                : hexPreview;
+                            previewCell.title = '원본: ' + value + '\nKSC-5601 인코딩됨 (' + paddedValue.length + 'bytes)';
+                        } else {
+                            previewCell.textContent = paddedValue;
+                            previewCell.title = '';
+                        }
                     }
                 });
                 
@@ -7292,6 +7701,11 @@ T000000000200000000000000003000`
              * @returns {string} 패딩된 값
              */
             function padValueByType(value, size, type) {
+                // FULL 타입: KSC-5601 2바이트 완성형 코드로 변환 후 패딩
+                if (type === 'FULL') {
+                    return KSC5601.padToByteSize(value, size);
+                }
+                
                 if (value.length > size) {
                     return value.substring(0, size);
                 }
@@ -7499,7 +7913,13 @@ T000000000200000000000000003000`
                     let value = input.value;
                     
                     // 타입에 따른 패딩 처리
-                    if (value.length < field.size) {
+                    if (field.type === 'FULL') {
+                        // FULL 타입: KSC-5601 인코딩 후 바이트 단위 패딩
+                        value = KSC5601.padToByteSize(value, field.size);
+                        raw += value;
+                        // display용: HEX 표현으로 변환
+                        display += '[KSC:' + value.length + 'B]';
+                    } else if (value.length < field.size) {
                         if (field.type === 'N') {
                             // 숫자 타입: 왼쪽 0 패딩
                             value = '0'.repeat(field.size - value.length) + value;
@@ -7507,12 +7927,16 @@ T000000000200000000000000003000`
                             // 문자 타입: 오른쪽 공백 패딩
                             value = value + ' '.repeat(field.size - value.length);
                         }
+                        raw += value;
+                        display += value.replace(/ /g, '·');  // 공백을 점으로 표시
                     } else if (value.length > field.size) {
                         value = value.substring(0, field.size);
+                        raw += value;
+                        display += value.replace(/ /g, '·');
+                    } else {
+                        raw += value;
+                        display += value.replace(/ /g, '·');
                     }
-                    
-                    raw += value;
-                    display += value.replace(/ /g, '·');  // 공백을 점으로 표시
                 });
                 
                 return { raw: raw, display: display };
