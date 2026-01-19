@@ -1232,6 +1232,74 @@
             color: #000;
         }
 
+        /* cd/code 필드용 타입 토글 스타일 */
+        .type-toggle-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            background: #e9ecef;
+            color: #6c757d;
+            border: 1px solid #ced4da;
+            margin-left: 6px;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .type-toggle-label:hover {
+            background: #dee2e6;
+            border-color: #adb5bd;
+        }
+
+        .type-toggle-checkbox {
+            width: 14px;
+            height: 14px;
+            margin: 0;
+            cursor: pointer;
+            accent-color: #ffc107;
+        }
+
+        .type-toggle-checkbox:checked + .type-toggle-text {
+            color: #856404;
+            font-weight: bold;
+        }
+
+        .type-toggle-label:has(.type-toggle-checkbox:checked) {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+
+        .type-toggle-text {
+            font-weight: normal;
+            transition: all 0.2s ease;
+        }
+
+        /* 다크모드 타입 토글 */
+        body.dark-mode .type-toggle-label {
+            background: #374151;
+            color: #9ca3af;
+            border-color: #4b5563;
+        }
+
+        body.dark-mode .type-toggle-label:hover {
+            background: #4b5563;
+            border-color: #6b7280;
+        }
+
+        body.dark-mode .type-toggle-label:has(.type-toggle-checkbox:checked) {
+            background: #78350f;
+            border-color: #ffc107;
+            color: #fcd34d;
+        }
+
+        body.dark-mode .type-toggle-checkbox:checked + .type-toggle-text {
+            color: #fcd34d;
+        }
+
         .type-badge {
             padding: 4px 10px;
             border-radius: 4px;
@@ -6529,12 +6597,23 @@ T000000000200000000000000003000`
             
             /**
              * 숫자 필드 여부 확인 헬퍼 함수
+             * - cd, code는 자동 판단에서 제외 (사용자 선택에 맡김)
              * @param {string} fieldName - 필드명
              * @returns {boolean} 숫자 필드 여부
              */
             function isNumericField(fieldName) {
-                const numericPatterns = /amt|amount|cnt|count|num|number|price|qty|quantity|seq|no|cd|code/i;
+                // cd, code는 사용자 판단에 맡기므로 제외
+                const numericPatterns = /amt|amount|cnt|count|num|number|price|qty|quantity|seq|no/i;
                 return numericPatterns.test(fieldName);
+            }
+            
+            /**
+             * cd/code 포함 필드 여부 확인 (사용자 선택 필요 필드)
+             * @param {string} fieldName - 필드명
+             * @returns {boolean} cd/code 포함 여부
+             */
+            function isUserChoiceField(fieldName) {
+                return /cd|code/i.test(fieldName);
             }
             
             /**
@@ -6579,11 +6658,29 @@ T000000000200000000000000003000`
                 } else {
                     // 일반 입력 필드
                     const isNumeric = isNumericField(field.name);
+                    const isUserChoice = isUserChoiceField(field.name);
+                    
+                    // 숫자 태그 HTML 생성 (cd/code 필드는 토글 가능)
+                    let numericTagHtml = '';
+                    if (isNumeric) {
+                        numericTagHtml = '<span class="field-tag numeric-tag">숫자</span>';
+                    } else if (isUserChoice) {
+                        // cd/code 필드: 사용자 선택 토글 추가
+                        numericTagHtml = `
+                            <label class="type-toggle-label" title="체크하면 숫자 필드로 처리 (좌측 0 패딩)">
+                                <input type="checkbox" 
+                                       class="type-toggle-checkbox" 
+                                       id="type-toggle-${index}"
+                                       data-field-index="${index}" />
+                                <span class="type-toggle-text">숫자</span>
+                            </label>
+                        `;
+                    }
                     
                     tr.innerHTML = `
                         <td>
                             <span class="field-name">${field.name}</span>
-                            ${isNumeric ? '<span class="field-tag numeric-tag">숫자</span>' : ''}
+                            ${numericTagHtml}
                         </td>
                         <td class="field-size">${field.size}</td>
                         <td>
@@ -6595,6 +6692,8 @@ T000000000200000000000000003000`
                                    data-field-name="${field.name}"
                                    data-field-size="${field.size}"
                                    data-field-index="${index}"
+                                   data-is-numeric="${isNumeric}"
+                                   data-is-user-choice="${isUserChoice}"
                                    id="gen-field-${index}"
                                    maxlength="${field.size}"
                                    placeholder="최대 ${field.size}자"
@@ -6615,6 +6714,7 @@ T000000000200000000000000003000`
                         const input = document.getElementById('gen-field-' + index);
                         const charCountEl = document.getElementById('char-count-' + index);
                         const previewEl = document.getElementById('preview-field-' + index);
+                        const typeToggle = document.getElementById('type-toggle-' + index);
                         
                         if (input) {
                             input.addEventListener('input', function() {
@@ -6633,8 +6733,13 @@ T000000000200000000000000003000`
                                     if (value.length === 0) {
                                         previewEl.textContent = '';
                                     } else if (value.length < size) {
-                                        // 패딩 표시
-                                        const padded = value + '░'.repeat(size - value.length);
+                                        // 패딩 표시 - 숫자 필드는 0, 문자 필드는 공백
+                                        const isNumericNow = input.dataset.isNumeric === 'true' || 
+                                                           (typeToggle && typeToggle.checked);
+                                        const padChar = isNumericNow ? '0' : '░';
+                                        const padded = isNumericNow ? 
+                                                      padChar.repeat(size - value.length) + value :
+                                                      value + padChar.repeat(size - value.length);
                                         previewEl.textContent = padded;
                                         previewEl.classList.add('padded');
                                     } else if (value.length === size) {
@@ -6646,6 +6751,20 @@ T000000000200000000000000003000`
                                         previewEl.classList.add('over');
                                     }
                                 }
+                            });
+                        }
+                        
+                        // 타입 토글 체크박스 이벤트 (cd/code 필드용)
+                        if (typeToggle && input) {
+                            typeToggle.addEventListener('change', function() {
+                                // inputmode 변경
+                                if (this.checked) {
+                                    input.setAttribute('inputmode', 'numeric');
+                                } else {
+                                    input.removeAttribute('inputmode');
+                                }
+                                // 미리보기 즉시 업데이트
+                                input.dispatchEvent(new Event('input'));
                             });
                         }
                     }, 0);
@@ -6776,18 +6895,33 @@ T000000000200000000000000003000`
                                 }
                             }
                             
-                            // 2. 숫자 필드 검증
-                            if (isNumericField(fieldName)) {
+                            // 2. 숫자 필드 검증 (자동 판단 + 사용자 선택 토글 확인)
+                            const fieldIndex = input.dataset.index;
+                            const typeToggle = document.getElementById('type-toggle-' + fieldIndex);
+                            const isAutoNumeric = isNumericField(fieldName);
+                            const isUserChoiceNumeric = typeToggle && typeToggle.checked;
+                            const shouldValidateNumeric = isAutoNumeric || isUserChoiceNumeric;
+                            
+                            if (shouldValidateNumeric) {
                                 if (value && !/^[0-9]*$/.test(value)) {
                                     input.setCustomValidity('숫자만 입력 가능합니다');
                                     input.style.borderColor = '#ffc107';
                                 } else {
                                     input.setCustomValidity('');
                                 }
+                            } else {
+                                input.setCustomValidity('');
                             }
                             
-                            // 3. 패딩 미리보기
-                            const paddedValue = padValue(value, fieldSize, fieldName);
+                            // 3. 패딩 미리보기 (숫자: 좌측 0 패딩, 문자: 우측 공백 패딩)
+                            let paddedValue;
+                            if (value.length >= fieldSize) {
+                                paddedValue = value.substring(0, fieldSize);
+                            } else if (shouldValidateNumeric) {
+                                paddedValue = '0'.repeat(fieldSize - value.length) + value;
+                            } else {
+                                paddedValue = value + ' '.repeat(fieldSize - value.length);
+                            }
                             const previewCell = row.querySelector('.preview-text');
                             if (previewCell) {
                                 previewCell.textContent = paddedValue;
@@ -6823,9 +6957,19 @@ T000000000200000000000000003000`
                         return;
                     }
                     
-                    // 값 패딩 (오른쪽 공백 채우기)
+                    // 숫자 필드 여부 판단 (자동 판단 + 사용자 선택 토글)
+                    const isNumeric = input.dataset.isNumeric === 'true';
+                    const isUserChoice = input.dataset.isUserChoice === 'true';
+                    const typeToggle = document.getElementById('type-toggle-' + idx);
+                    const useNumericPad = isNumeric || (isUserChoice && typeToggle && typeToggle.checked);
+                    
+                    // 값 패딩 (숫자: 좌측 0 패딩, 문자: 우측 공백 패딩)
                     if (value.length < field.size) {
-                        value = value + ' '.repeat(field.size - value.length);
+                        if (useNumericPad) {
+                            value = '0'.repeat(field.size - value.length) + value;
+                        } else {
+                            value = value + ' '.repeat(field.size - value.length);
+                        }
                     } else if (value.length > field.size) {
                         value = value.substring(0, field.size);
                     }
