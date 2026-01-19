@@ -34,6 +34,7 @@
         h1 {
             text-align: center;
             margin-bottom: 30px;
+            color: #333;
         }
 
         /* 입력 영역 */
@@ -43,12 +44,19 @@
             padding: 10px;
             font-size: 14px;
             box-sizing: border-box;
+            color: #333;
+            background: white;
+        }
+
+        textarea::placeholder {
+            color: #999;
         }
 
         label {
             display: block;
             font-weight: bold;
             margin-top: 15px;
+            color: #333;
         }
 
         button {
@@ -184,6 +192,14 @@
             cursor: pointer;
             margin-right: 5px;
             border-radius: 5px 5px 0 0;
+            color: #333;
+            font-size: 15px;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover {
+            background: #e0e0e0;
+            color: #007bff;
         }
 
         .tab-btn.active {
@@ -425,6 +441,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            color: #004085;
         }
 
         .option-checkbox:hover {
@@ -470,10 +487,12 @@
             cursor: pointer;
             font-size: 15px;
             transition: all 0.2s;
+            color: #495057;
         }
 
         .sub-tab-btn:hover {
             background: #e9ecef;
+            color: #007bff;
         }
 
         .sub-tab-btn.active {
@@ -1810,8 +1829,14 @@
         /* 단축키 힌트 스타일 */
         .shortcut-hint {
             font-size: 11px;
-            color: #6c757d;
+            color: rgba(255, 255, 255, 0.7);
             margin-left: 5px;
+        }
+
+        /* 버튼 외부에서 사용될 때 */
+        label .shortcut-hint,
+        span:not([class]) .shortcut-hint {
+            color: #6c757d;
         }
 
         /* 다크모드 토글 버튼 */
@@ -2110,6 +2135,11 @@
             background: #2d2d44;
             border-color: #3d3d5c;
             color: #e0e0e0;
+        }
+
+        body.dark-mode .tab-btn:hover {
+            background: #3d3d5c;
+            color: #64b5f6;
         }
 
         body.dark-mode .tab-btn.active {
