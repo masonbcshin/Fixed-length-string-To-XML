@@ -4812,7 +4812,9 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 const lengthBadgeHtml = createLengthBadge(record, structDefs, stats.mode);
                 const lengthBadgeContainer = document.createElement('span');
                 lengthBadgeContainer.innerHTML = lengthBadgeHtml;
-                headerDiv.appendChild(lengthBadgeContainer.firstChild);
+                if (lengthBadgeContainer.firstChild) {
+                    headerDiv.appendChild(lengthBadgeContainer.firstChild);
+                }
 
                 // 복사 버튼
                 const copyBtn = document.createElement('button');
@@ -6265,21 +6267,52 @@ T000000000200000000000000003000`
                     </div>
                 `;
 
-                // struct-input-section 앞에 삽입
-                const inputSection = document.getElementById('struct-input-section');
-                inputSection.parentNode.insertBefore(notification, inputSection);
+                // DOM에 삽입할 위치 찾기
+                let inserted = false;
+                
+                // 1순위: struct-definitions-area 앞에 삽입
+                const inputSection = document.getElementById('struct-definitions-area');
+                if (inputSection && inputSection.parentNode) {
+                    inputSection.parentNode.insertBefore(notification, inputSection);
+                    inserted = true;
+                }
+                
+                // 2순위: struct-tab에 추가
+                if (!inserted) {
+                    const structTab = document.getElementById('struct-tab');
+                    if (structTab) {
+                        if (structTab.firstChild) {
+                            structTab.insertBefore(notification, structTab.firstChild);
+                        } else {
+                            structTab.appendChild(notification);
+                        }
+                        inserted = true;
+                    }
+                }
+                
+                // 3순위: body에 추가 (최후의 fallback)
+                if (!inserted) {
+                    document.body.appendChild(notification);
+                    inserted = true;
+                }
 
-                // 복원 버튼 이벤트
-                document.getElementById('restore-yes').addEventListener('click', function() {
-                    doRestore(data);
-                    notification.remove();
-                });
+                // 알림 내부의 버튼에 이벤트 연결 (notification 내부에서 찾기)
+                const restoreYesBtn = notification.querySelector('#restore-yes');
+                const restoreNoBtn = notification.querySelector('#restore-no');
+                
+                if (restoreYesBtn) {
+                    restoreYesBtn.addEventListener('click', function() {
+                        doRestore(data);
+                        notification.remove();
+                    });
+                }
 
-                // 무시 버튼 이벤트
-                document.getElementById('restore-no').addEventListener('click', function() {
-                    notification.remove();
-                    localStorage.removeItem(STORAGE_KEY); // 저장된 데이터 삭제
-                });
+                if (restoreNoBtn) {
+                    restoreNoBtn.addEventListener('click', function() {
+                        notification.remove();
+                        localStorage.removeItem(STORAGE_KEY); // 저장된 데이터 삭제
+                    });
+                }
             }
 
             /**
@@ -7289,7 +7322,13 @@ T000000000200000000000000003000`
                 
                 // 목록에 추가 (최신이 위로)
                 const listContainer = container.querySelector('#xml-records-list');
-                listContainer.insertBefore(recordCard, listContainer.firstChild);
+                if (listContainer) {
+                    if (listContainer.firstChild) {
+                        listContainer.insertBefore(recordCard, listContainer.firstChild);
+                    } else {
+                        listContainer.appendChild(recordCard);
+                    }
+                }
                 
                 // 카운트 업데이트
                 updateXMLRecordCount();
@@ -7696,7 +7735,13 @@ T000000000200000000000000003000`
                 
                 // 목록에 추가 (최신이 위로)
                 const listContainer = container.querySelector('#records-list');
-                listContainer.insertBefore(recordCard, listContainer.firstChild);
+                if (listContainer) {
+                    if (listContainer.firstChild) {
+                        listContainer.insertBefore(recordCard, listContainer.firstChild);
+                    } else {
+                        listContainer.appendChild(recordCard);
+                    }
+                }
                 
                 // 카운트 업데이트
                 updateRecordCount();
