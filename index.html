@@ -7261,9 +7261,15 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 
                 // 통전문 샘플 설정 (65 bytes: 55 + 10bytes FULL)
                 // FULL 타입 필드는 KSC-5601 2바이트 완성형 인코딩
-                // 'TEST' → A3D4 A3C5 A3D3 A3D4 (8bytes) + A1A1 (2bytes 전각 공백) = 10bytes
-                const kscTest = String.fromCharCode(0xA3, 0xD4, 0xA3, 0xC5, 0xA3, 0xD3, 0xA3, 0xD4, 0xA1, 0xA1);
-                const sampleTelegram = 'HEADER01123456789012000000000100000Hong Gil Dong       ' + kscTest;
+                // '테스트' (한글 3글자) = C5D7 BDBA C6AE (6bytes) + A1A1 A1A1 (4bytes 전각 공백) = 10bytes
+                const kscHangul = String.fromCharCode(
+                    0xC5, 0xD7,  // 테
+                    0xBD, 0xBA,  // 스
+                    0xC6, 0xAE,  // 트
+                    0xA1, 0xA1,  // 전각 공백
+                    0xA1, 0xA1   // 전각 공백
+                );
+                const sampleTelegram = 'HEADER01123456789012000000000100000Hong Gil Dong       ' + kscHangul;
                 
                 document.getElementById('xml-input').value = sampleXml;
                 document.getElementById('telegram-input').value = sampleTelegram;
