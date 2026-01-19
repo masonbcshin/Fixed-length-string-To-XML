@@ -6265,9 +6265,17 @@ T000000000200000000000000003000`
                     </div>
                 `;
 
-                // struct-input-section 앞에 삽입
-                const inputSection = document.getElementById('struct-input-section');
-                inputSection.parentNode.insertBefore(notification, inputSection);
+                // struct-definitions-area 앞에 삽입
+                const inputSection = document.getElementById('struct-definitions-area');
+                if (inputSection && inputSection.parentNode) {
+                    inputSection.parentNode.insertBefore(notification, inputSection);
+                } else {
+                    // fallback: struct-tab에 추가
+                    const structTab = document.getElementById('struct-tab');
+                    if (structTab) {
+                        structTab.insertBefore(notification, structTab.firstChild);
+                    }
+                }
 
                 // 복원 버튼 이벤트
                 document.getElementById('restore-yes').addEventListener('click', function() {
