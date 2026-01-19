@@ -3412,7 +3412,8 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
             },
 
             /**
-             * 문자열을 KSC-5601 바이트 배열로 인코딩
+             * 문자열을 KSC-5601 2바이트 완성형 바이트 배열로 인코딩
+             * 모든 문자가 2바이트로 변환됨 (전각 문자)
              * @param {string} str - 인코딩할 문자열
              * @returns {Uint8Array} KSC-5601 바이트 배열
              */
@@ -3427,9 +3428,37 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     const char = str[i];
                     const code = char.charCodeAt(0);
                     
-                    // ASCII 문자 (0x00-0x7F)
-                    if (code < 0x80) {
-                        result.push(code);
+                    // 공백 → 전각 공백 (0xA1A1)
+                    if (code === 0x20) {
+                        result.push(0xA1);
+                        result.push(0xA1);
+                    }
+                    // 숫자 0-9 → 전각 숫자 (0xA3B0-0xA3B9)
+                    else if (code >= 0x30 && code <= 0x39) {
+                        result.push(0xA3);
+                        result.push(0xB0 + (code - 0x30));
+                    }
+                    // 대문자 A-Z → 전각 대문자 (0xA3C1-0xA3DA)
+                    else if (code >= 0x41 && code <= 0x5A) {
+                        result.push(0xA3);
+                        result.push(0xC1 + (code - 0x41));
+                    }
+                    // 소문자 a-z → 전각 소문자 (0xA3E1-0xA3FA)
+                    else if (code >= 0x61 && code <= 0x7A) {
+                        result.push(0xA3);
+                        result.push(0xE1 + (code - 0x61));
+                    }
+                    // 기타 ASCII 특수문자 → 전각 특수문자
+                    else if (code >= 0x21 && code <= 0x7E) {
+                        const fullwidthCode = this.asciiToFullwidth(code);
+                        if (fullwidthCode) {
+                            result.push((fullwidthCode >> 8) & 0xFF);
+                            result.push(fullwidthCode & 0xFF);
+                        } else {
+                            // 변환 불가 시 전각 물음표
+                            result.push(0xA3);
+                            result.push(0xBF);
+                        }
                     }
                     // 한글 완성형 (가-힣: 0xAC00-0xD7A3)
                     else if (code >= 0xAC00 && code <= 0xD7A3) {
@@ -3438,8 +3467,9 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                             result.push((kscCode >> 8) & 0xFF);
                             result.push(kscCode & 0xFF);
                         } else {
-                            // 변환 불가 시 '?' 대체
-                            result.push(0x3F);
+                            // 변환 불가 시 전각 물음표 대체
+                            result.push(0xA3);
+                            result.push(0xBF);
                         }
                     }
                     // 한글 자모 (ㄱ-ㅎ, ㅏ-ㅣ)
@@ -3449,7 +3479,8 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                             result.push((kscCode >> 8) & 0xFF);
                             result.push(kscCode & 0xFF);
                         } else {
-                            result.push(0x3F);
+                            result.push(0xA3);
+                            result.push(0xBF);
                         }
                     }
                     // 기타 2바이트 문자
@@ -3460,16 +3491,63 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                             result.push((kscCode >> 8) & 0xFF);
                             result.push(kscCode & 0xFF);
                         } else {
-                            // 변환 불가 시 '?' 대체
-                            result.push(0x3F);
+                            // 변환 불가 시 전각 물음표 대체
+                            result.push(0xA3);
+                            result.push(0xBF);
                         }
                     }
+                    // 제어 문자 등 → 전각 공백으로 대체
                     else {
-                        result.push(code & 0xFF);
+                        result.push(0xA1);
+                        result.push(0xA1);
                     }
                 }
                 
                 return new Uint8Array(result);
+            },
+            
+            /**
+             * ASCII 특수문자를 KSC-5601 전각 코드로 변환
+             * @param {number} ascii - ASCII 코드 (0x21-0x7E)
+             * @returns {number|null} KSC-5601 전각 코드 또는 null
+             */
+            asciiToFullwidth: function(ascii) {
+                // KSC-5601 전각 특수문자 매핑 (0xA3xx 영역)
+                const asciiToKsc = {
+                    0x21: 0xA3A1, // !
+                    0x22: 0xA3A2, // "
+                    0x23: 0xA3A3, // #
+                    0x24: 0xA3A4, // $
+                    0x25: 0xA3A5, // %
+                    0x26: 0xA3A6, // &
+                    0x27: 0xA3A7, // '
+                    0x28: 0xA3A8, // (
+                    0x29: 0xA3A9, // )
+                    0x2A: 0xA3AA, // *
+                    0x2B: 0xA3AB, // +
+                    0x2C: 0xA3AC, // ,
+                    0x2D: 0xA3AD, // -
+                    0x2E: 0xA3AE, // .
+                    0x2F: 0xA3AF, // /
+                    0x3A: 0xA3BA, // :
+                    0x3B: 0xA3BB, // ;
+                    0x3C: 0xA3BC, // <
+                    0x3D: 0xA3BD, // =
+                    0x3E: 0xA3BE, // >
+                    0x3F: 0xA3BF, // ?
+                    0x40: 0xA3C0, // @
+                    0x5B: 0xA3DB, // [
+                    0x5C: 0xA3DC, // \
+                    0x5D: 0xA3DD, // ]
+                    0x5E: 0xA3DE, // ^
+                    0x5F: 0xA3DF, // _
+                    0x60: 0xA3E0, // `
+                    0x7B: 0xA3FB, // {
+                    0x7C: 0xA3FC, // |
+                    0x7D: 0xA3FD, // }
+                    0x7E: 0xA3FE  // ~
+                };
+                return asciiToKsc[ascii] || null;
             },
 
             /**
@@ -3487,28 +3565,15 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
             },
 
             /**
-             * KSC-5601 인코딩된 문자열의 바이트 길이 계산
+             * KSC-5601 2바이트 완성형 인코딩된 문자열의 바이트 길이 계산
+             * 모든 문자가 2바이트로 처리됨
              * @param {string} str - 문자열
              * @returns {number} 바이트 길이
              */
             getByteLength: function(str) {
                 if (!str) return 0;
-                let length = 0;
-                for (let i = 0; i < str.length; i++) {
-                    const code = str.charCodeAt(i);
-                    if (code < 0x80) {
-                        length += 1;
-                    } else if (code >= 0xAC00 && code <= 0xD7A3) {
-                        length += 2; // 한글 완성형
-                    } else if (code >= 0x3131 && code <= 0x3163) {
-                        length += 2; // 한글 자모
-                    } else if (code > 0x7F) {
-                        length += 2; // 기타 2바이트 문자
-                    } else {
-                        length += 1;
-                    }
-                }
-                return length;
+                // KSC-5601 완성형에서는 모든 문자가 2바이트
+                return str.length * 2;
             },
 
             /**
@@ -3825,34 +3890,52 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 const currentByteLength = encoded.length;
                 
                 if (currentByteLength > byteSize) {
-                    // 바이트 단위로 자르기 (한글 깨짐 방지)
+                    // 바이트 단위로 자르기 (2바이트 단위로 정렬)
                     return this.truncateToByteSize(value, byteSize);
                 }
                 
                 if (currentByteLength < byteSize) {
-                    // 우측 공백 패딩 (0x20)
-                    return encoded + ' '.repeat(byteSize - currentByteLength);
+                    // 우측 전각 공백 패딩 (0xA1A1 = 2바이트)
+                    // 전각 공백: String.fromCharCode(0xA1, 0xA1)
+                    const fullwidthSpace = String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
+                    const remainingBytes = byteSize - currentByteLength;
+                    const paddingCount = Math.floor(remainingBytes / 2);
+                    let result = encoded;
+                    
+                    for (let i = 0; i < paddingCount; i++) {
+                        result += fullwidthSpace;
+                    }
+                    
+                    // 홀수 바이트가 남으면 반각 공백으로 채움 (비정상 케이스)
+                    if (remainingBytes % 2 === 1) {
+                        result += ' ';
+                    }
+                    
+                    return result;
                 }
                 
                 return encoded;
             },
 
             /**
-             * 바이트 크기로 문자열 자르기 (한글 깨짐 방지)
+             * 바이트 크기로 문자열 자르기 (2바이트 경계 유지)
              * @param {string} str - 원본 문자열
              * @param {number} maxBytes - 최대 바이트 수
              * @returns {string} 잘린 Latin1 문자열
              */
             truncateToByteSize: function(str, maxBytes) {
+                // 2바이트 경계로 조정 (짝수로 내림)
+                const adjustedMaxBytes = Math.floor(maxBytes / 2) * 2;
+                
                 let result = '';
                 let currentBytes = 0;
                 
                 for (let i = 0; i < str.length; i++) {
                     const char = str[i];
                     const encoded = this.encodeToString(char);
-                    const charBytes = encoded.length;
+                    const charBytes = encoded.length; // 항상 2바이트
                     
-                    if (currentBytes + charBytes > maxBytes) {
+                    if (currentBytes + charBytes > adjustedMaxBytes) {
                         break;
                     }
                     
