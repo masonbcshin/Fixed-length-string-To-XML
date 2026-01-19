@@ -5674,6 +5674,14 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 const size = field.size;
                 const type = field.type;
                 
+                // FULL 타입: KSC-5601 인코딩 적용
+                if (type === 'FULL') {
+                    // 이미 인코딩된 원본 데이터 사용 (파싱 시 저장된 바이트 데이터)
+                    // FULL 타입은 편집 불가이므로 원본 value 그대로 사용
+                    regeneratedData += value;
+                    return;
+                }
+                
                 // 패딩 처리
                 if (value.length < size) {
                     if (type === 'N') {
@@ -6865,6 +6873,72 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 if (parsed[0].value !== 'ABC') return '첫 번째 값 불일치';
                 if (parsed[1].value !== 'HELLO') return '두 번째 값 불일치';
                 
+                return true;
+            });
+
+            // =========================================
+            // 테스트 케이스 11: KSC-5601 인코딩/디코딩
+            // =========================================
+            test('KSC-5601 인코딩 - 영문자', function() {
+                const encoded = KSC5601.encode('ABC');
+                // 영문 대문자는 전각으로 변환: A=0xA3C1, B=0xA3C2, C=0xA3C3
+                if (encoded.length !== 6) return '인코딩 길이 불일치 (예상: 6, 실제: ' + encoded.length + ')';
+                if (encoded[0] !== 0xA3 || encoded[1] !== 0xC1) return 'A 인코딩 실패';
+                if (encoded[2] !== 0xA3 || encoded[3] !== 0xC2) return 'B 인코딩 실패';
+                if (encoded[4] !== 0xA3 || encoded[5] !== 0xC3) return 'C 인코딩 실패';
+                return true;
+            });
+
+            test('KSC-5601 인코딩 - 숫자', function() {
+                const encoded = KSC5601.encode('123');
+                // 숫자는 전각으로 변환: 1=0xA3B1, 2=0xA3B2, 3=0xA3B3
+                if (encoded.length !== 6) return '인코딩 길이 불일치';
+                if (encoded[0] !== 0xA3 || encoded[1] !== 0xB1) return '1 인코딩 실패';
+                if (encoded[2] !== 0xA3 || encoded[3] !== 0xB2) return '2 인코딩 실패';
+                if (encoded[4] !== 0xA3 || encoded[5] !== 0xB3) return '3 인코딩 실패';
+                return true;
+            });
+
+            test('KSC-5601 인코딩 - 공백', function() {
+                const encoded = KSC5601.encode(' ');
+                // 공백은 전각 공백: 0xA1A1
+                if (encoded.length !== 2) return '인코딩 길이 불일치';
+                if (encoded[0] !== 0xA1 || encoded[1] !== 0xA1) return '공백 인코딩 실패';
+                return true;
+            });
+
+            test('KSC-5601 디코딩 - EUC-KR', function() {
+                // '가' = 0xB0A1 in EUC-KR
+                const bytes = new Uint8Array([0xB0, 0xA1]);
+                const decoded = KSC5601.decode(bytes);
+                if (decoded !== '가') return '가 디코딩 실패 (결과: ' + decoded + ')';
+                return true;
+            });
+
+            test('KSC-5601 바이트 길이 계산', function() {
+                // 모든 문자가 2바이트
+                const len1 = KSC5601.getByteLength('ABC');
+                if (len1 !== 6) return 'ABC 길이 불일치 (예상: 6, 실제: ' + len1 + ')';
+                
+                const len2 = KSC5601.getByteLength('한글');
+                if (len2 !== 4) return '한글 길이 불일치 (예상: 4, 실제: ' + len2 + ')';
+                
+                return true;
+            });
+
+            test('KSC-5601 패딩 - 바이트 단위', function() {
+                // 'A'를 6바이트로 패딩
+                const padded = KSC5601.padToByteSize('A', 6);
+                // A(2bytes) + 전각공백 2개(4bytes) = 6bytes
+                if (padded.length !== 6) return '패딩 길이 불일치 (예상: 6, 실제: ' + padded.length + ')';
+                return true;
+            });
+
+            test('KSC-5601 자르기 - 바이트 경계', function() {
+                // 'ABC'(6바이트)를 4바이트로 자르기
+                const truncated = KSC5601.truncateToByteSize('ABC', 4);
+                // 4바이트 = 2문자
+                if (truncated.length !== 4) return '자르기 길이 불일치 (예상: 4, 실제: ' + truncated.length + ')';
                 return true;
             });
 
