@@ -6086,63 +6086,26 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
          * =====================================================
          * KSC-5601 전각 디코딩 함수
          * EUC-KR 인코딩된 바이트를 유니코드 문자열로 변환
+         * (decodeToKSCFullwidth의 래퍼 - 통합된 디코딩 함수 사용)
          * =====================================================
          * @param {string} bytes - 디코딩할 바이트 문자열
          * @returns {string} 디코딩된 문자열
          */
         function decodeKSC5601Fullwidth(bytes) {
-            try {
-                // EUC-KR 디코딩 시도
-                const decoder = new TextDecoder('euc-kr');
-                const uint8Array = new Uint8Array(
-                    Array.from(bytes).map(function(c) { return c.charCodeAt(0); })
-                );
-                const decoded = decoder.decode(uint8Array);
-                return decoded;
-            } catch (e) {
-                console.warn('KSC-5601 전각 디코딩 실패:', e);
-                // 폴백: 원본 반환
-                return bytes;
-            }
+            return decodeToKSCFullwidth(bytes);
         }
 
         /**
          * =====================================================
          * KSC-5601 혼용 디코딩 함수
          * 한글은 2바이트, ASCII는 1바이트로 처리
+         * (decodeToKSCMixed의 래퍼 - 통합된 디코딩 함수 사용)
          * =====================================================
          * @param {string} bytes - 디코딩할 바이트 문자열
          * @returns {string} 디코딩된 문자열
          */
         function decodeKSC5601Mixed(bytes) {
-            try {
-                let result = '';
-                let i = 0;
-                
-                while (i < bytes.length) {
-                    const byte1 = bytes.charCodeAt(i);
-                    
-                    // 멀티바이트 시작 (0x81-0xFE)
-                    if (byte1 >= 0x81 && byte1 <= 0xFE && i + 1 < bytes.length) {
-                        const byte2 = bytes.charCodeAt(i + 1);
-                        
-                        // 2바이트 문자 디코딩
-                        const decoder = new TextDecoder('euc-kr');
-                        const arr = new Uint8Array([byte1, byte2]);
-                        result += decoder.decode(arr);
-                        i += 2;
-                    } else {
-                        // ASCII 1바이트
-                        result += bytes[i];
-                        i++;
-                    }
-                }
-                
-                return result;
-            } catch (e) {
-                console.warn('KSC-5601 혼용 디코딩 실패:', e);
-                return bytes;
-            }
+            return decodeToKSCMixed(bytes);
         }
 
         /**
