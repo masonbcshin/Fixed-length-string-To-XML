@@ -1393,6 +1393,57 @@
             color: white;
         }
 
+        .type-badge.crlf-badge {
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            background: #adb5bd;
+            color: #495057;
+        }
+
+        /* 디코딩 모드 드롭다운 */
+        .decoding-mode-select {
+            padding: 5px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            background: white;
+            color: #495057;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 90px;
+        }
+
+        .decoding-mode-select:hover {
+            border-color: #17a2b8;
+        }
+
+        .decoding-mode-select:focus {
+            outline: none;
+            border-color: #17a2b8;
+            box-shadow: 0 0 0 3px rgba(23, 162, 184, 0.2);
+        }
+
+        /* KSC 모드 선택 시 강조 */
+        .decoding-mode-select.ksc-active {
+            border-color: #fd7e14;
+            background: linear-gradient(135deg, #fff5eb 0%, #ffe8d6 100%);
+            color: #d63600;
+        }
+
+        /* 값이 변경되었을 때 표시 */
+        .decoding-mode-select.value-changed {
+            animation: pulse-highlight 0.5s ease;
+        }
+
+        @keyframes pulse-highlight {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
         /* 원본 보기 버튼 */
         .show-raw-btn {
             padding: 4px 10px;
@@ -1860,34 +1911,63 @@
             box-sizing: border-box;
         }
 
-        /* KSC-5601 섹션 스타일 */
-        .ksc-section {
-            background: linear-gradient(135deg, #fff9e6 0%, #ffe8cc 100%);
-            padding: 20px;
-            border: 2px solid #ffc107;
-            border-radius: 10px;
-            margin-top: 20px;
-            box-shadow: 0 2px 8px rgba(255,193,7,0.1);
+        /* KSC-5601 힌트 섹션 스타일 */
+        .ksc-hint-section {
+            margin-top: 15px;
         }
 
-        .ksc-header {
+        .ksc-hint {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 18px;
+            background: linear-gradient(135deg, #e8f4fd 0%, #d6eaf8 100%);
+            border: 1px solid #3498db;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #2c3e50;
         }
 
-        .ksc-title-area {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .ksc-hint .hint-icon {
+            font-size: 18px;
+            flex-shrink: 0;
         }
 
-        .ksc-title-area label {
-            font-size: 16px;
-            font-weight: bold;
-            color: #856404;
-            margin: 0;
+        .ksc-hint .hint-text {
+            flex: 1;
+            line-height: 1.5;
+        }
+
+        .ksc-hint .hint-text strong {
+            color: #1a5276;
+        }
+
+        .ksc-hint .hint-text em {
+            font-style: normal;
+            color: #2980b9;
+            font-weight: 600;
+        }
+
+        .ksc-hint .hint-text code {
+            background: rgba(52, 152, 219, 0.15);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: monospace;
+            color: #1a5276;
+        }
+
+        .ksc-hint .help-icon-btn {
+            background: #3498db;
+            flex-shrink: 0;
+        }
+
+        .ksc-hint .help-icon-btn:hover {
+            background: #2980b9;
+        }
+
+        .ksc-hint .help-icon {
+            color: white;
         }
 
         .help-icon-btn {
@@ -2616,15 +2696,24 @@
             color: #aaa;
         }
 
-        /* 다크 모드 - KSC-5601 섹션 스타일 */
-        body.dark-mode .ksc-section {
-            background: linear-gradient(135deg, #3d3d2e 0%, #4d3d2e 100%);
-            border-color: #b8860b;
-            box-shadow: 0 2px 8px rgba(184,134,11,0.2);
+        /* 다크 모드 - KSC-5601 힌트 섹션 스타일 */
+        body.dark-mode .ksc-hint {
+            background: linear-gradient(135deg, #2d3a4a 0%, #1e3a5f 100%);
+            border-color: #3498db;
+            color: #b0c4de;
         }
 
-        body.dark-mode .ksc-title-area label {
-            color: #ffd54f;
+        body.dark-mode .ksc-hint .hint-text strong {
+            color: #5dade2;
+        }
+
+        body.dark-mode .ksc-hint .hint-text em {
+            color: #85c1e9;
+        }
+
+        body.dark-mode .ksc-hint .hint-text code {
+            background: rgba(52, 152, 219, 0.25);
+            color: #85c1e9;
         }
 
         body.dark-mode .help-icon-btn {
@@ -2773,6 +2862,33 @@
         /* 다크 모드 - 결과 테이블 타입 배지 */
         body.dark-mode .type-badge.ascii-badge {
             background: #5a6268;
+        }
+
+        body.dark-mode .type-badge.crlf-badge {
+            background: #4a4a6a;
+            color: #adb5bd;
+        }
+
+        /* 다크 모드 - 디코딩 모드 드롭다운 */
+        body.dark-mode .decoding-mode-select {
+            background: #2d2d44;
+            border-color: #3d3d5c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .decoding-mode-select:hover {
+            border-color: #17a2b8;
+        }
+
+        body.dark-mode .decoding-mode-select:focus {
+            border-color: #17a2b8;
+            box-shadow: 0 0 0 3px rgba(23, 162, 184, 0.3);
+        }
+
+        body.dark-mode .decoding-mode-select.ksc-active {
+            border-color: #fd7e14;
+            background: linear-gradient(135deg, #3d3d2e 0%, #4d3d2e 100%);
+            color: #ffc078;
         }
 
         body.dark-mode .show-raw-btn {
@@ -5180,75 +5296,17 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         <textarea class="struct-definition" rows="8" placeholder="typedef struct { ... } 구조체명;"></textarea>
                     </div>
                     
-                    <div class="input-row ksc-section">
-                        <div class="ksc-header">
-                            <div class="ksc-title-area">
-                                <label>🌏 KSC-5601 필드 설정</label>
-                                <button type="button" class="help-icon-btn" data-help="ksc5601" title="도움말">
-                                    <span class="help-icon">?</span>
-                                </button>
-                            </div>
-                            <button type="button" class="parse-for-ksc-btn" data-index="${index}">
-                                🔍 구조체 파싱
+                    <div class="input-row ksc-hint-section">
+                        <div class="ksc-hint">
+                            <span class="hint-icon">💡</span>
+                            <span class="hint-text">
+                                <strong>KSC-5601 (한글) 필드</strong>가 있나요?
+                                파싱 결과에서 각 필드의 <em>타입 드롭다운</em>을 변경하여 
+                                <code>ASCII</code> / <code>KSC 전각</code> / <code>KSC 혼용</code> 모드를 선택할 수 있습니다.
+                            </span>
+                            <button type="button" class="help-icon-btn" data-help="ksc5601" title="KSC-5601 도움말">
+                                <span class="help-icon">?</span>
                             </button>
-                        </div>
-                        
-                        <div class="ksc-settings" style="display: none;">
-                            <div class="ksc-notice">
-                                <div class="notice-icon">⚠️</div>
-                                <div class="notice-text">
-                                    <strong>KSC-5601 필드는 모든 문자가 2바이트입니다</strong><br>
-                                    <small>(한글, 전각 영문/숫자/공백 모두 포함)</small>
-                                </div>
-                            </div>
-                            
-                            <div class="encoding-mode-selector">
-                                <label class="mode-label">인코딩 처리 방식</label>
-                                <div class="mode-options">
-                                    <label class="mode-option">
-                                        <input type="radio" 
-                                               name="encoding-mode-${index}" 
-                                               value="fullwidth" 
-                                               class="mode-radio"
-                                               checked>
-                                        <div class="mode-content">
-                                            <div class="mode-title">
-                                                <span class="mode-icon">🔷</span>
-                                                전각 전용 (권장)
-                                            </div>
-                                            <div class="mode-desc">
-                                                모든 문자 2 bytes. 글자수 × 2 = 바이트 수
-                                            </div>
-                                        </div>
-                                    </label>
-                                    
-                                    <label class="mode-option">
-                                        <input type="radio" 
-                                               name="encoding-mode-${index}" 
-                                               value="mixed"
-                                               class="mode-radio">
-                                        <div class="mode-content">
-                                            <div class="mode-title">
-                                                <span class="mode-icon">🔶</span>
-                                                혼용 모드
-                                            </div>
-                                            <div class="mode-desc">
-                                                한글 2 bytes, ASCII 1 byte
-                                            </div>
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-                            
-                            <div class="ksc-fields-container">
-                                <div class="fields-header">
-                                    <span>KSC-5601 필드 선택</span>
-                                </div>
-                                
-                                <div class="ksc-fields-list" id="ksc-fields-${index}">
-                                    <p class="no-fields-msg">구조체를 파싱하면 필드 목록이 표시됩니다</p>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -5256,89 +5314,6 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
             // 3. 요소 반환
             return div;
-        }
-
-        /**
-         * =====================================================
-         * KSC-5601 필드 체크박스 목록 생성 함수
-         * 파싱된 필드를 기반으로 체크박스 UI 생성
-         * =====================================================
-         * @param {number} cardIndex - 구조체 카드 인덱스
-         * @param {Array} fields - 파싱된 필드 배열
-         * @param {Set} previousSelections - 이전 선택 상태
-         */
-        function generateKSCFieldCheckboxes(cardIndex, fields, previousSelections) {
-            if (previousSelections === undefined) {
-                previousSelections = new Set();
-            }
-            
-            const container = document.getElementById('ksc-fields-' + cardIndex);
-            
-            container.innerHTML = '';
-            
-            // CRLF 필드 제외하고 필드 생성
-            const validFields = fields.filter(function(f) {
-                return !f.name.toLowerCase().match(/crlf|cr_lf|newline|eol/);
-            });
-            
-            if (validFields.length === 0) {
-                container.innerHTML = '<p class="no-valid-fields">KSC-5601로 설정 가능한 필드가 없습니다</p>';
-                return;
-            }
-            
-            validFields.forEach(function(field, fieldIndex) {
-                const fieldDiv = document.createElement('div');
-                fieldDiv.className = 'ksc-field-item';
-                
-                // 자동 감지: name, nm, addr 등 포함
-                const patterns = /name|nm|addr|address|memo|remark|desc|title|content|msg|message/i;
-                const autoDetected = patterns.test(field.name);
-                
-                // 이전 선택 상태 또는 자동 감지
-                const isChecked = previousSelections.has(field.name) || 
-                                 (previousSelections.size === 0 && autoDetected);
-                
-                fieldDiv.innerHTML = 
-                    '<label class="ksc-field-label ' + (isChecked ? 'checked' : '') + '">' +
-                        '<input type="checkbox" ' +
-                               'class="ksc-field-checkbox" ' +
-                               'data-card="' + cardIndex + '" ' +
-                               'data-field="' + field.name + '" ' +
-                               'value="' + fieldIndex + '" ' +
-                               (isChecked ? 'checked' : '') + '>' +
-                        '<div class="field-info">' +
-                            '<span class="field-name">' + field.name + '</span>' +
-                            '<span class="field-size-badge">' + field.size + ' bytes</span>' +
-                            (autoDetected ? '<span class="auto-badge">자동감지</span>' : '') +
-                        '</div>' +
-                    '</label>';
-                
-                container.appendChild(fieldDiv);
-            });
-            
-            // 전체 선택/해제 컨트롤
-            const controlsDiv = document.createElement('div');
-            controlsDiv.className = 'ksc-checkbox-controls';
-            controlsDiv.innerHTML = 
-                '<button type="button" class="control-btn select-all" data-card="' + cardIndex + '">' +
-                    '☑️ 전체 선택' +
-                '</button>' +
-                '<button type="button" class="control-btn deselect-all" data-card="' + cardIndex + '">' +
-                    '☐ 전체 해제' +
-                '</button>';
-            container.appendChild(controlsDiv);
-            
-            // 체크박스 변경 시 라벨 스타일 업데이트
-            container.addEventListener('change', function(e) {
-                if (e.target.classList.contains('ksc-field-checkbox')) {
-                    const label = e.target.closest('.ksc-field-label');
-                    if (e.target.checked) {
-                        label.classList.add('checked');
-                    } else {
-                        label.classList.remove('checked');
-                    }
-                }
-            });
         }
 
         /**
@@ -5844,34 +5819,22 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         console.warn('구조체 "' + currentName + '": crlf 필드가 있으나 개행 인식 비활성화됨');
                     }
                     
-                    // KSC-5601 설정 수집 (신규)
-                    const kscFieldNames = [];
-                    card.querySelectorAll('.ksc-field-checkbox:checked').forEach(function(cb) {
-                        kscFieldNames.push(cb.dataset.field);
-                    });
-                    
-                    const encodingModeRadio = card.querySelector('input[name^="encoding-mode-"]:checked');
-                    const encodingMode = encodingModeRadio ? encodingModeRadio.value : 'fullwidth';
-                    
-                    // 필드에 KSC 정보 추가
-                    const fieldsWithKSC = parsed.fields.map(function(field) {
-                        const isKSC = kscFieldNames.includes(field.name);
+                    // 필드 정보 매핑 (KSC는 결과 화면에서 토글로 설정)
+                    const fields = parsed.fields.map(function(field) {
                         return {
                             name: field.name,
                             size: field.size,
-                            isKSC: isKSC,
-                            encodingMode: isKSC ? encodingMode : null
+                            isKSC: false,  // 기본값: ASCII, 결과 화면에서 변경 가능
+                            encodingMode: null
                         };
                     });
                     
                     structDefs.push({
                         name: currentName,
                         kubun: kubunValue || null,
-                        fields: fieldsWithKSC,
+                        fields: fields,
                         totalSize: parsed.totalSize,
-                        hasCRLFField: hasCRLFField,
-                        kscFields: kscFieldNames,
-                        encodingMode: encodingMode
+                        hasCRLFField: hasCRLFField
                     });
                 } else {
                     // g. 파싱 실패 시 에러 표시 후 null 반환
@@ -7213,16 +7176,109 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
          */
 
         /**
-         * 필드 타입 배지 HTML 생성 함수
-         * @param {string} fieldType - 필드 타입 ('ASCII', 'KSC-5601 (전각)', 'KSC-5601 (혼용)')
-         * @returns {string} 배지 HTML
+         * 필드 디코딩 모드 드롭다운 HTML 생성 함수
+         * @param {string} fieldType - 현재 필드 타입 ('ASCII', 'KSC-5601 (전각)', 'KSC-5601 (혼용)')
+         * @param {number} recordIndex - 레코드 인덱스
+         * @param {number} fieldIndex - 필드 인덱스
+         * @returns {string} 드롭다운 HTML
          */
-        function getFieldTypeBadge(fieldType) {
+        function createDecodingModeDropdown(fieldType, recordIndex, fieldIndex) {
+            // 현재 선택된 값 결정
+            let currentValue = 'ascii';
             if (fieldType && fieldType.startsWith('KSC-5601')) {
-                const mode = fieldType.includes('전각') ? '전각' : '혼용';
-                return '<span class="type-badge ksc-badge" title="' + fieldType + '">KSC ' + mode + '</span>';
+                currentValue = fieldType.includes('전각') ? 'fullwidth' : 'mixed';
             }
-            return '<span class="type-badge ascii-badge">ASCII</span>';
+            
+            return `
+                <select class="decoding-mode-select" 
+                        data-record-index="${recordIndex}" 
+                        data-field-index="${fieldIndex}">
+                    <option value="ascii" ${currentValue === 'ascii' ? 'selected' : ''}>ASCII</option>
+                    <option value="fullwidth" ${currentValue === 'fullwidth' ? 'selected' : ''}>KSC 전각</option>
+                    <option value="mixed" ${currentValue === 'mixed' ? 'selected' : ''}>KSC 혼용</option>
+                </select>
+            `;
+        }
+
+        /**
+         * KSC-5601 전각 모드 디코딩 (결과 화면용)
+         * @param {string} rawBytes - 원본 바이트 문자열
+         * @returns {string} 디코딩된 문자열
+         */
+        function decodeToKSCFullwidth(rawBytes) {
+            try {
+                // 문자열을 바이트 배열로 변환
+                const bytes = new Uint8Array(rawBytes.length);
+                for (let i = 0; i < rawBytes.length; i++) {
+                    bytes[i] = rawBytes.charCodeAt(i) & 0xFF;
+                }
+                
+                // EUC-KR 디코딩
+                const decoder = new TextDecoder('euc-kr');
+                return decoder.decode(bytes);
+            } catch (e) {
+                console.error('KSC 전각 디코딩 실패:', e);
+                return rawBytes;
+            }
+        }
+
+        /**
+         * KSC-5601 혼용 모드 디코딩 (결과 화면용)
+         * @param {string} rawBytes - 원본 바이트 문자열
+         * @returns {string} 디코딩된 문자열
+         */
+        function decodeToKSCMixed(rawBytes) {
+            try {
+                let result = '';
+                let i = 0;
+                
+                while (i < rawBytes.length) {
+                    const byte1 = rawBytes.charCodeAt(i) & 0xFF;
+                    
+                    // 한글 바이트 범위 (EUC-KR: 0xB0-0xC8 첫 바이트, 0xA1-0xFE 두번째)
+                    // 또는 확장 범위 (0x81-0xFE)
+                    if (byte1 >= 0x81 && byte1 <= 0xFE && i + 1 < rawBytes.length) {
+                        const byte2 = rawBytes.charCodeAt(i + 1) & 0xFF;
+                        if (byte2 >= 0x41) {
+                            // 2바이트 문자로 처리
+                            const bytes = new Uint8Array([byte1, byte2]);
+                            const decoder = new TextDecoder('euc-kr');
+                            result += decoder.decode(bytes);
+                            i += 2;
+                            continue;
+                        }
+                    }
+                    
+                    // ASCII 문자 (1바이트)
+                    result += rawBytes.charAt(i);
+                    i++;
+                }
+                
+                return result;
+            } catch (e) {
+                console.error('KSC 혼용 디코딩 실패:', e);
+                return rawBytes;
+            }
+        }
+
+        /**
+         * 디코딩 모드에 따라 값을 재해석
+         * @param {string} rawBytes - 원본 바이트 문자열
+         * @param {string} mode - 디코딩 모드 ('ascii', 'fullwidth', 'mixed')
+         * @returns {string} 디코딩된 값
+         */
+        function decodeByMode(rawBytes, mode) {
+            if (!rawBytes) return '';
+            
+            switch (mode) {
+                case 'fullwidth':
+                    return decodeToKSCFullwidth(rawBytes);
+                case 'mixed':
+                    return decodeToKSCMixed(rawBytes);
+                case 'ascii':
+                default:
+                    return rawBytes;
+            }
         }
 
         function displayStructResults(parseResult) {
@@ -7473,10 +7529,16 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         values.forEach(function(value, tdIndex) {
                             const td = document.createElement('td');
                             
-                            // 타입 컬럼 (두번째 컬럼)
+                            // 타입 컬럼 (두번째 컬럼) - 드롭다운으로 변경
                             if (tdIndex === 1) {
                                 td.className = 'field-type-cell';
-                                td.innerHTML = getFieldTypeBadge(value);
+                                
+                                // CRLF 필드는 드롭다운 대신 고정 배지
+                                if (isCRLFField) {
+                                    td.innerHTML = '<span class="type-badge crlf-badge">CRLF</span>';
+                                } else {
+                                    td.innerHTML = createDecodingModeDropdown(value, recordIndex, fieldIndex);
+                                }
                                 tr.appendChild(td);
                                 return;
                             }
@@ -7501,16 +7563,17 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                                     valueSpan.setAttribute('data-original-value', field.value);
                                     valueSpan.setAttribute('data-field-size', field.fieldSize);
                                     valueSpan.setAttribute('data-field-name', field.fieldName);
+                                    valueSpan.setAttribute('data-raw-value', field.rawValue || field.value);
                                     valueSpan.textContent = value;
                                     td.appendChild(valueSpan);
                                     
-                                    // 원본 버튼 추가 (rawValue가 있고 value와 다른 경우)
-                                    if (field.rawValue && field.rawValue !== field.value) {
+                                    // 원본 버튼 (항상 표시, rawValue 존재 시)
+                                    if (field.rawValue) {
                                         const rawBtn = document.createElement('button');
                                         rawBtn.className = 'show-raw-btn';
                                         rawBtn.setAttribute('data-raw', escapeHtml(field.rawValue));
-                                        rawBtn.textContent = '원본';
-                                        rawBtn.title = '원본 바이트 보기';
+                                        rawBtn.textContent = 'HEX';
+                                        rawBtn.title = '원본 바이트(HEX) 보기';
                                         td.appendChild(rawBtn);
                                     }
                                     
@@ -8567,80 +8630,6 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         }
                     }
                 }
-                
-                // =========================================
-                // KSC-5601 파싱 버튼 이벤트
-                // =========================================
-                if (e.target.classList.contains('parse-for-ksc-btn')) {
-                    const cardIndex = parseInt(e.target.dataset.index);
-                    const card = e.target.closest('.struct-card');
-                    
-                    // 1. 구조체 정의 텍스트 가져오기
-                    const structDefText = card.querySelector('.struct-definition').value.trim();
-                    
-                    if (!structDefText) {
-                        alert('구조체 정의를 먼저 입력하세요');
-                        return;
-                    }
-                    
-                    // 2. 구조체 파싱 (17단계 함수 재사용)
-                    const parsed = parseStructDefinition(structDefText);
-                    
-                    if (!parsed || !parsed.fields || parsed.fields.length === 0) {
-                        alert('구조체 파싱 실패. 형식을 확인하세요\n\n예: typedef struct { char name[20]; } STRUCT;');
-                        return;
-                    }
-                    
-                    // 3. 기존 선택 상태 저장 (재파싱 시 유지)
-                    const previousSelections = new Set();
-                    card.querySelectorAll('.ksc-field-checkbox:checked').forEach(function(cb) {
-                        previousSelections.add(cb.dataset.field);
-                    });
-                    
-                    // 4. KSC 필드 체크박스 목록 생성
-                    generateKSCFieldCheckboxes(cardIndex, parsed.fields, previousSelections);
-                    
-                    // 5. KSC 설정 영역 표시
-                    card.querySelector('.ksc-settings').style.display = 'block';
-                    
-                    // 6. 버튼 상태 변경
-                    e.target.textContent = '✓ 파싱 완료';
-                    e.target.style.backgroundColor = '#28a745';
-                    e.target.disabled = true;
-                    
-                    // 7. 재파싱 버튼 추가
-                    if (!card.querySelector('.reparse-ksc-btn')) {
-                        const reparseBtn = document.createElement('button');
-                        reparseBtn.type = 'button';
-                        reparseBtn.className = 'reparse-ksc-btn';
-                        reparseBtn.dataset.index = cardIndex;
-                        reparseBtn.innerHTML = '🔄 재파싱';
-                        e.target.after(reparseBtn);
-                    }
-                    
-                    showTemporaryMessage('✓ ' + parsed.fields.length + '개 필드가 파싱되었습니다');
-                }
-                
-                // =========================================
-                // 재파싱 버튼 이벤트
-                // =========================================
-                if (e.target.classList.contains('reparse-ksc-btn')) {
-                    const cardIndex = parseInt(e.target.dataset.index);
-                    const card = e.target.closest('.struct-card');
-                    
-                    // 파싱 버튼 재활성화
-                    const parseBtn = card.querySelector('.parse-for-ksc-btn');
-                    parseBtn.disabled = false;
-                    parseBtn.textContent = '🔍 구조체 파싱';
-                    parseBtn.style.backgroundColor = '';
-                    
-                    // 재파싱 버튼 제거
-                    e.target.remove();
-                    
-                    // 파싱 버튼 클릭
-                    parseBtn.click();
-                }
-                
             });
 
             // =========================================
@@ -8669,32 +8658,6 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
             // =========================================
             // KSC 필드 전체 선택/해제 이벤트 위임
-            // =========================================
-            document.addEventListener('click', function(e) {
-                // 전체 선택
-                if (e.target.classList.contains('select-all')) {
-                    const cardIndex = e.target.dataset.card;
-                    const checkboxes = document.querySelectorAll(
-                        '.ksc-field-checkbox[data-card="' + cardIndex + '"]'
-                    );
-                    checkboxes.forEach(function(cb) {
-                        cb.checked = true;
-                        cb.closest('.ksc-field-label').classList.add('checked');
-                    });
-                }
-                
-                // 전체 해제
-                if (e.target.classList.contains('deselect-all')) {
-                    const cardIndex = e.target.dataset.card;
-                    const checkboxes = document.querySelectorAll(
-                        '.ksc-field-checkbox[data-card="' + cardIndex + '"]'
-                    );
-                    checkboxes.forEach(function(cb) {
-                        cb.checked = false;
-                        cb.closest('.ksc-field-label').classList.remove('checked');
-                    });
-                }
-            });
 
             // 도움말 토글 이벤트
             const helpToggle = document.querySelector('.help-toggle');
@@ -9171,6 +9134,61 @@ T000000000200000000000000003000`
                     displayTestResults(testResult);
                 });
             }
+
+            // 디코딩 모드 드롭다운 변경 이벤트 (이벤트 위임 사용)
+            document.getElementById('struct-result-container').addEventListener('change', function(e) {
+                if (!e.target.classList.contains('decoding-mode-select')) {
+                    return;
+                }
+                
+                const select = e.target;
+                const mode = select.value;
+                const recordIndex = parseInt(select.getAttribute('data-record-index'));
+                const fieldIndex = parseInt(select.getAttribute('data-field-index'));
+                
+                // 같은 행의 값 셀 찾기
+                const tr = select.closest('tr');
+                const valueSpan = tr.querySelector('.editable-value');
+                
+                if (!valueSpan) return;
+                
+                // 원본 바이트 가져오기
+                const rawValue = valueSpan.getAttribute('data-raw-value');
+                if (!rawValue) return;
+                
+                // 선택한 모드로 재디코딩
+                const newValue = decodeByMode(rawValue, mode).trim();
+                
+                // 값 업데이트
+                valueSpan.textContent = newValue;
+                valueSpan.setAttribute('data-original-value', newValue);
+                valueSpan.classList.remove('modified');
+                
+                // 드롭다운 스타일 업데이트
+                if (mode === 'ascii') {
+                    select.classList.remove('ksc-active');
+                } else {
+                    select.classList.add('ksc-active');
+                }
+                
+                // 펄스 애니메이션
+                select.classList.add('value-changed');
+                setTimeout(function() {
+                    select.classList.remove('value-changed');
+                }, 500);
+                
+                // 전역 데이터 업데이트
+                if (window.structParsedDataCurrent && 
+                    window.structParsedDataCurrent[recordIndex] && 
+                    window.structParsedDataCurrent[recordIndex].fields[fieldIndex]) {
+                    window.structParsedDataCurrent[recordIndex].fields[fieldIndex].value = newValue;
+                    window.structParsedDataCurrent[recordIndex].fields[fieldIndex].fieldType = 
+                        mode === 'fullwidth' ? 'KSC-5601 (전각)' : 
+                        mode === 'mixed' ? 'KSC-5601 (혼용)' : 'ASCII';
+                }
+                
+                console.log(`필드 [${fieldIndex}] 디코딩 모드 변경: ${mode} → "${newValue}"`);
+            });
 
             // 복사 버튼 및 원본 버튼 클릭 이벤트 (이벤트 위임 사용)
             document.getElementById('struct-result-container').addEventListener('click', function(e) {
