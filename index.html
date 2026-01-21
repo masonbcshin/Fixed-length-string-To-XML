@@ -6498,63 +6498,26 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
          * =====================================================
          * KSC-5601 전각 디코딩 함수
          * EUC-KR 인코딩된 바이트를 유니코드 문자열로 변환
+         * (decodeToKSCFullwidth의 래퍼 - 통합된 디코딩 함수 사용)
          * =====================================================
          * @param {string} bytes - 디코딩할 바이트 문자열
          * @returns {string} 디코딩된 문자열
          */
         function decodeKSC5601Fullwidth(bytes) {
-            try {
-                // EUC-KR 디코딩 시도
-                const decoder = new TextDecoder('euc-kr');
-                const uint8Array = new Uint8Array(
-                    Array.from(bytes).map(function(c) { return c.charCodeAt(0); })
-                );
-                const decoded = decoder.decode(uint8Array);
-                return decoded;
-            } catch (e) {
-                console.warn('KSC-5601 전각 디코딩 실패:', e);
-                // 폴백: 원본 반환
-                return bytes;
-            }
+            return decodeToKSCFullwidth(bytes);
         }
 
         /**
          * =====================================================
          * KSC-5601 혼용 디코딩 함수
          * 한글은 2바이트, ASCII는 1바이트로 처리
+         * (decodeToKSCMixed의 래퍼 - 통합된 디코딩 함수 사용)
          * =====================================================
          * @param {string} bytes - 디코딩할 바이트 문자열
          * @returns {string} 디코딩된 문자열
          */
         function decodeKSC5601Mixed(bytes) {
-            try {
-                let result = '';
-                let i = 0;
-                
-                while (i < bytes.length) {
-                    const byte1 = bytes.charCodeAt(i);
-                    
-                    // 멀티바이트 시작 (0x81-0xFE)
-                    if (byte1 >= 0x81 && byte1 <= 0xFE && i + 1 < bytes.length) {
-                        const byte2 = bytes.charCodeAt(i + 1);
-                        
-                        // 2바이트 문자 디코딩
-                        const decoder = new TextDecoder('euc-kr');
-                        const arr = new Uint8Array([byte1, byte2]);
-                        result += decoder.decode(arr);
-                        i += 2;
-                    } else {
-                        // ASCII 1바이트
-                        result += bytes[i];
-                        i++;
-                    }
-                }
-                
-                return result;
-            } catch (e) {
-                console.warn('KSC-5601 혼용 디코딩 실패:', e);
-                return bytes;
-            }
+            return decodeToKSCMixed(bytes);
         }
 
         /**
@@ -9057,6 +9020,162 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 if (encoded[2] !== 0xA3 || encoded[3] !== 0xC2) return 'B 인코딩 실패';
                 // 가: B0A1
                 if (encoded[4] !== 0xB0 || encoded[5] !== 0xA1) return '가 인코딩 실패';
+                
+                return true;
+            });
+
+            // =========================================
+            // 테스트 케이스 14: KSC-5601 통합 검증 (한글+영문+공백 2바이트)
+            // =========================================
+            test('KSC-5601 전각 모드 - 한글+영문+공백 조합', function() {
+                // 한글 "홍길동", 영문 "ABC", 공백 " " 모두 2바이트씩
+                const testStr = '홍길동 ABC';
+                const encoded = KSC5601.encode(testStr);
+                
+                // 7문자 × 2바이트 = 14바이트
+                if (encoded.length !== 14) return '인코딩 길이 불일치 (예상: 14, 실제: ' + encoded.length + ')';
+                
+                // 디코딩 후 원본과 비교
+                const decoded = KSC5601.decode(encoded);
+                if (decoded !== testStr) return '디코딩 결과 불일치 (원본: "' + testStr + '", 결과: "' + decoded + '")';
+                
+                return true;
+            });
+
+            test('KSC-5601 전각 모드 - 인코딩/디코딩 왕복 검증', function() {
+                // 다양한 문자 조합 테스트
+                const testCases = [
+                    '가나다라',           // 한글만
+                    'ABCD',              // 영문만
+                    '    ',              // 공백만 (4개)
+                    '홍 길 동',          // 한글+공백
+                    'A B C',             // 영문+공백
+                    '테스트 TEST 123',   // 한글+영문+숫자+공백
+                    '김철수  010'        // 한글+공백2개+숫자
+                ];
+                
+                for (let i = 0; i < testCases.length; i++) {
+                    const original = testCases[i];
+                    const encoded = KSC5601.encode(original);
+                    const decoded = KSC5601.decode(encoded);
+                    
+                    if (decoded !== original) {
+                        return '케이스 ' + (i+1) + ' 실패: "' + original + '" → "' + decoded + '"';
+                    }
+                    
+                    // 모든 문자가 2바이트인지 확인
+                    if (encoded.length !== original.length * 2) {
+                        return '케이스 ' + (i+1) + ' 바이트 길이 불일치: ' + original.length + '문자 → ' + encoded.length + '바이트';
+                    }
+                }
+                
+                return true;
+            });
+
+            test('KSC-5601 전각 모드 - 패딩 후 디코딩 검증', function() {
+                // 10바이트 필드에 "홍길동" (6바이트) 패딩
+                const padded = KSC5601.padToByteSize('홍길동', 10);
+                
+                if (padded.length !== 10) return '패딩 길이 불일치 (예상: 10, 실제: ' + padded.length + ')';
+                
+                // 디코딩 후 확인 (전각 공백 2개가 뒤에 붙음)
+                const decoded = KSC5601.decode(padded);
+                if (!decoded.startsWith('홍길동')) return '패딩 후 원본 손실: "' + decoded + '"';
+                
+                // 트림 후 원본과 비교
+                if (decoded.trim() !== '홍길동') return '트림 후 불일치: "' + decoded.trim() + '"';
+                
+                return true;
+            });
+
+            test('KSC-5601 전각 모드 - 구조체 재생성 시뮬레이션', function() {
+                // 실제 구조체 필드 시나리오: 이름(10), 주소(20)
+                const name = '김철수';      // 3문자 = 6바이트
+                const addr = '서울시 강남구'; // 7문자 = 14바이트
+                
+                // 필드 크기에 맞춰 패딩
+                const encodedName = KSC5601.padToByteSize(name, 10);  // 10바이트
+                const encodedAddr = KSC5601.padToByteSize(addr, 20);  // 20바이트
+                
+                if (encodedName.length !== 10) return '이름 필드 길이 불일치';
+                if (encodedAddr.length !== 20) return '주소 필드 길이 불일치';
+                
+                // 통데이터 생성
+                const telegram = encodedName + encodedAddr;
+                if (telegram.length !== 30) return '통데이터 길이 불일치 (예상: 30, 실제: ' + telegram.length + ')';
+                
+                // 다시 파싱 (바이트 단위로 분리)
+                const parsedName = telegram.substring(0, 10);
+                const parsedAddr = telegram.substring(10, 30);
+                
+                // 디코딩
+                const decodedName = KSC5601.decode(parsedName).trim();
+                const decodedAddr = KSC5601.decode(parsedAddr).trim();
+                
+                if (decodedName !== name) return '이름 디코딩 실패: "' + decodedName + '"';
+                if (decodedAddr !== addr) return '주소 디코딩 실패: "' + decodedAddr + '"';
+                
+                return true;
+            });
+
+            test('KSC-5601 혼용 모드 인코딩 검증', function() {
+                // 혼용 모드: 한글 2바이트, ASCII 1바이트
+                const testStr = '홍길동ABC';
+                
+                // encodeToKSCMixed 함수 테스트 (20바이트 필드)
+                const encoded = encodeToKSCMixed(testStr, 20);
+                
+                // 한글 3자(6바이트) + 영문 3자(3바이트) = 9바이트 + 패딩 11바이트 = 20바이트
+                if (encoded.length !== 20) return '인코딩 길이 불일치 (예상: 20, 실제: ' + encoded.length + ')';
+                
+                // 한글 부분 디코딩 확인 (처음 6바이트)
+                const koreanPart = encoded.substring(0, 6);
+                const decodedKorean = KSC5601.decode(koreanPart);
+                if (decodedKorean !== '홍길동') return '한글 디코딩 실패: "' + decodedKorean + '"';
+                
+                // 영문 부분 확인 (다음 3바이트)
+                const asciiPart = encoded.substring(6, 9);
+                if (asciiPart !== 'ABC') return '영문 부분 불일치: "' + asciiPart + '"';
+                
+                return true;
+            });
+
+            test('KSC-5601 특수문자 인코딩 검증', function() {
+                // 특수문자도 전각으로 변환되는지 확인
+                const specialChars = '!@#$%';
+                const encoded = KSC5601.encode(specialChars);
+                
+                // 5문자 × 2바이트 = 10바이트
+                if (encoded.length !== 10) return '특수문자 인코딩 길이 불일치';
+                
+                // 디코딩 확인
+                const decoded = KSC5601.decode(encoded);
+                if (decoded !== specialChars) return '특수문자 디코딩 불일치: "' + decoded + '"';
+                
+                return true;
+            });
+
+            test('KSC-5601 수정 후 재인코딩 검증', function() {
+                // 시나리오: 파싱된 값 수정 후 재생성
+                const original = '홍길동';
+                const modified = '김영희';
+                
+                // 원본 인코딩
+                const encodedOriginal = KSC5601.padToByteSize(original, 10);
+                
+                // 수정된 값 인코딩
+                const encodedModified = KSC5601.padToByteSize(modified, 10);
+                
+                // 길이 동일 확인
+                if (encodedOriginal.length !== encodedModified.length) {
+                    return '수정 전후 길이 불일치';
+                }
+                
+                // 수정된 값 디코딩 확인
+                const decodedModified = KSC5601.decode(encodedModified).trim();
+                if (decodedModified !== modified) {
+                    return '수정된 값 디코딩 실패: "' + decodedModified + '"';
+                }
                 
                 return true;
             });
