@@ -7777,7 +7777,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
         /**
          * KSC-5601 혼용 모드 인코딩 (재생성용)
          * 한글은 2바이트 (EUC-KR), ASCII는 1바이트로 인코딩
-         * 중요: ASCII는 그대로 유지 (전각 변환 안 함)
+         * 단, 공백은 전각 공백(A1A1, 2바이트)으로 처리 (KSC-5601 표준)
          * @param {string} text - 인코딩할 문자열
          * @param {number} size - 필드 크기 (바이트)
          * @returns {string} 인코딩된 바이트 문자열
@@ -7791,8 +7791,14 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     const char = text[i];
                     const code = char.charCodeAt(0);
                     
-                    if (code < 0x80) {
-                        // ASCII: 1바이트 그대로 (전각 변환 안 함!)
+                    // 공백: 전각 공백 A1A1 (2바이트) - KSC-5601 표준
+                    if (code === 0x20) {
+                        if (byteCount + 2 <= size) {
+                            result += String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
+                            byteCount += 2;
+                        }
+                    } else if (code < 0x80) {
+                        // 기타 ASCII (숫자, 영문 등): 1바이트 그대로
                         if (byteCount + 1 <= size) {
                             result += char;
                             byteCount += 1;
@@ -7806,8 +7812,8 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                                 result += String.fromCharCode((kscCode >> 8) & 0xFF);
                                 result += String.fromCharCode(kscCode & 0xFF);
                             } else {
-                                // 변환 불가 시 공백 2개 (EUC-KR에 없는 한글)
-                                result += '  ';
+                                // 변환 불가 시 전각 공백 (EUC-KR에 없는 한글)
+                                result += String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
                                 console.warn('KSC-5601에 없는 한글:', char, '(U+' + code.toString(16).toUpperCase() + ')');
                             }
                             byteCount += 2;
@@ -7820,7 +7826,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                                 result += String.fromCharCode((kscCode >> 8) & 0xFF);
                                 result += String.fromCharCode(kscCode & 0xFF);
                             } else {
-                                result += '  ';
+                                result += String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
                             }
                             byteCount += 2;
                         }
@@ -7832,16 +7838,21 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                             if (encoded && encoded.length === 2) {
                                 result += encoded;
                             } else {
-                                // 변환 불가 시 공백 2개
-                                result += '  ';
+                                // 변환 불가 시 전각 공백
+                                result += String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
                             }
                             byteCount += 2;
                         }
                     }
                 }
                 
-                // 패딩 처리 (ASCII 공백으로)
-                while (byteCount < size) {
+                // 패딩 처리 (전각 공백 A1A1으로)
+                while (byteCount + 2 <= size) {
+                    result += String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
+                    byteCount += 2;
+                }
+                // 홀수 바이트 남으면 ASCII 공백으로 (비정상 케이스)
+                if (byteCount < size) {
                     result += ' ';
                     byteCount++;
                 }
