@@ -5851,6 +5851,99 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
         /**
          * =====================================================
+         * KSC-5601 혼용 모드 바이트 계산 함수
+         * 한글은 2바이트, ASCII는 1바이트로 계산
+         * =====================================================
+         * @param {string} str - 계산할 문자열
+         * @returns {number} 바이트 수
+         */
+        function calculateKSCMixedBytes(str) {
+            let bytes = 0;
+            for (let i = 0; i < str.length; i++) {
+                const code = str.charCodeAt(i);
+                // 한글 (가-힣) 또는 기타 멀티바이트
+                if ((code >= 0xAC00 && code <= 0xD7A3) || code > 0x7F) {
+                    bytes += 2;
+                } else {
+                    bytes += 1;
+                }
+            }
+            return bytes;
+        }
+
+        /**
+         * =====================================================
+         * KSC-5601 전각 패딩 함수
+         * 모든 문자를 2바이트로 처리하여 패딩
+         * =====================================================
+         * @param {string} value - 패딩할 문자열
+         * @param {number} size - 목표 바이트 크기
+         * @returns {string} 패딩된 문자열
+         */
+        function padKSC5601Fullwidth(value, size) {
+            const maxChars = Math.floor(size / 2);
+            if (value.length > maxChars) {
+                return value.substring(0, maxChars);
+            }
+            if (value.length < maxChars) {
+                // 부족한 글자 수만큼 공백 (전각 공백 또는 일반 공백 2개)
+                const paddingChars = maxChars - value.length;
+                return value + ' '.repeat(paddingChars * 2);
+            }
+            return value;
+        }
+
+        /**
+         * =====================================================
+         * KSC-5601 혼용 패딩 함수
+         * 한글 2바이트, ASCII 1바이트로 계산하여 패딩
+         * =====================================================
+         * @param {string} value - 패딩할 문자열
+         * @param {number} size - 목표 바이트 크기
+         * @returns {string} 패딩된 문자열
+         */
+        function padKSC5601Mixed(value, size) {
+            const byteLength = calculateKSCMixedBytes(value);
+            if (byteLength > size) {
+                // 바이트 단위로 자르기
+                return truncateByKSCBytes(value, size);
+            }
+            if (byteLength < size) {
+                // ASCII 공백으로 패딩
+                return value + ' '.repeat(size - byteLength);
+            }
+            return value;
+        }
+
+        /**
+         * =====================================================
+         * KSC-5601 바이트 단위 문자열 자르기
+         * 멀티바이트 문자 경계를 고려하여 자름
+         * =====================================================
+         * @param {string} str - 자를 문자열
+         * @param {number} maxBytes - 최대 바이트 수
+         * @returns {string} 잘린 문자열
+         */
+        function truncateByKSCBytes(str, maxBytes) {
+            let bytes = 0;
+            let result = '';
+            for (let i = 0; i < str.length; i++) {
+                const char = str[i];
+                const code = char.charCodeAt(0);
+                const charBytes = ((code >= 0xAC00 && code <= 0xD7A3) || code > 0x7F) ? 2 : 1;
+                
+                if (bytes + charBytes <= maxBytes) {
+                    result += char;
+                    bytes += charBytes;
+                } else {
+                    break;
+                }
+            }
+            return result;
+        }
+
+        /**
+         * =====================================================
          * 라인 기반 파싱 함수 (개행 인식 ON 모드)
          * =====================================================
          * 
@@ -9608,8 +9701,78 @@ T000000000200000000000000003000`
                             const fieldName = input.dataset.field;
                             const fieldSize = parseInt(input.dataset.size);
                             const value = input.value;
+                            const isKSC = input.dataset.ksc === 'true';
                             
-                            // 1. 글자 수 카운터 업데이트
+                            // KSC-5601 필드 처리
+                            if (isKSC) {
+                                const encodingMode = input.dataset.encodingMode;
+                                const row = input.closest('tr');
+                                const currentCharsSpan = row.querySelector('.current-chars');
+                                const currentBytesSpan = row.querySelector('.current-bytes');
+                                const previewCell = row.querySelector('.preview-text');
+                                
+                                if (encodingMode === 'fullwidth') {
+                                    // 전각 전용: 글자수 × 2 = 바이트
+                                    const charCount = value.length;
+                                    const byteCount = charCount * 2;
+                                    const maxChars = Math.floor(fieldSize / 2);
+                                    
+                                    if (currentCharsSpan) currentCharsSpan.textContent = charCount;
+                                    if (currentBytesSpan) currentBytesSpan.textContent = byteCount;
+                                    
+                                    if (charCount > maxChars) {
+                                        input.style.borderColor = '#dc3545';
+                                        input.style.backgroundColor = '#fff5f5';
+                                        if (currentCharsSpan) currentCharsSpan.style.color = '#dc3545';
+                                    } else if (charCount === maxChars) {
+                                        input.style.borderColor = '#28a745';
+                                        input.style.backgroundColor = '#f0fff4';
+                                        if (currentCharsSpan) currentCharsSpan.style.color = '#28a745';
+                                    } else {
+                                        input.style.borderColor = '#ced4da';
+                                        input.style.backgroundColor = '#fff';
+                                        if (currentCharsSpan) currentCharsSpan.style.color = '#6c757d';
+                                    }
+                                    
+                                    // 미리보기
+                                    if (previewCell) {
+                                        const paddedValue = padKSC5601Fullwidth(value, fieldSize);
+                                        previewCell.textContent = paddedValue;
+                                    }
+                                    
+                                } else {
+                                    // 혼용 모드
+                                    const charCount = value.length;
+                                    const byteCount = calculateKSCMixedBytes(value);
+                                    
+                                    if (currentCharsSpan) currentCharsSpan.textContent = charCount;
+                                    if (currentBytesSpan) currentBytesSpan.textContent = byteCount;
+                                    
+                                    if (byteCount > fieldSize) {
+                                        input.style.borderColor = '#dc3545';
+                                        input.style.backgroundColor = '#fff5f5';
+                                        if (currentBytesSpan) currentBytesSpan.style.color = '#dc3545';
+                                    } else if (byteCount === fieldSize) {
+                                        input.style.borderColor = '#28a745';
+                                        input.style.backgroundColor = '#f0fff4';
+                                        if (currentBytesSpan) currentBytesSpan.style.color = '#28a745';
+                                    } else {
+                                        input.style.borderColor = '#ced4da';
+                                        input.style.backgroundColor = '#fff';
+                                        if (currentBytesSpan) currentBytesSpan.style.color = '#6c757d';
+                                    }
+                                    
+                                    // 미리보기
+                                    if (previewCell) {
+                                        const paddedValue = padKSC5601Mixed(value, fieldSize);
+                                        previewCell.textContent = paddedValue;
+                                    }
+                                }
+                                
+                                return; // KSC 필드는 여기서 처리 완료
+                            }
+                            
+                            // 1. 글자 수 카운터 업데이트 (일반 필드)
                             const row = input.closest('tr');
                             const currentLength = row.querySelector('.current-length');
                             
