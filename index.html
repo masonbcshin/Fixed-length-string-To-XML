@@ -7698,88 +7698,35 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
         /**
          * 유니코드 한글을 EUC-KR 바이트로 변환
-         * 한글 완성형 범위: U+AC00 ~ U+D7A3
-         * @param {string} char - 단일 한글 문자
-         * @returns {string|null} EUC-KR 2바이트 문자열 또는 null
+         * KSC5601 객체의 encode 메서드를 활용
+         * @param {string} char - 단일 문자
+         * @returns {string|null} EUC-KR 바이트 문자열 또는 null
          */
         function unicodeToEUCKR(char) {
-            const code = char.charCodeAt(0);
-            
-            // 한글 완성형 범위 (가~힣)
-            if (code >= 0xAC00 && code <= 0xD7A3) {
-                // KS X 1001 한글 영역 매핑
-                // 간단한 매핑: UTF-8 한글을 직접 바이트로 저장
-                // (실제 EUC-KR 변환이 아닌 UTF-8 바이트 저장 방식)
-                const utf8Bytes = new TextEncoder().encode(char);
-                if (utf8Bytes.length === 3) {
-                    // UTF-8 한글은 3바이트, 처음 2바이트만 사용 (손실 발생)
-                    // 더 나은 방법: EUC-KR 변환 테이블 사용
-                    return String.fromCharCode(utf8Bytes[0]) + String.fromCharCode(utf8Bytes[1]);
+            try {
+                // KSC5601 라이브러리 사용하여 EUC-KR로 인코딩
+                const encoded = KSC5601.encodeToString(char);
+                if (encoded && encoded.length === 2) {
+                    return encoded;
                 }
+                return null;
+            } catch (e) {
+                console.warn('unicodeToEUCKR 변환 실패:', char, e);
+                return null;
             }
-            
-            return null;
         }
 
         /**
          * KSC-5601 전각 모드 인코딩 (재생성용)
-         * 유니코드 문자열을 EUC-KR 바이트로 인코딩
+         * KSC5601 라이브러리를 사용하여 유니코드 문자열을 EUC-KR 바이트로 인코딩
          * @param {string} text - 인코딩할 문자열
          * @param {number} size - 필드 크기 (바이트)
          * @returns {string} 인코딩된 바이트 문자열
          */
         function encodeToKSCFullwidth(text, size) {
             try {
-                let result = '';
-                
-                for (let i = 0; i < text.length && result.length < size; i++) {
-                    const char = text[i];
-                    const code = char.charCodeAt(0);
-                    
-                    // ASCII 범위 (0x00-0x7F)
-                    if (code < 0x80) {
-                        if (result.length + 2 > size) break;
-                        
-                        // 전각 ASCII로 변환
-                        if (code >= 0x21 && code <= 0x7E) {
-                            // 전각 ASCII: 0xA3 + (0x21~0x7E -> 0xA1~0xFE)
-                            result += String.fromCharCode(0xA3) + String.fromCharCode(code + 0x80);
-                        } else if (code === 0x20) {
-                            // 전각 공백
-                            result += String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
-                        } else {
-                            // 제어 문자 등은 전각 공백으로
-                            result += String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
-                        }
-                    } else {
-                        if (result.length + 2 > size) break;
-                        
-                        // 한글 및 기타 문자
-                        const eucBytes = unicodeToEUCKR(char);
-                        if (eucBytes) {
-                            result += eucBytes;
-                        } else {
-                            // 변환 불가 시 전각 공백
-                            result += String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
-                        }
-                    }
-                }
-                
-                // 패딩 처리 (전각 공백으로)
-                while (result.length < size) {
-                    if (result.length + 2 <= size) {
-                        result += String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
-                    } else {
-                        result += ' ';
-                    }
-                }
-                
-                // 길이 초과 시 자르기
-                if (result.length > size) {
-                    result = result.substring(0, size);
-                }
-                
-                return result;
+                // KSC5601 라이브러리의 padToByteSize 사용 (전각 모드)
+                return KSC5601.padToByteSize(text, size);
             } catch (e) {
                 console.error('KSC 전각 인코딩 실패:', e);
                 return text.padEnd(size, ' ').substring(0, size);
@@ -7788,7 +7735,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
         /**
          * KSC-5601 혼용 모드 인코딩 (재생성용)
-         * 한글은 2바이트, ASCII는 1바이트로 인코딩
+         * 한글은 2바이트 (EUC-KR), ASCII는 1바이트로 인코딩
          * @param {string} text - 인코딩할 문자열
          * @param {number} size - 필드 크기 (바이트)
          * @returns {string} 인코딩된 바이트 문자열
@@ -7803,17 +7750,18 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     const code = char.charCodeAt(0);
                     
                     if (code < 0x80) {
-                        // ASCII: 1바이트
+                        // ASCII: 1바이트 그대로
                         if (byteCount + 1 <= size) {
                             result += char;
                             byteCount += 1;
                         }
                     } else {
-                        // 한글 및 기타: 2바이트
+                        // 한글 및 기타: KSC5601로 2바이트 인코딩
                         if (byteCount + 2 <= size) {
-                            const eucBytes = unicodeToEUCKR(char);
-                            if (eucBytes) {
-                                result += eucBytes;
+                            // KSC5601 라이브러리 사용
+                            const encoded = KSC5601.encodeToString(char);
+                            if (encoded && encoded.length === 2) {
+                                result += encoded;
                             } else {
                                 // 변환 불가 시 공백 2개
                                 result += '  ';
@@ -8226,6 +8174,8 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                                             if (window.structParsedDataCurrent[recIdx] && 
                                                 window.structParsedDataCurrent[recIdx].fields[fldIdx]) {
                                                 window.structParsedDataCurrent[recIdx].fields[fldIdx].value = currentValue;
+                                                // 값이 변경되었으므로 rawValue를 null로 설정 (재생성 시 새로 인코딩)
+                                                window.structParsedDataCurrent[recIdx].fields[fldIdx].rawValue = null;
                                             }
                                         } else {
                                             this.classList.remove('modified');
