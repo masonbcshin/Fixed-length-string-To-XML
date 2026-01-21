@@ -1676,6 +1676,34 @@
             background: #138496;
         }
 
+        /* 전체 접기/펼치기 버튼 */
+        .toggle-all-btn {
+            padding: 8px 14px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.2s ease;
+        }
+
+        .toggle-all-btn:hover {
+            background: #5a6268;
+        }
+
+        .toggle-all-btn .toggle-icon {
+            font-size: 10px;
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-all-btn.all-collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+
         /* 구조체 정의 컨테이너 스타일 */
         #struct-definitions-container {
             display: flex;
@@ -2554,6 +2582,14 @@
         body.dark-mode .struct-card {
             background: #2d2d44;
             border-color: #3d3d5c;
+        }
+
+        body.dark-mode .toggle-all-btn {
+            background: #4a4a6a;
+        }
+
+        body.dark-mode .toggle-all-btn:hover {
+            background: #5a5a7a;
         }
 
         body.dark-mode .struct-card-header {
@@ -4164,6 +4200,9 @@
                         🔍 디버그 모드
                     </label>
                     <button id="add-struct-btn">+ 구조체 추가 <span class="shortcut-hint">(Ctrl+N)</span></button>
+                    <button id="toggle-all-structs-btn" class="toggle-all-btn" title="전체 접기/펼치기">
+                        <span class="toggle-icon">▼</span> 전체 접기
+                    </button>
                 </div>
             </div>
             <div class="option-description">
@@ -8476,6 +8515,35 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 const newCard = createStructCard(structCardIndex);
                 structContainer.appendChild(newCard);
                 structCardIndex++;
+            });
+
+            // =========================================
+            // 전체 접기/펼치기 버튼 클릭 이벤트
+            // =========================================
+            const toggleAllBtn = document.getElementById('toggle-all-structs-btn');
+            toggleAllBtn.addEventListener('click', function() {
+                const cards = structContainer.querySelectorAll('.struct-card');
+                const isAllCollapsed = this.classList.contains('all-collapsed');
+                
+                cards.forEach(function(card) {
+                    if (isAllCollapsed) {
+                        // 전체 펼치기
+                        card.classList.remove('collapsed');
+                    } else {
+                        // 전체 접기
+                        card.classList.add('collapsed');
+                    }
+                    updateStructPreview(card);
+                });
+                
+                // 버튼 상태 토글
+                if (isAllCollapsed) {
+                    this.classList.remove('all-collapsed');
+                    this.innerHTML = '<span class="toggle-icon">▼</span> 전체 접기';
+                } else {
+                    this.classList.add('all-collapsed');
+                    this.innerHTML = '<span class="toggle-icon">▼</span> 전체 펼치기';
+                }
             });
 
             // =========================================
