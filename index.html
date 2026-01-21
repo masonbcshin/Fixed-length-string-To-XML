@@ -4168,14 +4168,15 @@
             gap: 10px;
         }
 
-        .footer-credit {
+        ._x7k2m9 {
             margin: 0;
             color: #666;
             font-size: 13px;
         }
 
-        .footer-credit strong {
+        ._x7k2m9 ._h3n5v8 {
             color: #667eea;
+            font-weight: bold;
         }
 
         .devnote-toggle {
@@ -4405,7 +4406,7 @@
             background: linear-gradient(180deg, transparent, #1a1a2e);
         }
 
-        body.dark-mode .footer-credit {
+        body.dark-mode ._x7k2m9 {
             color: #aaa;
         }
 
@@ -4869,7 +4870,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
     <!-- Footer 개발 노트 섹션 -->
     <footer class="footer-devnote">
         <div class="footer-main">
-            <p class="footer-credit">Made by <strong>Mason Shin</strong> with Cursor AI</p>
+            <p class="_x7k2m9" id="_c4r8d1"></p>
             <button class="devnote-toggle" id="devnote-toggle">
                 <span>📋 개발 노트</span>
                 <span class="toggle-icon">▼</span>
@@ -9102,6 +9103,11 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
         // DOMContentLoaded 이벤트 - 이벤트 리스너 등록
         // =========================================
         document.addEventListener('DOMContentLoaded', function() {
+            // =========================================
+            // Footer Credit 초기화 (난독화)
+            // =========================================
+            (function(){var _0x=[77,97,100,101,32,98,121,32],_1x=[32,119,105,116,104,32],_2x=[67,117,114,115,111,114,32,65,73],_3x=[77,97,115,111,110,32,83,104,105,110],_e=document.getElementById('_c4r8d1');if(_e){var _s=document.createElement('span');_s.className='_h3n5v8';_s.textContent=String.fromCharCode.apply(null,_3x);_e.appendChild(document.createTextNode(String.fromCharCode.apply(null,_0x)));_e.appendChild(_s);_e.appendChild(document.createTextNode(String.fromCharCode.apply(null,_1x)+String.fromCharCode.apply(null,_2x)));}})();
+
             // =========================================
             // 서브 탭 (파싱/생성 모드) 전환 이벤트 - struct-tab
             // =========================================
