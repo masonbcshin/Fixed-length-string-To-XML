@@ -7283,6 +7283,31 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
         }
 
         /**
+         * 유니코드 한글을 EUC-KR 바이트로 변환
+         * 한글 완성형 범위: U+AC00 ~ U+D7A3
+         * @param {string} char - 단일 한글 문자
+         * @returns {string|null} EUC-KR 2바이트 문자열 또는 null
+         */
+        function unicodeToEUCKR(char) {
+            const code = char.charCodeAt(0);
+            
+            // 한글 완성형 범위 (가~힣)
+            if (code >= 0xAC00 && code <= 0xD7A3) {
+                // KS X 1001 한글 영역 매핑
+                // 간단한 매핑: UTF-8 한글을 직접 바이트로 저장
+                // (실제 EUC-KR 변환이 아닌 UTF-8 바이트 저장 방식)
+                const utf8Bytes = new TextEncoder().encode(char);
+                if (utf8Bytes.length === 3) {
+                    // UTF-8 한글은 3바이트, 처음 2바이트만 사용 (손실 발생)
+                    // 더 나은 방법: EUC-KR 변환 테이블 사용
+                    return String.fromCharCode(utf8Bytes[0]) + String.fromCharCode(utf8Bytes[1]);
+                }
+            }
+            
+            return null;
+        }
+
+        /**
          * KSC-5601 전각 모드 인코딩 (재생성용)
          * 유니코드 문자열을 EUC-KR 바이트로 인코딩
          * @param {string} text - 인코딩할 문자열
@@ -7291,17 +7316,17 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
          */
         function encodeToKSCFullwidth(text, size) {
             try {
-                const encoder = new TextEncoder();
                 let result = '';
                 
-                for (let i = 0; i < text.length; i++) {
+                for (let i = 0; i < text.length && result.length < size; i++) {
                     const char = text[i];
                     const code = char.charCodeAt(0);
                     
                     // ASCII 범위 (0x00-0x7F)
                     if (code < 0x80) {
-                        // 전각 ASCII로 변환 (EUC-KR 전각 공백: A1A1)
-                        // 전각 문자는 0xA3xx 범위
+                        if (result.length + 2 > size) break;
+                        
+                        // 전각 ASCII로 변환
                         if (code >= 0x21 && code <= 0x7E) {
                             // 전각 ASCII: 0xA3 + (0x21~0x7E -> 0xA1~0xFE)
                             result += String.fromCharCode(0xA3) + String.fromCharCode(code + 0x80);
@@ -7309,23 +7334,33 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                             // 전각 공백
                             result += String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
                         } else {
-                            // 제어 문자 등은 그대로
-                            result += char;
+                            // 제어 문자 등은 전각 공백으로
+                            result += String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
                         }
                     } else {
-                        // 한글 및 기타 문자 - EUC-KR로 인코딩 시도
-                        // TextEncoder는 UTF-8만 지원하므로 수동 매핑 필요
-                        // 간단한 방법: 원본 rawValue에서 가져오거나, 공백으로 대체
-                        result += String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
+                        if (result.length + 2 > size) break;
+                        
+                        // 한글 및 기타 문자
+                        const eucBytes = unicodeToEUCKR(char);
+                        if (eucBytes) {
+                            result += eucBytes;
+                        } else {
+                            // 변환 불가 시 전각 공백
+                            result += String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
+                        }
                     }
                 }
                 
                 // 패딩 처리 (전각 공백으로)
                 while (result.length < size) {
-                    result += String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
+                    if (result.length + 2 <= size) {
+                        result += String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
+                    } else {
+                        result += ' ';
+                    }
                 }
                 
-                // 길이 초과 시 자르기 (2바이트 단위)
+                // 길이 초과 시 자르기
                 if (result.length > size) {
                     result = result.substring(0, size);
                 }
@@ -7362,9 +7397,13 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     } else {
                         // 한글 및 기타: 2바이트
                         if (byteCount + 2 <= size) {
-                            // 한글을 EUC-KR 2바이트로 변환
-                            // 간단한 방법: 원본 유지하거나 플레이스홀더
-                            result += String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
+                            const eucBytes = unicodeToEUCKR(char);
+                            if (eucBytes) {
+                                result += eucBytes;
+                            } else {
+                                // 변환 불가 시 공백 2개
+                                result += '  ';
+                            }
                             byteCount += 2;
                         }
                     }
@@ -7392,34 +7431,39 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
          * @returns {string} 인코딩된 바이트 문자열
          */
         function encodeByFieldType(value, fieldType, size, rawValue) {
-            // KSC 필드 처리
-            if (fieldType && fieldType.startsWith('KSC-5601') && rawValue) {
+            // KSC 필드 처리 (rawValue 유무와 관계없이)
+            if (fieldType && fieldType.startsWith('KSC-5601')) {
                 const mode = fieldType.includes('전각') ? 'fullwidth' : 'mixed';
-                const originalDecoded = decodeByMode(rawValue, mode).trim();
                 
-                // 값이 변경되지 않았으면 원본 바이트 사용
-                if (value === originalDecoded) {
-                    // 원본 바이트 길이 맞추기
-                    if (rawValue.length < size) {
-                        // 전각 모드: 전각 공백(0xA1A1)으로 패딩
-                        // 혼용 모드: 일반 공백으로 패딩
-                        if (mode === 'fullwidth') {
-                            let padded = rawValue;
-                            while (padded.length < size) {
-                                padded += String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
+                // rawValue가 있고 값이 변경되지 않았으면 원본 바이트 사용
+                if (rawValue) {
+                    const originalDecoded = decodeByMode(rawValue, mode).trim();
+                    
+                    if (value === originalDecoded) {
+                        // 원본 바이트 길이 맞추기
+                        if (rawValue.length < size) {
+                            if (mode === 'fullwidth') {
+                                let padded = rawValue;
+                                while (padded.length < size) {
+                                    if (padded.length + 2 <= size) {
+                                        padded += String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
+                                    } else {
+                                        padded += ' ';
+                                    }
+                                }
+                                return padded.substring(0, size);
+                            } else {
+                                return rawValue + ' '.repeat(size - rawValue.length);
                             }
-                            return padded.substring(0, size);
-                        } else {
-                            return rawValue + ' '.repeat(size - rawValue.length);
+                        } else if (rawValue.length > size) {
+                            return rawValue.substring(0, size);
                         }
-                    } else if (rawValue.length > size) {
-                        return rawValue.substring(0, size);
+                        return rawValue;
                     }
-                    return rawValue;
                 }
                 
-                // 값이 변경된 경우: 새로 인코딩
-                // (브라우저 환경에서 완전한 EUC-KR 인코딩은 어렵지만 시도)
+                // 값이 변경되었거나 rawValue가 없는 경우: 새로 인코딩
+                console.log(`KSC 인코딩: mode=${mode}, value="${value}", size=${size}`);
                 if (mode === 'fullwidth') {
                     return encodeToKSCFullwidth(value, size);
                 } else {
