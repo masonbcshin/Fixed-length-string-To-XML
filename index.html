@@ -9665,6 +9665,12 @@ T000000000200000000000000003000`
                 }
             });
 
+            // =========================================
+            // KSC-5601 도움말 모달 이벤트 핸들러
+            // =========================================
+            const kscHelpModal = document.getElementById('ksc-help-modal');
+            const kscCloseBtn = kscHelpModal.querySelector('.close-help');
+
             // ESC 키로 모달 닫기
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape' && crlfHelpModal.classList.contains('show')) {
@@ -9674,12 +9680,6 @@ T000000000200000000000000003000`
                     kscHelpModal.classList.remove('show');
                 }
             });
-
-            // =========================================
-            // KSC-5601 도움말 모달 이벤트 핸들러
-            // =========================================
-            const kscHelpModal = document.getElementById('ksc-help-modal');
-            const kscCloseBtn = kscHelpModal.querySelector('.close-help');
 
             // help-icon-btn 클릭 이벤트 (이벤트 위임)
             document.addEventListener('click', function(e) {
