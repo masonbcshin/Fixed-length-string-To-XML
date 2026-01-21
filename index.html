@@ -1843,6 +1843,9 @@
         }
 
         .ksc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 15px;
         }
 
@@ -5138,7 +5141,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         <textarea class="struct-definition" rows="8" placeholder="typedef struct { ... } 구조체명;"></textarea>
                     </div>
                     
-                    <div class="input-row ksc-section" style="display: none;">
+                    <div class="input-row ksc-section">
                         <div class="ksc-header">
                             <div class="ksc-title-area">
                                 <label>🌏 KSC-5601 필드 설정</label>
@@ -5146,64 +5149,66 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                                     <span class="help-icon">?</span>
                                 </button>
                             </div>
+                            <button type="button" class="parse-for-ksc-btn" data-index="${index}">
+                                🔍 구조체 파싱
+                            </button>
                         </div>
                         
-                        <div class="ksc-notice">
-                            <div class="notice-icon">⚠️</div>
-                            <div class="notice-text">
-                                <strong>KSC-5601 필드는 모든 문자가 2바이트입니다</strong><br>
-                                <small>(한글, 전각 영문/숫자/공백 모두 포함)</small>
-                            </div>
-                        </div>
-                        
-                        <div class="encoding-mode-selector">
-                            <label class="mode-label">인코딩 처리 방식</label>
-                            <div class="mode-options">
-                                <label class="mode-option">
-                                    <input type="radio" 
-                                           name="encoding-mode-${index}" 
-                                           value="fullwidth" 
-                                           class="mode-radio"
-                                           checked>
-                                    <div class="mode-content">
-                                        <div class="mode-title">
-                                            <span class="mode-icon">🔷</span>
-                                            전각 전용 (권장)
-                                        </div>
-                                        <div class="mode-desc">
-                                            모든 문자 2 bytes. 글자수 × 2 = 바이트 수
-                                        </div>
-                                    </div>
-                                </label>
-                                
-                                <label class="mode-option">
-                                    <input type="radio" 
-                                           name="encoding-mode-${index}" 
-                                           value="mixed"
-                                           class="mode-radio">
-                                    <div class="mode-content">
-                                        <div class="mode-title">
-                                            <span class="mode-icon">🔶</span>
-                                            혼용 모드
-                                        </div>
-                                        <div class="mode-desc">
-                                            한글 2 bytes, ASCII 1 byte
-                                        </div>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div class="ksc-fields-container">
-                            <div class="fields-header">
-                                <span>KSC-5601 필드 선택</span>
-                                <button type="button" class="parse-for-ksc-btn" data-index="${index}">
-                                    🔍 구조체 파싱
-                                </button>
+                        <div class="ksc-settings" style="display: none;">
+                            <div class="ksc-notice">
+                                <div class="notice-icon">⚠️</div>
+                                <div class="notice-text">
+                                    <strong>KSC-5601 필드는 모든 문자가 2바이트입니다</strong><br>
+                                    <small>(한글, 전각 영문/숫자/공백 모두 포함)</small>
+                                </div>
                             </div>
                             
-                            <div class="ksc-fields-list" id="ksc-fields-${index}">
-                                <p class="no-fields-msg">구조체를 파싱하면 필드 목록이 표시됩니다</p>
+                            <div class="encoding-mode-selector">
+                                <label class="mode-label">인코딩 처리 방식</label>
+                                <div class="mode-options">
+                                    <label class="mode-option">
+                                        <input type="radio" 
+                                               name="encoding-mode-${index}" 
+                                               value="fullwidth" 
+                                               class="mode-radio"
+                                               checked>
+                                        <div class="mode-content">
+                                            <div class="mode-title">
+                                                <span class="mode-icon">🔷</span>
+                                                전각 전용 (권장)
+                                            </div>
+                                            <div class="mode-desc">
+                                                모든 문자 2 bytes. 글자수 × 2 = 바이트 수
+                                            </div>
+                                        </div>
+                                    </label>
+                                    
+                                    <label class="mode-option">
+                                        <input type="radio" 
+                                               name="encoding-mode-${index}" 
+                                               value="mixed"
+                                               class="mode-radio">
+                                        <div class="mode-content">
+                                            <div class="mode-title">
+                                                <span class="mode-icon">🔶</span>
+                                                혼용 모드
+                                            </div>
+                                            <div class="mode-desc">
+                                                한글 2 bytes, ASCII 1 byte
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="ksc-fields-container">
+                                <div class="fields-header">
+                                    <span>KSC-5601 필드 선택</span>
+                                </div>
+                                
+                                <div class="ksc-fields-list" id="ksc-fields-${index}">
+                                    <p class="no-fields-msg">구조체를 파싱하면 필드 목록이 표시됩니다</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -8527,8 +8532,8 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     // 4. KSC 필드 체크박스 목록 생성
                     generateKSCFieldCheckboxes(cardIndex, parsed.fields, previousSelections);
                     
-                    // 5. KSC 섹션 표시
-                    card.querySelector('.ksc-section').style.display = 'block';
+                    // 5. KSC 설정 영역 표시
+                    card.querySelector('.ksc-settings').style.display = 'block';
                     
                     // 6. 버튼 상태 변경
                     e.target.textContent = '✓ 파싱 완료';
