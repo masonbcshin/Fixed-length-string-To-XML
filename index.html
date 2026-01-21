@@ -7723,18 +7723,33 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
         }
 
         /**
-         * 유니코드 한글을 EUC-KR 바이트로 변환
-         * KSC5601 객체의 encode 메서드를 활용
+         * 유니코드 한글을 EUC-KR 바이트로 변환 (혼용 모드용)
+         * 한글만 EUC-KR로 변환, ASCII는 처리하지 않음
          * @param {string} char - 단일 문자
-         * @returns {string|null} EUC-KR 바이트 문자열 또는 null
+         * @returns {string|null} EUC-KR 2바이트 문자열 또는 null
          */
         function unicodeToEUCKR(char) {
             try {
-                // KSC5601 라이브러리 사용하여 EUC-KR로 인코딩
-                const encoded = KSC5601.encodeToString(char);
-                if (encoded && encoded.length === 2) {
-                    return encoded;
+                const code = char.charCodeAt(0);
+                
+                // 한글 완성형 (가-힣: 0xAC00-0xD7A3)
+                if (code >= 0xAC00 && code <= 0xD7A3) {
+                    const kscCode = KSC5601.unicodeToKSC5601(code);
+                    if (kscCode) {
+                        return String.fromCharCode((kscCode >> 8) & 0xFF) + 
+                               String.fromCharCode(kscCode & 0xFF);
+                    }
                 }
+                
+                // 한글 자모 (ㄱ-ㅣ: 0x3131-0x3163)
+                if (code >= 0x3131 && code <= 0x3163) {
+                    const kscCode = KSC5601.unicodeJamoToKSC5601(code);
+                    if (kscCode) {
+                        return String.fromCharCode((kscCode >> 8) & 0xFF) + 
+                               String.fromCharCode(kscCode & 0xFF);
+                    }
+                }
+                
                 return null;
             } catch (e) {
                 console.warn('unicodeToEUCKR 변환 실패:', char, e);
@@ -7762,6 +7777,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
         /**
          * KSC-5601 혼용 모드 인코딩 (재생성용)
          * 한글은 2바이트 (EUC-KR), ASCII는 1바이트로 인코딩
+         * 중요: ASCII는 그대로 유지 (전각 변환 안 함)
          * @param {string} text - 인코딩할 문자열
          * @param {number} size - 필드 크기 (바이트)
          * @returns {string} 인코딩된 바이트 문자열
@@ -7776,15 +7792,42 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     const code = char.charCodeAt(0);
                     
                     if (code < 0x80) {
-                        // ASCII: 1바이트 그대로
+                        // ASCII: 1바이트 그대로 (전각 변환 안 함!)
                         if (byteCount + 1 <= size) {
                             result += char;
                             byteCount += 1;
                         }
-                    } else {
-                        // 한글 및 기타: KSC5601로 2바이트 인코딩
+                    } else if (code >= 0xAC00 && code <= 0xD7A3) {
+                        // 한글 완성형: KSC5601 테이블로 EUC-KR 2바이트 인코딩
                         if (byteCount + 2 <= size) {
-                            // KSC5601 라이브러리 사용
+                            const kscCode = KSC5601.unicodeToKSC5601(code);
+                            if (kscCode) {
+                                // 상위 바이트, 하위 바이트
+                                result += String.fromCharCode((kscCode >> 8) & 0xFF);
+                                result += String.fromCharCode(kscCode & 0xFF);
+                            } else {
+                                // 변환 불가 시 공백 2개 (EUC-KR에 없는 한글)
+                                result += '  ';
+                                console.warn('KSC-5601에 없는 한글:', char, '(U+' + code.toString(16).toUpperCase() + ')');
+                            }
+                            byteCount += 2;
+                        }
+                    } else if (code >= 0x3131 && code <= 0x3163) {
+                        // 한글 자모 (ㄱ-ㅣ): KSC5601 자모 테이블로 인코딩
+                        if (byteCount + 2 <= size) {
+                            const kscCode = KSC5601.unicodeJamoToKSC5601(code);
+                            if (kscCode) {
+                                result += String.fromCharCode((kscCode >> 8) & 0xFF);
+                                result += String.fromCharCode(kscCode & 0xFF);
+                            } else {
+                                result += '  ';
+                            }
+                            byteCount += 2;
+                        }
+                    } else {
+                        // 기타 비ASCII 문자: 2바이트로 처리
+                        if (byteCount + 2 <= size) {
+                            // KSC5601 전각으로 시도
                             const encoded = KSC5601.encodeToString(char);
                             if (encoded && encoded.length === 2) {
                                 result += encoded;
