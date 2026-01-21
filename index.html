@@ -1246,6 +1246,22 @@
             color: white;
         }
 
+        .ksc-tag {
+            background: #fd7e14;
+            color: white;
+        }
+
+        /* KSC 필드 바이트 초과 경고 */
+        .field-input.over-limit {
+            border-color: #dc3545;
+            background-color: #fff5f5;
+        }
+
+        .char-counter.over-limit {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
         .numeric-tag {
             background: #ffc107;
             color: #000;
@@ -2652,6 +2668,16 @@
         }
 
         body.dark-mode .no-valid-fields {
+            color: #ff6b6b;
+        }
+
+        /* 다크 모드 - KSC 필드 바이트 초과 경고 */
+        body.dark-mode .field-input.over-limit {
+            border-color: #dc3545;
+            background-color: #4a1a1a;
+        }
+
+        body.dark-mode .char-counter.over-limit {
             color: #ff6b6b;
         }
 
@@ -9236,9 +9262,10 @@ T000000000200000000000000003000`
              * @param {Object} field - 필드 정의 객체
              * @param {number} index - 필드 인덱스
              * @param {boolean} recognizeCRLF - CRLF 인식 여부
+             * @param {string} encodingMode - 인코딩 모드 ('fullwidth' 또는 'mixed')
              * @returns {HTMLTableRowElement} 테이블 행 요소
              */
-            function createFieldRow(field, index, recognizeCRLF) {
+            function createFieldRow(field, index, recognizeCRLF, encodingMode) {
                 const tr = document.createElement('tr');
                 
                 // CRLF 필드 특수 처리
@@ -9270,8 +9297,103 @@ T000000000200000000000000003000`
                             <code class="preview-text" id="preview-field-${index}" data-field-size="${field.size}">\\r\\n</code>
                         </td>
                     `;
-                } else {
-                    // 일반 입력 필드
+                    return tr;
+                }
+                
+                // KSC-5601 필드 처리
+                if (field.isKSC) {
+                    const maxChars = encodingMode === 'fullwidth' 
+                        ? Math.floor(field.size / 2)
+                        : '가변';
+                    
+                    const placeholderText = encodingMode === 'fullwidth' 
+                        ? '최대 ' + maxChars + '자'
+                        : '최대 ' + field.size + ' bytes';
+                    
+                    const charCounterHtml = encodingMode === 'fullwidth'
+                        ? '<span class="current-chars">0</span>/' + maxChars + '자 (<span class="current-bytes">0</span>/' + field.size + 'B)'
+                        : '<span class="current-bytes">0</span>/' + field.size + 'B (<span class="current-chars">0</span>자)';
+                    
+                    tr.innerHTML = `
+                        <td>
+                            <span class="field-name">${field.name}</span>
+                            <span class="field-tag ksc-tag">KSC-5601</span>
+                        </td>
+                        <td class="field-size">${field.size}</td>
+                        <td>
+                            <input type="text"
+                                   class="field-input generate-field-input ksc-field-input"
+                                   data-field="${field.name}"
+                                   data-size="${field.size}"
+                                   data-index="${index}"
+                                   data-field-name="${field.name}"
+                                   data-field-size="${field.size}"
+                                   data-field-index="${index}"
+                                   data-ksc="true"
+                                   data-encoding-mode="${encodingMode}"
+                                   id="gen-field-${index}"
+                                   placeholder="${placeholderText}" />
+                            <div class="input-meta">
+                                <span class="char-counter" id="char-counter-${index}">
+                                    ${charCounterHtml}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="preview-cell">
+                            <code class="preview-text" id="preview-field-${index}" data-field-size="${field.size}"></code>
+                        </td>
+                    `;
+                    
+                    // KSC 필드 입력 이벤트 바인딩
+                    setTimeout(function() {
+                        const input = document.getElementById('gen-field-' + index);
+                        const counterEl = document.getElementById('char-counter-' + index);
+                        const previewEl = document.getElementById('preview-field-' + index);
+                        
+                        if (input) {
+                            input.addEventListener('input', function() {
+                                const value = this.value;
+                                const size = parseInt(this.dataset.fieldSize);
+                                const mode = this.dataset.encodingMode;
+                                
+                                // 바이트 수 계산
+                                let byteCount = 0;
+                                if (mode === 'fullwidth') {
+                                    byteCount = value.length * 2;
+                                } else {
+                                    // 혼용 모드: 한글 2바이트, ASCII 1바이트
+                                    for (let i = 0; i < value.length; i++) {
+                                        byteCount += value.charCodeAt(i) > 127 ? 2 : 1;
+                                    }
+                                }
+                                
+                                // 카운터 업데이트
+                                const charsSpan = counterEl.querySelector('.current-chars');
+                                const bytesSpan = counterEl.querySelector('.current-bytes');
+                                if (charsSpan) charsSpan.textContent = value.length;
+                                if (bytesSpan) bytesSpan.textContent = byteCount;
+                                
+                                // 바이트 초과 시 경고
+                                if (byteCount > size) {
+                                    counterEl.classList.add('over-limit');
+                                    input.classList.add('over-limit');
+                                } else {
+                                    counterEl.classList.remove('over-limit');
+                                    input.classList.remove('over-limit');
+                                }
+                                
+                                // 미리보기 업데이트
+                                if (previewEl) {
+                                    previewEl.textContent = value || '';
+                                }
+                            });
+                        }
+                    }, 0);
+                    
+                    return tr;
+                }
+                
+                // 일반 입력 필드
                     const isNumeric = isNumericField(field.name);
                     const isUserChoice = isUserChoiceField(field.name);
                     
@@ -9659,7 +9781,7 @@ T000000000200000000000000003000`
                 const tbody = document.getElementById('form-fields-body');
                 
                 structDef.fields.forEach(function(field, index) {
-                    const row = createFieldRow(field, index, recognizeCRLF);
+                    const row = createFieldRow(field, index, recognizeCRLF, structDef.encodingMode);
                     tbody.appendChild(row);
                 });
                 
