@@ -771,20 +771,6 @@
             color: #212529;
         }
 
-        .copy-record-btn {
-            padding: 6px 12px;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-
-        .copy-record-btn:hover {
-            background: #0056b3;
-        }
-
         .delete-record-btn {
             padding: 6px 12px;
             background: #dc3545;
@@ -1405,8 +1391,8 @@
 
         /* 디코딩 모드 드롭다운 */
         .decoding-mode-select {
-            padding: 5px 8px;
-            font-size: 12px;
+            padding: 6px 10px;
+            font-size: 13px;
             font-weight: 600;
             border: 2px solid #dee2e6;
             border-radius: 6px;
@@ -1414,7 +1400,7 @@
             color: #495057;
             cursor: pointer;
             transition: all 0.2s ease;
-            min-width: 90px;
+            min-width: 100px;
         }
 
         .decoding-mode-select:hover {
@@ -1431,7 +1417,8 @@
         .decoding-mode-select.ksc-active {
             border-color: #fd7e14;
             background: linear-gradient(135deg, #fff5eb 0%, #ffe8d6 100%);
-            color: #d63600;
+            color: #c23600;
+            font-weight: 700;
         }
 
         /* 값이 변경되었을 때 표시 */
@@ -1444,21 +1431,22 @@
             50% { transform: scale(1.05); }
         }
 
-        /* 원본 보기 버튼 */
+        /* 원본 HEX 보기 버튼 */
         .show-raw-btn {
-            padding: 4px 10px;
-            background: #17a2b8;
+            padding: 5px 12px;
+            background: #6c757d;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 11px;
+            font-size: 12px;
+            font-weight: 500;
             margin-left: 10px;
             transition: all 0.2s;
         }
 
         .show-raw-btn:hover {
-            background: #138496;
+            background: #5a6268;
         }
 
         /* 값 셀 스타일 */
@@ -1715,39 +1703,45 @@
          * 구조체 정의 영역
          * ===================================================== */
         #add-struct-btn {
-            padding: 8px 16px;
+            padding: 10px 20px;
             background: #17a2b8;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
         }
 
         #add-struct-btn:hover {
             background: #138496;
+            transform: translateY(-1px);
         }
 
         /* 전체 접기/펼치기 버튼 */
         .toggle-all-btn {
-            padding: 8px 14px;
+            padding: 10px 18px;
             background: #6c757d;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 14px;
+            font-weight: 500;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
-            transition: background 0.2s ease;
+            gap: 6px;
+            transition: all 0.2s ease;
         }
 
         .toggle-all-btn:hover {
             background: #5a6268;
+            transform: translateY(-1px);
         }
 
         .toggle-all-btn .toggle-icon {
-            font-size: 10px;
+            font-size: 11px;
             transition: transform 0.3s ease;
         }
 
@@ -2328,14 +2322,18 @@
         /* 단축키 힌트 스타일 */
         .shortcut-hint {
             font-size: 11px;
-            color: rgba(255, 255, 255, 0.7);
-            margin-left: 5px;
+            color: rgba(255, 255, 255, 0.85);
+            margin-left: 6px;
+            background: rgba(0, 0, 0, 0.15);
+            padding: 2px 6px;
+            border-radius: 3px;
         }
 
         /* 버튼 외부에서 사용될 때 */
         label .shortcut-hint,
         span:not([class]) .shortcut-hint {
             color: #6c757d;
+            background: rgba(0, 0, 0, 0.05);
         }
 
         /* 다크모드 토글 버튼 */
@@ -2543,17 +2541,20 @@
 
         /* 레코드 복사 버튼 스타일 */
         .copy-record-btn {
-            padding: 6px 12px;
+            padding: 8px 14px;
             background: #28a745;
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 5px;
             cursor: pointer;
             font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
         }
 
         .copy-record-btn:hover {
             background: #1e7e34;
+            transform: translateY(-1px);
         }
 
         /* 자동 설정 필드 스타일 (CRLF 등) */
@@ -2892,11 +2893,11 @@
         }
 
         body.dark-mode .show-raw-btn {
-            background: #138496;
+            background: #5a6268;
         }
 
         body.dark-mode .show-raw-btn:hover {
-            background: #17a2b8;
+            background: #6c757d;
         }
 
         body.dark-mode .help-section {
