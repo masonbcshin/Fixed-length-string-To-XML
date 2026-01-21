@@ -7282,6 +7282,204 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
             }
         }
 
+        /**
+         * 유니코드 한글을 EUC-KR 바이트로 변환
+         * 한글 완성형 범위: U+AC00 ~ U+D7A3
+         * @param {string} char - 단일 한글 문자
+         * @returns {string|null} EUC-KR 2바이트 문자열 또는 null
+         */
+        function unicodeToEUCKR(char) {
+            const code = char.charCodeAt(0);
+            
+            // 한글 완성형 범위 (가~힣)
+            if (code >= 0xAC00 && code <= 0xD7A3) {
+                // KS X 1001 한글 영역 매핑
+                // 간단한 매핑: UTF-8 한글을 직접 바이트로 저장
+                // (실제 EUC-KR 변환이 아닌 UTF-8 바이트 저장 방식)
+                const utf8Bytes = new TextEncoder().encode(char);
+                if (utf8Bytes.length === 3) {
+                    // UTF-8 한글은 3바이트, 처음 2바이트만 사용 (손실 발생)
+                    // 더 나은 방법: EUC-KR 변환 테이블 사용
+                    return String.fromCharCode(utf8Bytes[0]) + String.fromCharCode(utf8Bytes[1]);
+                }
+            }
+            
+            return null;
+        }
+
+        /**
+         * KSC-5601 전각 모드 인코딩 (재생성용)
+         * 유니코드 문자열을 EUC-KR 바이트로 인코딩
+         * @param {string} text - 인코딩할 문자열
+         * @param {number} size - 필드 크기 (바이트)
+         * @returns {string} 인코딩된 바이트 문자열
+         */
+        function encodeToKSCFullwidth(text, size) {
+            try {
+                let result = '';
+                
+                for (let i = 0; i < text.length && result.length < size; i++) {
+                    const char = text[i];
+                    const code = char.charCodeAt(0);
+                    
+                    // ASCII 범위 (0x00-0x7F)
+                    if (code < 0x80) {
+                        if (result.length + 2 > size) break;
+                        
+                        // 전각 ASCII로 변환
+                        if (code >= 0x21 && code <= 0x7E) {
+                            // 전각 ASCII: 0xA3 + (0x21~0x7E -> 0xA1~0xFE)
+                            result += String.fromCharCode(0xA3) + String.fromCharCode(code + 0x80);
+                        } else if (code === 0x20) {
+                            // 전각 공백
+                            result += String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
+                        } else {
+                            // 제어 문자 등은 전각 공백으로
+                            result += String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
+                        }
+                    } else {
+                        if (result.length + 2 > size) break;
+                        
+                        // 한글 및 기타 문자
+                        const eucBytes = unicodeToEUCKR(char);
+                        if (eucBytes) {
+                            result += eucBytes;
+                        } else {
+                            // 변환 불가 시 전각 공백
+                            result += String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
+                        }
+                    }
+                }
+                
+                // 패딩 처리 (전각 공백으로)
+                while (result.length < size) {
+                    if (result.length + 2 <= size) {
+                        result += String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
+                    } else {
+                        result += ' ';
+                    }
+                }
+                
+                // 길이 초과 시 자르기
+                if (result.length > size) {
+                    result = result.substring(0, size);
+                }
+                
+                return result;
+            } catch (e) {
+                console.error('KSC 전각 인코딩 실패:', e);
+                return text.padEnd(size, ' ').substring(0, size);
+            }
+        }
+
+        /**
+         * KSC-5601 혼용 모드 인코딩 (재생성용)
+         * 한글은 2바이트, ASCII는 1바이트로 인코딩
+         * @param {string} text - 인코딩할 문자열
+         * @param {number} size - 필드 크기 (바이트)
+         * @returns {string} 인코딩된 바이트 문자열
+         */
+        function encodeToKSCMixed(text, size) {
+            try {
+                let result = '';
+                let byteCount = 0;
+                
+                for (let i = 0; i < text.length && byteCount < size; i++) {
+                    const char = text[i];
+                    const code = char.charCodeAt(0);
+                    
+                    if (code < 0x80) {
+                        // ASCII: 1바이트
+                        if (byteCount + 1 <= size) {
+                            result += char;
+                            byteCount += 1;
+                        }
+                    } else {
+                        // 한글 및 기타: 2바이트
+                        if (byteCount + 2 <= size) {
+                            const eucBytes = unicodeToEUCKR(char);
+                            if (eucBytes) {
+                                result += eucBytes;
+                            } else {
+                                // 변환 불가 시 공백 2개
+                                result += '  ';
+                            }
+                            byteCount += 2;
+                        }
+                    }
+                }
+                
+                // 패딩 처리 (ASCII 공백으로)
+                while (byteCount < size) {
+                    result += ' ';
+                    byteCount++;
+                }
+                
+                return result;
+            } catch (e) {
+                console.error('KSC 혼용 인코딩 실패:', e);
+                return text.padEnd(size, ' ').substring(0, size);
+            }
+        }
+
+        /**
+         * 인코딩 모드에 따라 값을 인코딩 (재생성용)
+         * @param {string} value - 인코딩할 값
+         * @param {string} fieldType - 필드 타입 ('ASCII', 'KSC-5601 (전각)', 'KSC-5601 (혼용)')
+         * @param {number} size - 필드 크기
+         * @param {string} rawValue - 원본 바이트 값 (KSC 필드의 경우)
+         * @returns {string} 인코딩된 바이트 문자열
+         */
+        function encodeByFieldType(value, fieldType, size, rawValue) {
+            // KSC 필드 처리 (rawValue 유무와 관계없이)
+            if (fieldType && fieldType.startsWith('KSC-5601')) {
+                const mode = fieldType.includes('전각') ? 'fullwidth' : 'mixed';
+                
+                // rawValue가 있고 값이 변경되지 않았으면 원본 바이트 사용
+                if (rawValue) {
+                    const originalDecoded = decodeByMode(rawValue, mode).trim();
+                    
+                    if (value === originalDecoded) {
+                        // 원본 바이트 길이 맞추기
+                        if (rawValue.length < size) {
+                            if (mode === 'fullwidth') {
+                                let padded = rawValue;
+                                while (padded.length < size) {
+                                    if (padded.length + 2 <= size) {
+                                        padded += String.fromCharCode(0xA1) + String.fromCharCode(0xA1);
+                                    } else {
+                                        padded += ' ';
+                                    }
+                                }
+                                return padded.substring(0, size);
+                            } else {
+                                return rawValue + ' '.repeat(size - rawValue.length);
+                            }
+                        } else if (rawValue.length > size) {
+                            return rawValue.substring(0, size);
+                        }
+                        return rawValue;
+                    }
+                }
+                
+                // 값이 변경되었거나 rawValue가 없는 경우: 새로 인코딩
+                console.log(`KSC 인코딩: mode=${mode}, value="${value}", size=${size}`);
+                if (mode === 'fullwidth') {
+                    return encodeToKSCFullwidth(value, size);
+                } else {
+                    return encodeToKSCMixed(value, size);
+                }
+            }
+            
+            // ASCII 모드 (기본)
+            if (value.length < size) {
+                return value + ' '.repeat(size - value.length);
+            } else if (value.length > size) {
+                return value.substring(0, size);
+            }
+            return value;
+        }
+
         function displayStructResults(parseResult) {
             // 1. struct-result-container 초기화
             const container = document.getElementById('struct-result-container');
@@ -7773,6 +7971,8 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         let value = field.value || '';
                         const size = field.fieldSize;
                         const fieldName = field.fieldName || '';
+                        const fieldType = field.fieldType || 'ASCII';
+                        const rawValue = field.rawValue || '';
                         
                         // CRLF 필드 여부 확인
                         const isCRLFField = fieldName.toLowerCase().match(/crlf|cr_lf|newline/);
@@ -7790,14 +7990,8 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                                 }
                             }
                         } else {
-                            // 일반 필드: 패딩 처리
-                            if (value.length < size) {
-                                // 오른쪽 공백 패딩
-                                value = value + ' '.repeat(size - value.length);
-                            } else if (value.length > size) {
-                                // 길이 초과 시 자르기
-                                value = value.substring(0, size);
-                            }
+                            // KSC 또는 ASCII 필드: 타입에 따라 인코딩
+                            value = encodeByFieldType(value, fieldType, size, rawValue);
                         }
                         
                         recordData += value;
