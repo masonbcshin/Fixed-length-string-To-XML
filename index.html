@@ -1968,6 +1968,126 @@
             margin: 0;
         }
 
+        /* KSC 필드 체크박스 스타일 */
+        .ksc-field-item {
+            margin-bottom: 10px;
+        }
+
+        .ksc-field-label {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .ksc-field-label:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .ksc-field-label.checked {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+
+        .ksc-field-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .field-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            margin-left: 12px;
+        }
+
+        .field-name {
+            font-weight: bold;
+            color: #495057;
+            font-family: 'Courier New', monospace;
+        }
+
+        .field-size-badge {
+            background: #6c757d;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .auto-badge {
+            background: #28a745;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .ksc-checkbox-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #dee2e6;
+        }
+
+        .control-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: #f8f9fa;
+        }
+
+        .control-btn.select-all:hover {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+
+        .control-btn.deselect-all:hover {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+
+        .reparse-ksc-btn {
+            padding: 8px 16px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .reparse-ksc-btn:hover {
+            background: #5a6268;
+        }
+
+        .no-valid-fields {
+            text-align: center;
+            color: #dc3545;
+            padding: 30px;
+            font-style: italic;
+            margin: 0;
+        }
+
         /* 로컬 스토리지 복원 알림 스타일 */
         .restore-notification {
             background: #e3f2fd;
@@ -2473,6 +2593,66 @@
 
         body.dark-mode .ksc-fields-list .no-fields-msg {
             color: #aaa;
+        }
+
+        /* 다크 모드 - KSC 필드 체크박스 스타일 */
+        body.dark-mode .ksc-field-label {
+            background: #3d3d5c;
+            border-color: #4d4d6c;
+        }
+
+        body.dark-mode .ksc-field-label:hover {
+            background: #4d4d6c;
+            border-color: #6d6d8c;
+        }
+
+        body.dark-mode .ksc-field-label.checked {
+            background: #3d3d2e;
+            border-color: #b8860b;
+        }
+
+        body.dark-mode .field-name {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .field-size-badge {
+            background: #5a6268;
+        }
+
+        body.dark-mode .ksc-checkbox-controls {
+            border-top-color: #4d4d6c;
+        }
+
+        body.dark-mode .control-btn {
+            background: #2d2d44;
+            border-color: #4d4d6c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .control-btn:hover {
+            background: #3d3d5c;
+        }
+
+        body.dark-mode .control-btn.select-all:hover {
+            background: #1e4620;
+            border-color: #28a745;
+        }
+
+        body.dark-mode .control-btn.deselect-all:hover {
+            background: #4a1a1a;
+            border-color: #dc3545;
+        }
+
+        body.dark-mode .reparse-ksc-btn {
+            background: #5a6268;
+        }
+
+        body.dark-mode .reparse-ksc-btn:hover {
+            background: #6c757d;
+        }
+
+        body.dark-mode .no-valid-fields {
+            color: #ff6b6b;
         }
 
         body.dark-mode .help-section {
@@ -4721,6 +4901,89 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
             // 3. 요소 반환
             return div;
+        }
+
+        /**
+         * =====================================================
+         * KSC-5601 필드 체크박스 목록 생성 함수
+         * 파싱된 필드를 기반으로 체크박스 UI 생성
+         * =====================================================
+         * @param {number} cardIndex - 구조체 카드 인덱스
+         * @param {Array} fields - 파싱된 필드 배열
+         * @param {Set} previousSelections - 이전 선택 상태
+         */
+        function generateKSCFieldCheckboxes(cardIndex, fields, previousSelections) {
+            if (previousSelections === undefined) {
+                previousSelections = new Set();
+            }
+            
+            const container = document.getElementById('ksc-fields-' + cardIndex);
+            
+            container.innerHTML = '';
+            
+            // CRLF 필드 제외하고 필드 생성
+            const validFields = fields.filter(function(f) {
+                return !f.name.toLowerCase().match(/crlf|cr_lf|newline|eol/);
+            });
+            
+            if (validFields.length === 0) {
+                container.innerHTML = '<p class="no-valid-fields">KSC-5601로 설정 가능한 필드가 없습니다</p>';
+                return;
+            }
+            
+            validFields.forEach(function(field, fieldIndex) {
+                const fieldDiv = document.createElement('div');
+                fieldDiv.className = 'ksc-field-item';
+                
+                // 자동 감지: name, nm, addr 등 포함
+                const patterns = /name|nm|addr|address|memo|remark|desc|title|content|msg|message/i;
+                const autoDetected = patterns.test(field.name);
+                
+                // 이전 선택 상태 또는 자동 감지
+                const isChecked = previousSelections.has(field.name) || 
+                                 (previousSelections.size === 0 && autoDetected);
+                
+                fieldDiv.innerHTML = 
+                    '<label class="ksc-field-label ' + (isChecked ? 'checked' : '') + '">' +
+                        '<input type="checkbox" ' +
+                               'class="ksc-field-checkbox" ' +
+                               'data-card="' + cardIndex + '" ' +
+                               'data-field="' + field.name + '" ' +
+                               'value="' + fieldIndex + '" ' +
+                               (isChecked ? 'checked' : '') + '>' +
+                        '<div class="field-info">' +
+                            '<span class="field-name">' + field.name + '</span>' +
+                            '<span class="field-size-badge">' + field.size + ' bytes</span>' +
+                            (autoDetected ? '<span class="auto-badge">자동감지</span>' : '') +
+                        '</div>' +
+                    '</label>';
+                
+                container.appendChild(fieldDiv);
+            });
+            
+            // 전체 선택/해제 컨트롤
+            const controlsDiv = document.createElement('div');
+            controlsDiv.className = 'ksc-checkbox-controls';
+            controlsDiv.innerHTML = 
+                '<button type="button" class="control-btn select-all" data-card="' + cardIndex + '">' +
+                    '☑️ 전체 선택' +
+                '</button>' +
+                '<button type="button" class="control-btn deselect-all" data-card="' + cardIndex + '">' +
+                    '☐ 전체 해제' +
+                '</button>';
+            container.appendChild(controlsDiv);
+            
+            // 체크박스 변경 시 라벨 스타일 업데이트
+            container.addEventListener('change', function(e) {
+                if (e.target.classList.contains('ksc-field-checkbox')) {
+                    const label = e.target.closest('.ksc-field-label');
+                    if (e.target.checked) {
+                        label.classList.add('checked');
+                    } else {
+                        label.classList.remove('checked');
+                    }
+                }
+            });
         }
 
         /**
@@ -7666,6 +7929,100 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                             structCardIndex = 0;
                         }
                     }
+                }
+                
+                // =========================================
+                // KSC-5601 파싱 버튼 이벤트
+                // =========================================
+                if (e.target.classList.contains('parse-for-ksc-btn')) {
+                    const cardIndex = parseInt(e.target.dataset.index);
+                    const card = e.target.closest('.struct-card');
+                    
+                    // 1. 구조체 정의 텍스트 가져오기
+                    const structDefText = card.querySelector('.struct-definition').value.trim();
+                    
+                    if (!structDefText) {
+                        alert('구조체 정의를 먼저 입력하세요');
+                        return;
+                    }
+                    
+                    // 2. 구조체 파싱 (17단계 함수 재사용)
+                    const parsed = parseStructDefinition(structDefText);
+                    
+                    if (!parsed || !parsed.fields || parsed.fields.length === 0) {
+                        alert('구조체 파싱 실패. 형식을 확인하세요\n\n예: typedef struct { char name[20]; } STRUCT;');
+                        return;
+                    }
+                    
+                    // 3. 기존 선택 상태 저장 (재파싱 시 유지)
+                    const previousSelections = new Set();
+                    card.querySelectorAll('.ksc-field-checkbox:checked').forEach(function(cb) {
+                        previousSelections.add(cb.dataset.field);
+                    });
+                    
+                    // 4. KSC 필드 체크박스 목록 생성
+                    generateKSCFieldCheckboxes(cardIndex, parsed.fields, previousSelections);
+                    
+                    // 5. KSC 섹션 표시
+                    card.querySelector('.ksc-section').style.display = 'block';
+                    
+                    // 6. 버튼 상태 변경
+                    e.target.textContent = '✓ 파싱 완료';
+                    e.target.style.backgroundColor = '#28a745';
+                    e.target.disabled = true;
+                    
+                    // 7. 재파싱 버튼 추가
+                    if (!card.querySelector('.reparse-ksc-btn')) {
+                        const reparseBtn = document.createElement('button');
+                        reparseBtn.type = 'button';
+                        reparseBtn.className = 'reparse-ksc-btn';
+                        reparseBtn.dataset.index = cardIndex;
+                        reparseBtn.innerHTML = '🔄 재파싱';
+                        e.target.after(reparseBtn);
+                    }
+                    
+                    showTemporaryMessage('✓ ' + parsed.fields.length + '개 필드가 파싱되었습니다');
+                }
+                
+                // =========================================
+                // 재파싱 버튼 이벤트
+                // =========================================
+                if (e.target.classList.contains('reparse-ksc-btn')) {
+                    const cardIndex = parseInt(e.target.dataset.index);
+                    const card = e.target.closest('.struct-card');
+                    
+                    // 파싱 버튼 재활성화
+                    const parseBtn = card.querySelector('.parse-for-ksc-btn');
+                    parseBtn.disabled = false;
+                    parseBtn.textContent = '🔍 구조체 파싱';
+                    parseBtn.style.backgroundColor = '';
+                    
+                    // 재파싱 버튼 제거
+                    e.target.remove();
+                    
+                    // 파싱 버튼 클릭
+                    parseBtn.click();
+                }
+                
+                // =========================================
+                // KSC 전체 선택/해제 버튼 이벤트
+                // =========================================
+                if (e.target.classList.contains('select-all')) {
+                    const cardIndex = e.target.dataset.card;
+                    const container = document.getElementById('ksc-fields-' + cardIndex);
+                    container.querySelectorAll('.ksc-field-checkbox').forEach(function(cb) {
+                        cb.checked = true;
+                        cb.closest('.ksc-field-label').classList.add('checked');
+                    });
+                }
+                
+                if (e.target.classList.contains('deselect-all')) {
+                    const cardIndex = e.target.dataset.card;
+                    const container = document.getElementById('ksc-fields-' + cardIndex);
+                    container.querySelectorAll('.ksc-field-checkbox').forEach(function(cb) {
+                        cb.checked = false;
+                        cb.closest('.ksc-field-label').classList.remove('checked');
+                    });
                 }
             });
 
