@@ -3631,6 +3631,25 @@
             background: #1aa179;
         }
 
+        /* KSC-5601 테스트 케이스 버튼 스타일 */
+        .test-modal .test-buttons button[data-case="ksc_fullwidth"] {
+            background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+            color: white;
+        }
+
+        .test-modal .test-buttons button[data-case="ksc_fullwidth"]:hover {
+            background: linear-gradient(135deg, #7b1fa2 0%, #6a1b9a 100%);
+        }
+
+        .test-modal .test-buttons button[data-case="ksc_mixed"] {
+            background: linear-gradient(135deg, #e91e63 0%, #c2185b 100%);
+            color: white;
+        }
+
+        .test-modal .test-buttons button[data-case="ksc_mixed"]:hover {
+            background: linear-gradient(135deg, #c2185b 0%, #ad1457 100%);
+        }
+
         /* 테스트 그룹 스타일 */
         .test-modal .test-group {
             margin-bottom: 20px;
@@ -4861,6 +4880,15 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     <div class="test-buttons">
                         <button data-case="continuous">📦 연속 데이터</button>
                         <button data-case="continuous_multi">🔄 연속 다중 레코드</button>
+                    </div>
+                </div>
+                
+                <!-- KSC-5601 테스트 (한글 인코딩) -->
+                <div class="test-group">
+                    <h5>🔤 KSC-5601 (한글 인코딩)</h5>
+                    <div class="test-buttons">
+                        <button data-case="ksc_fullwidth">전각 모드 (모든 문자 2B)</button>
+                        <button data-case="ksc_mixed">혼용 모드 (한글 2B/ASCII 1B)</button>
                     </div>
                 </div>
             </div>
@@ -9634,6 +9662,97 @@ T000000000200000000000000003000`
                     description: 'H-D-D-T 순서 연속, 여러 레코드 파싱',
                     mode: 'continuous',
                     data: `H881234567D123456789012345600000000000000001000T0000000001000000000000000010H991234567D987654321098765400000000000000002000T0000000001000000000000000020`
+                },
+                
+                // ========== KSC-5601 테스트 케이스 ==========
+                ksc_fullwidth: {
+                    name: 'KSC-5601 전각 모드',
+                    description: '한글/영문/숫자/공백 모두 2바이트, 타입을 KSC 전각으로 변경하여 확인',
+                    mode: 'ksc-fullwidth',
+                    // 데이터는 EUC-KR 인코딩된 바이트 (Latin1)
+                    // 이름(10B): "홍길동  " = B8AB B1E6 B5BF A1A1 A1A1 (한글 3자 + 전각공백 2개)
+                    // 나이(4B): "0025" = A3B0 A3B0 A3B2 A3B5 (전각 숫자)
+                    // 등급(4B): "A1  " = A3C1 A3B1 A1A1 (전각 영문+숫자+공백)
+                    // 메모(12B): "테스트 OK " = ...
+                    data: String.fromCharCode(
+                        // === 레코드 1 ===
+                        // 구분(1B): 'H'
+                        0x48,
+                        // 이름(10B): "홍길동" + 전각공백 2개 = B8AB B1E6 B5BF A1A1 A1A1
+                        0xC8, 0xAB, 0xB1, 0xE6, 0xB5, 0xBF, 0xA1, 0xA1, 0xA1, 0xA1,
+                        // 나이(4B): "25" 전각 = A3B2 A3B5
+                        0xA3, 0xB2, 0xA3, 0xB5,
+                        // 등급(2B): "A" 전각 = A3C1
+                        0xA3, 0xC1,
+                        // CRLF
+                        0x0D, 0x0A,
+                        
+                        // === 레코드 2 ===
+                        // 구분(1B): 'D'
+                        0x44,
+                        // 이름(10B): "김영희" + 전각공백 2개 = B1E8 BFC5 C8F1 A1A1 A1A1
+                        0xB1, 0xE8, 0xBF, 0xB5, 0xC8, 0xF1, 0xA1, 0xA1, 0xA1, 0xA1,
+                        // 나이(4B): "30" 전각 = A3B3 A3B0
+                        0xA3, 0xB3, 0xA3, 0xB0,
+                        // 등급(2B): "B" 전각 = A3C2
+                        0xA3, 0xC2,
+                        // CRLF
+                        0x0D, 0x0A,
+                        
+                        // === 레코드 3 ===
+                        // 구분(1B): 'T'
+                        0x54,
+                        // 총원(10B): "총 2명" 전각 = C3D1 A1A1 A3B2 B8ED A1A1 A1A1 A1A1 A1A1
+                        0xC3, 0xD1, 0xA1, 0xA1, 0xA3, 0xB2, 0xB8, 0xED, 0xA1, 0xA1,
+                        // 평균(4B): "27" 전각 = A3B2 A3B7
+                        0xA3, 0xB2, 0xA3, 0xB7,
+                        // 상태(2B): "OK" 전각 = 실제로는 ASCII로
+                        0x4F, 0x4B
+                    )
+                },
+                ksc_mixed: {
+                    name: 'KSC-5601 혼용 모드',
+                    description: '한글 2바이트, ASCII 1바이트 혼용, 타입을 KSC 혼용으로 변경하여 확인',
+                    mode: 'ksc-mixed',
+                    // 혼용 모드: 한글은 EUC-KR 2바이트, ASCII는 1바이트
+                    // 이름(8B): "홍길동AB" = B8AB(홍) B1E6(길) B5BF(동) 41(A) 42(B) = 6+2 = 8B
+                    // 코드(6B): "ABC123" = 41 42 43 31 32 33 = 6B
+                    // 비고(10B): "OK테스트 " = 4F 4B C5D7 BDBA C6AE 20 20 = 2+6+2 = 10B
+                    data: String.fromCharCode(
+                        // === 레코드 1 ===
+                        // 구분(1B): 'H'
+                        0x48,
+                        // 이름(8B): "홍길동AB" 혼용 = B8AB B1E6 B5BF 41 42
+                        0xC8, 0xAB, 0xB1, 0xE6, 0xB5, 0xBF, 0x41, 0x42,
+                        // 코드(6B): "ABC123" ASCII
+                        0x41, 0x42, 0x43, 0x31, 0x32, 0x33,
+                        // 비고(10B): "OK테스트" 혼용 + 공백 = 4F 4B C5D7 BDBA C6AE 20 20
+                        0x4F, 0x4B, 0xC5, 0xD7, 0xBD, 0xBA, 0xC6, 0xAE, 0x20, 0x20,
+                        // CRLF
+                        0x0D, 0x0A,
+                        
+                        // === 레코드 2 ===
+                        // 구분(1B): 'D'
+                        0x44,
+                        // 이름(8B): "김영희CD" 혼용
+                        0xB1, 0xE8, 0xBF, 0xB5, 0xC8, 0xF1, 0x43, 0x44,
+                        // 코드(6B): "XYZ789" ASCII
+                        0x58, 0x59, 0x5A, 0x37, 0x38, 0x39,
+                        // 비고(10B): "완료 OK" 혼용 = BF..  20 4F 4B 20 20 20
+                        0xBF, 0xCF, 0xB7, 0xE1, 0x20, 0x4F, 0x4B, 0x20, 0x20, 0x20,
+                        // CRLF
+                        0x0D, 0x0A,
+                        
+                        // === 레코드 3 (Trailer) ===
+                        // 구분(1B): 'T'
+                        0x54,
+                        // 총원(8B): "총 2명" 혼용 = C3D1 20 32 B8ED 20 20
+                        0xC3, 0xD1, 0x20, 0x32, 0xB8, 0xED, 0x20, 0x20,
+                        // 코드(6B): "END   " ASCII
+                        0x45, 0x4E, 0x44, 0x20, 0x20, 0x20,
+                        // 비고(10B): "정상종료" 혼용 = C1A4 BBF3 C1BE B7E1 20 20
+                        0xC1, 0xA4, 0xBB, 0xF3, 0xC1, 0xBE, 0xB7, 0xE1, 0x20, 0x20
+                    )
                 }
             };
 
@@ -9665,6 +9784,8 @@ T000000000200000000000000003000`
              * - 테스트 케이스 mode에 따라 개행 인식 옵션 자동 설정
              * - line-by-line: 개행 인식 ON (각 줄 독립 파싱)
              * - continuous: 개행 인식 OFF (연속 데이터 파싱)
+             * - ksc-fullwidth: KSC-5601 전각 모드 (모든 문자 2바이트)
+             * - ksc-mixed: KSC-5601 혼용 모드 (한글 2바이트, ASCII 1바이트)
              */
             testButtons.forEach(function(button) {
                 button.addEventListener('click', function() {
@@ -9674,10 +9795,11 @@ T000000000200000000000000003000`
                     if (!testCase) return;
 
                     // 1. 테스트 케이스 모드에 따라 개행 인식 체크박스 설정
-                    // line-by-line 모드 = 개행 인식 ON
-                    // continuous 모드 = 개행 인식 OFF
                     const isLineByLineMode = testCase.mode === 'line-by-line';
-                    document.getElementById('recognize-crlf').checked = isLineByLineMode;
+                    const isKSCMode = testCase.mode.startsWith('ksc-');
+                    
+                    // KSC 모드는 개행 인식 ON (CRLF 포함)
+                    document.getElementById('recognize-crlf').checked = isLineByLineMode || isKSCMode;
                     
                     // 2. 기존 모든 구조체 카드 삭제
                     structContainer.innerHTML = '';
@@ -9686,11 +9808,83 @@ T000000000200000000000000003000`
                     structCardIndex = 0;
 
                     // 4. 구조체 정의 설정
-                    // 개행 인식 ON: CRLF 필드 포함
-                    // 개행 인식 OFF: CRLF 필드 제외 (연속 데이터이므로)
-                    const sampleStructs = isLineByLineMode 
-                        ? [
-                            // === 개행 인식 ON용 구조체 (CRLF 필드 포함) ===
+                    let sampleStructs;
+                    
+                    if (testCase.mode === 'ksc-fullwidth') {
+                        // === KSC-5601 전각 모드용 구조체 ===
+                        sampleStructs = [
+                            {
+                                name: 'KSC_H',
+                                kubun: 'H',
+                                definition: `typedef struct{
+  char record_kubun[1];  // 레코드 구분 'H' (ASCII)
+  char name[10];         // 이름 (KSC전각: 한글3자+공백2개 = 10B)
+  char age[4];           // 나이 (KSC전각: 숫자2자 = 4B)
+  char grade[2];         // 등급 (KSC전각: 영문1자 = 2B)
+  char crlf[2];          // 개행문자
+} KSC_H;  // 총 19 bytes`
+                            },
+                            {
+                                name: 'KSC_D',
+                                kubun: 'D',
+                                definition: `typedef struct{
+  char record_kubun[1];  // 레코드 구분 'D' (ASCII)
+  char name[10];         // 이름 (KSC전각: 한글3자+공백2개 = 10B)
+  char age[4];           // 나이 (KSC전각: 숫자2자 = 4B)
+  char grade[2];         // 등급 (KSC전각: 영문1자 = 2B)
+  char crlf[2];          // 개행문자
+} KSC_D;  // 총 19 bytes`
+                            },
+                            {
+                                name: 'KSC_T',
+                                kubun: 'T',
+                                definition: `typedef struct{
+  char record_kubun[1];  // 레코드 구분 'T' (ASCII)
+  char summary[10];      // 요약 (KSC전각: "총 2명" 등 = 10B)
+  char avg[4];           // 평균 (KSC전각: 숫자2자 = 4B)
+  char status[2];        // 상태 (ASCII: "OK" = 2B)
+} KSC_T;  // 총 17 bytes (CRLF 없음)`
+                            }
+                        ];
+                    } else if (testCase.mode === 'ksc-mixed') {
+                        // === KSC-5601 혼용 모드용 구조체 ===
+                        sampleStructs = [
+                            {
+                                name: 'MIX_H',
+                                kubun: 'H',
+                                definition: `typedef struct{
+  char record_kubun[1];  // 레코드 구분 'H'
+  char name[8];          // 이름 (혼용: 한글3자6B + ASCII2자2B = 8B)
+  char code[6];          // 코드 (ASCII: 6B)
+  char memo[10];         // 비고 (혼용: "OK테스트" = 2+6+2 = 10B)
+  char crlf[2];          // 개행문자
+} MIX_H;  // 총 27 bytes`
+                            },
+                            {
+                                name: 'MIX_D',
+                                kubun: 'D',
+                                definition: `typedef struct{
+  char record_kubun[1];  // 레코드 구분 'D'
+  char name[8];          // 이름 (혼용: 8B)
+  char code[6];          // 코드 (ASCII: 6B)
+  char memo[10];         // 비고 (혼용: 10B)
+  char crlf[2];          // 개행문자
+} MIX_D;  // 총 27 bytes`
+                            },
+                            {
+                                name: 'MIX_T',
+                                kubun: 'T',
+                                definition: `typedef struct{
+  char record_kubun[1];  // 레코드 구분 'T'
+  char summary[8];       // 요약 (혼용: "총 2명" = 8B)
+  char code[6];          // 코드 (ASCII: "END   " = 6B)
+  char memo[10];         // 비고 (혼용: "정상종료" = 10B)
+} MIX_T;  // 총 25 bytes (CRLF 없음)`
+                            }
+                        ];
+                    } else if (isLineByLineMode) {
+                        // === 개행 인식 ON용 구조체 (CRLF 필드 포함) ===
+                        sampleStructs = [
                             {
                                 name: 'DHF_H',
                                 kubun: 'H',
@@ -9721,9 +9915,10 @@ T000000000200000000000000003000`
   char crlf[2];          // 개행문자 (CRLF)
 } DHF_T;`
                             }
-                        ]
-                        : [
-                            // === 개행 인식 OFF용 구조체 (CRLF 필드 제외) ===
+                        ];
+                    } else {
+                        // === 개행 인식 OFF용 구조체 (CRLF 필드 제외) ===
+                        sampleStructs = [
                             {
                                 name: 'DHF_H',
                                 kubun: 'H',
@@ -9752,6 +9947,7 @@ T000000000200000000000000003000`
 } DHF_T;  // 총 31 bytes (개행 없음)`
                             }
                         ];
+                    }
 
                     // 각 샘플 구조체마다 카드 생성
                     sampleStructs.forEach(function(sample) {
@@ -9772,9 +9968,28 @@ T000000000200000000000000003000`
                     testModal.classList.remove('show');
                     
                     // 7. 완료 메시지 표시 (모드 정보 포함)
-                    const modeInfo = isLineByLineMode 
-                        ? '개행문자 인식이 활성화되었습니다.\n각 레코드 끝에 CRLF(2 bytes)가 있습니다.'
-                        : '개행문자 인식이 비활성화되었습니다.\n연속 데이터로 파싱됩니다.';
+                    let modeInfo;
+                    if (testCase.mode === 'ksc-fullwidth') {
+                        modeInfo = 'KSC-5601 전각 모드입니다.\n\n' +
+                                   '※ 파싱 후 타입 컬럼의 드롭다운을 "KSC 전각"으로 변경하면\n' +
+                                   '   한글이 올바르게 표시됩니다.\n\n' +
+                                   '테스트 데이터:\n' +
+                                   '- 이름: 홍길동, 김영희 (한글)\n' +
+                                   '- 나이: 25, 30 (숫자)\n' +
+                                   '- 등급: A, B (영문)';
+                    } else if (testCase.mode === 'ksc-mixed') {
+                        modeInfo = 'KSC-5601 혼용 모드입니다.\n\n' +
+                                   '※ 파싱 후 타입 컬럼의 드롭다운을 "KSC 혼용"으로 변경하면\n' +
+                                   '   한글이 올바르게 표시됩니다.\n\n' +
+                                   '테스트 데이터:\n' +
+                                   '- 이름: 홍길동AB, 김영희CD (한글+영문 혼용)\n' +
+                                   '- 코드: ABC123, XYZ789 (ASCII)\n' +
+                                   '- 비고: OK테스트, 완료 OK (혼용)';
+                    } else if (isLineByLineMode) {
+                        modeInfo = '개행문자 인식이 활성화되었습니다.\n각 레코드 끝에 CRLF(2 bytes)가 있습니다.';
+                    } else {
+                        modeInfo = '개행문자 인식이 비활성화되었습니다.\n연속 데이터로 파싱됩니다.';
+                    }
                     
                     alert('✓ 테스트 케이스 로드 완료\n\n' +
                           '테스트: ' + testCase.name + '\n' +
