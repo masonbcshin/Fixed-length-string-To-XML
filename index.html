@@ -8004,26 +8004,6 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     parseBtn.click();
                 }
                 
-                // =========================================
-                // KSC 전체 선택/해제 버튼 이벤트
-                // =========================================
-                if (e.target.classList.contains('select-all')) {
-                    const cardIndex = e.target.dataset.card;
-                    const container = document.getElementById('ksc-fields-' + cardIndex);
-                    container.querySelectorAll('.ksc-field-checkbox').forEach(function(cb) {
-                        cb.checked = true;
-                        cb.closest('.ksc-field-label').classList.add('checked');
-                    });
-                }
-                
-                if (e.target.classList.contains('deselect-all')) {
-                    const cardIndex = e.target.dataset.card;
-                    const container = document.getElementById('ksc-fields-' + cardIndex);
-                    container.querySelectorAll('.ksc-field-checkbox').forEach(function(cb) {
-                        cb.checked = false;
-                        cb.closest('.ksc-field-label').classList.remove('checked');
-                    });
-                }
             });
 
             // =========================================
@@ -8046,6 +8026,35 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         console.error('복사 실패:', err);
                         // 폴백: 수동 복사 안내
                         alert('자동 복사에 실패했습니다. 텍스트를 직접 선택하여 복사해주세요.');
+                    });
+                }
+            });
+
+            // =========================================
+            // KSC 필드 전체 선택/해제 이벤트 위임
+            // =========================================
+            document.addEventListener('click', function(e) {
+                // 전체 선택
+                if (e.target.classList.contains('select-all')) {
+                    const cardIndex = e.target.dataset.card;
+                    const checkboxes = document.querySelectorAll(
+                        '.ksc-field-checkbox[data-card="' + cardIndex + '"]'
+                    );
+                    checkboxes.forEach(function(cb) {
+                        cb.checked = true;
+                        cb.closest('.ksc-field-label').classList.add('checked');
+                    });
+                }
+                
+                // 전체 해제
+                if (e.target.classList.contains('deselect-all')) {
+                    const cardIndex = e.target.dataset.card;
+                    const checkboxes = document.querySelectorAll(
+                        '.ksc-field-checkbox[data-card="' + cardIndex + '"]'
+                    );
+                    checkboxes.forEach(function(cb) {
+                        cb.checked = false;
+                        cb.closest('.ksc-field-label').classList.remove('checked');
                     });
                 }
             });
