@@ -5762,6 +5762,69 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
         /**
          * =====================================================
+         * KSC-5601 전각 디코딩 함수
+         * EUC-KR 인코딩된 바이트를 유니코드 문자열로 변환
+         * =====================================================
+         * @param {string} bytes - 디코딩할 바이트 문자열
+         * @returns {string} 디코딩된 문자열
+         */
+        function decodeKSC5601Fullwidth(bytes) {
+            try {
+                // EUC-KR 디코딩 시도
+                const decoder = new TextDecoder('euc-kr');
+                const uint8Array = new Uint8Array(
+                    Array.from(bytes).map(function(c) { return c.charCodeAt(0); })
+                );
+                const decoded = decoder.decode(uint8Array);
+                return decoded;
+            } catch (e) {
+                console.warn('KSC-5601 전각 디코딩 실패:', e);
+                // 폴백: 원본 반환
+                return bytes;
+            }
+        }
+
+        /**
+         * =====================================================
+         * KSC-5601 혼용 디코딩 함수
+         * 한글은 2바이트, ASCII는 1바이트로 처리
+         * =====================================================
+         * @param {string} bytes - 디코딩할 바이트 문자열
+         * @returns {string} 디코딩된 문자열
+         */
+        function decodeKSC5601Mixed(bytes) {
+            try {
+                let result = '';
+                let i = 0;
+                
+                while (i < bytes.length) {
+                    const byte1 = bytes.charCodeAt(i);
+                    
+                    // 멀티바이트 시작 (0x81-0xFE)
+                    if (byte1 >= 0x81 && byte1 <= 0xFE && i + 1 < bytes.length) {
+                        const byte2 = bytes.charCodeAt(i + 1);
+                        
+                        // 2바이트 문자 디코딩
+                        const decoder = new TextDecoder('euc-kr');
+                        const arr = new Uint8Array([byte1, byte2]);
+                        result += decoder.decode(arr);
+                        i += 2;
+                    } else {
+                        // ASCII 1바이트
+                        result += bytes[i];
+                        i++;
+                    }
+                }
+                
+                return result;
+            } catch (e) {
+                console.warn('KSC-5601 혼용 디코딩 실패:', e);
+                return bytes;
+            }
+        }
+
+        /**
+         * =====================================================
          * 라인 기반 파싱 함수 (개행 인식 ON 모드)
          * =====================================================
          * 
@@ -5899,13 +5962,27 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 matched.fields.forEach(field => {
                     const startPos = fieldOffset;
                     const endPos = startPos + field.size;
-                    const value = lineWithCRLF.substring(startPos, endPos);
+                    const rawBytes = lineWithCRLF.substring(startPos, endPos);
+                    
+                    // 표시용 값
+                    let displayValue = rawBytes;
+                    
+                    // KSC-5601 필드 처리
+                    if (field.isKSC) {
+                        if (field.encodingMode === 'fullwidth') {
+                            // 전각 전용: 모든 문자 2 bytes
+                            displayValue = decodeKSC5601Fullwidth(rawBytes);
+                        } else if (field.encodingMode === 'mixed') {
+                            // 혼용: 한글 2 bytes, ASCII 1 byte
+                            displayValue = decodeKSC5601Mixed(rawBytes);
+                        }
+                    }
                     
                     // 디버그: 각 필드 값 로깅
                     if (isDebugMode) {
-                        const hexValue = Array.from(value).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
-                        const displayValue = value.replace(/\r/g, '\\r').replace(/\n/g, '\\n');
-                        console.log(`  📍 ${field.name}[${field.size}]: "${displayValue}" | HEX: ${hexValue}`);
+                        const hexValue = Array.from(rawBytes).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
+                        const debugDisplay = rawBytes.replace(/\r/g, '\\r').replace(/\n/g, '\\n');
+                        console.log(`  📍 ${field.name}[${field.size}]: "${debugDisplay}" | HEX: ${hexValue}${field.isKSC ? ' | KSC: "' + displayValue + '"' : ''}`);
                     }
 
                     records.push({
@@ -5915,7 +5992,11 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         kubun: matched.kubun,
                         fieldName: field.name,
                         fieldSize: field.size,
-                        value,
+                        fieldType: field.isKSC 
+                            ? 'KSC-5601 (' + (field.encodingMode === 'fullwidth' ? '전각' : '혼용') + ')'
+                            : 'ASCII',
+                        value: displayValue.trim(),
+                        rawValue: rawBytes,
                         startPos,
                         endPos
                     });
@@ -6048,13 +6129,27 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 matched.fields.forEach(field => {
                     const startPos = currentPos + fieldOffset;
                     const endPos = startPos + field.size;
-                    const value = processedData.substring(startPos, endPos);
+                    const rawBytes = processedData.substring(startPos, endPos);
+                    
+                    // 표시용 값
+                    let displayValue = rawBytes;
+                    
+                    // KSC-5601 필드 처리
+                    if (field.isKSC) {
+                        if (field.encodingMode === 'fullwidth') {
+                            // 전각 전용: 모든 문자 2 bytes
+                            displayValue = decodeKSC5601Fullwidth(rawBytes);
+                        } else if (field.encodingMode === 'mixed') {
+                            // 혼용: 한글 2 bytes, ASCII 1 byte
+                            displayValue = decodeKSC5601Mixed(rawBytes);
+                        }
+                    }
                     
                     // 디버그: 각 필드 값 로깅
                     if (isDebugMode) {
-                        const hexValue = Array.from(value).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
-                        const displayValue = value.replace(/\r/g, '\\r').replace(/\n/g, '\\n');
-                        console.log(`  📍 ${field.name}[${field.size}]: "${displayValue}" | HEX: ${hexValue}`);
+                        const hexValue = Array.from(rawBytes).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
+                        const debugDisplay = rawBytes.replace(/\r/g, '\\r').replace(/\n/g, '\\n');
+                        console.log(`  📍 ${field.name}[${field.size}]: "${debugDisplay}" | HEX: ${hexValue}${field.isKSC ? ' | KSC: "' + displayValue + '"' : ''}`);
                     }
 
                     records.push({
@@ -6063,7 +6158,11 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         kubun: matched.kubun,
                         fieldName: field.name,
                         fieldSize: field.size,
-                        value,
+                        fieldType: field.isKSC 
+                            ? 'KSC-5601 (' + (field.encodingMode === 'fullwidth' ? '전각' : '혼용') + ')'
+                            : 'ASCII',
+                        value: displayValue.trim(),
+                        rawValue: rawBytes,
                         startPos,
                         endPos
                     });
