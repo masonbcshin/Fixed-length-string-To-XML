@@ -1766,6 +1766,53 @@
             box-sizing: border-box;
         }
 
+        /* 인코딩 모드 선택 스타일 */
+        .encoding-mode-select {
+            background: white;
+            padding: 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            margin-bottom: 12px;
+        }
+
+        .encoding-mode-select > label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #495057;
+        }
+
+        .radio-group-inline {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .radio-label {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .radio-label:has(input:checked) {
+            background: #e7f3ff;
+            border-color: #007bff;
+        }
+
+        .radio-label input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            margin-right: 10px;
+        }
+
+        .radio-label span {
+            color: #495057;
+        }
+
         /* 로컬 스토리지 복원 알림 스타일 */
         .restore-notification {
             background: #e3f2fd;
@@ -2187,6 +2234,30 @@
 
         body.dark-mode .struct-card-body .input-row small {
             color: #aaa;
+        }
+
+        /* 다크 모드 - 인코딩 모드 선택 스타일 */
+        body.dark-mode .encoding-mode-select {
+            background: #2d2d44;
+            border-color: #3d3d5c;
+        }
+
+        body.dark-mode .encoding-mode-select > label {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .radio-label {
+            background: #3d3d5c;
+            border-color: #4d4d6c;
+        }
+
+        body.dark-mode .radio-label:has(input:checked) {
+            background: #1e3a5f;
+            border-color: #2196f3;
+        }
+
+        body.dark-mode .radio-label span {
+            color: #e0e0e0;
         }
 
         body.dark-mode .help-section {
@@ -4359,6 +4430,48 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     <div class="input-row">
                         <label>구조체 정의</label>
                         <textarea class="struct-definition" rows="8" placeholder="typedef struct { ... } 구조체명;"></textarea>
+                    </div>
+                    
+                    <div class="input-row multibyte-section" style="display: none;">
+                        <div class="section-header-inline">
+                            <label>🌏 KSC-5601 필드 설정</label>
+                            <button type="button" class="help-btn-inline" data-help="multibyte">?</button>
+                        </div>
+                        
+                        <div class="multibyte-info">
+                            <small>
+                                ⚠️ <strong>KSC-5601 필드는 모든 문자가 2바이트입니다</strong><br>
+                                (한글, 영문, 숫자, 공백 모두 포함)
+                            </small>
+                        </div>
+                        
+                        <!-- 인코딩 모드 선택 추가 -->
+                        <div class="encoding-mode-select">
+                            <label>인코딩 처리 방식</label>
+                            <div class="radio-group-inline">
+                                <label class="radio-label">
+                                    <input type="radio" 
+                                           name="encoding-mode-${index}" 
+                                           value="fullwidth" 
+                                           checked>
+                                    <span>전각 전용 (모든 문자 2 bytes)</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" 
+                                           name="encoding-mode-${index}" 
+                                           value="mixed">
+                                    <span>혼용 (한글 2 bytes, ASCII 1 byte)</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="multibyte-fields-list" id="multibyte-fields-${index}">
+                            <p class="no-fields-msg">구조체를 먼저 파싱하세요</p>
+                        </div>
+                        
+                        <button type="button" class="parse-struct-btn" data-index="${index}">
+                            🔍 구조체 파싱
+                        </button>
                     </div>
                 </div>
             `;
