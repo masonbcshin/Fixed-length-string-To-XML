@@ -1246,6 +1246,22 @@
             color: white;
         }
 
+        .ksc-tag {
+            background: #fd7e14;
+            color: white;
+        }
+
+        /* KSC 필드 바이트 초과 경고 */
+        .field-input.over-limit {
+            border-color: #dc3545;
+            background-color: #fff5f5;
+        }
+
+        .char-counter.over-limit {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
         .numeric-tag {
             background: #ffc107;
             color: #000;
@@ -1354,6 +1370,56 @@
         .type-badge.type-FULL {
             background: #6f42c1;
             color: white;
+        }
+
+        /* 결과 테이블 타입 배지 */
+        .type-badge.ksc-badge {
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            background: linear-gradient(135deg, #fd7e14 0%, #dc3545 100%);
+            color: white;
+        }
+
+        .type-badge.ascii-badge {
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            background: #6c757d;
+            color: white;
+        }
+
+        /* 원본 보기 버튼 */
+        .show-raw-btn {
+            padding: 4px 10px;
+            background: #17a2b8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            margin-left: 10px;
+            transition: all 0.2s;
+        }
+
+        .show-raw-btn:hover {
+            background: #138496;
+        }
+
+        /* 값 셀 스타일 */
+        .field-value-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .field-value-cell .editable-value {
+            flex: 1;
+            min-width: 0;
         }
 
         .field-type-cell {
@@ -1764,6 +1830,328 @@
         .struct-card-body .input-row textarea {
             width: 100%;
             box-sizing: border-box;
+        }
+
+        /* KSC-5601 섹션 스타일 */
+        .ksc-section {
+            background: linear-gradient(135deg, #fff9e6 0%, #ffe8cc 100%);
+            padding: 20px;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            margin-top: 20px;
+            box-shadow: 0 2px 8px rgba(255,193,7,0.1);
+        }
+
+        .ksc-header {
+            margin-bottom: 15px;
+        }
+
+        .ksc-title-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ksc-title-area label {
+            font-size: 16px;
+            font-weight: bold;
+            color: #856404;
+            margin: 0;
+        }
+
+        .help-icon-btn {
+            background: #ffc107;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .help-icon-btn:hover {
+            background: #e0a800;
+            transform: scale(1.1);
+        }
+
+        .help-icon {
+            color: #000;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .ksc-notice {
+            background: white;
+            padding: 15px;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .notice-icon {
+            font-size: 24px;
+            line-height: 1;
+        }
+
+        .notice-text {
+            flex: 1;
+        }
+
+        .notice-text strong {
+            color: #856404;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .notice-text small {
+            color: #856404;
+            opacity: 0.8;
+        }
+
+        .encoding-mode-selector {
+            margin-bottom: 20px;
+        }
+
+        .mode-label {
+            display: block;
+            font-weight: bold;
+            color: #856404;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .mode-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .mode-option {
+            background: white;
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            gap: 12px;
+        }
+
+        .mode-option:hover {
+            border-color: #ffc107;
+            box-shadow: 0 2px 8px rgba(255,193,7,0.2);
+        }
+
+        .mode-option:has(.mode-radio:checked) {
+            background: #fff3cd;
+            border-color: #ffc107;
+            border-width: 2px;
+        }
+
+        .mode-radio {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .mode-content {
+            flex: 1;
+        }
+
+        .mode-title {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mode-icon {
+            font-size: 18px;
+        }
+
+        .mode-desc {
+            color: #6c757d;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .ksc-fields-container {
+            background: white;
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+        }
+
+        .fields-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .fields-header span {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .parse-for-ksc-btn {
+            padding: 8px 16px;
+            background: #17a2b8;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .parse-for-ksc-btn:hover {
+            background: #138496;
+            transform: translateY(-2px);
+        }
+
+        .ksc-fields-list {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .ksc-fields-list .no-fields-msg {
+            text-align: center;
+            color: #6c757d;
+            padding: 30px;
+            font-style: italic;
+            margin: 0;
+        }
+
+        /* KSC 필드 체크박스 스타일 */
+        .ksc-field-item {
+            margin-bottom: 10px;
+        }
+
+        .ksc-field-label {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .ksc-field-label:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .ksc-field-label.checked {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+
+        .ksc-field-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .field-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            margin-left: 12px;
+        }
+
+        .field-name {
+            font-weight: bold;
+            color: #495057;
+            font-family: 'Courier New', monospace;
+        }
+
+        .field-size-badge {
+            background: #6c757d;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .auto-badge {
+            background: #28a745;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .ksc-checkbox-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #dee2e6;
+        }
+
+        .control-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: #f8f9fa;
+        }
+
+        .control-btn.select-all:hover {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+
+        .control-btn.deselect-all:hover {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+
+        .reparse-ksc-btn {
+            padding: 8px 16px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .reparse-ksc-btn:hover {
+            background: #5a6268;
+        }
+
+        .no-valid-fields {
+            text-align: center;
+            color: #dc3545;
+            padding: 30px;
+            font-style: italic;
+            margin: 0;
         }
 
         /* 로컬 스토리지 복원 알림 스타일 */
@@ -2187,6 +2575,173 @@
 
         body.dark-mode .struct-card-body .input-row small {
             color: #aaa;
+        }
+
+        /* 다크 모드 - KSC-5601 섹션 스타일 */
+        body.dark-mode .ksc-section {
+            background: linear-gradient(135deg, #3d3d2e 0%, #4d3d2e 100%);
+            border-color: #b8860b;
+            box-shadow: 0 2px 8px rgba(184,134,11,0.2);
+        }
+
+        body.dark-mode .ksc-title-area label {
+            color: #ffd54f;
+        }
+
+        body.dark-mode .help-icon-btn {
+            background: #b8860b;
+        }
+
+        body.dark-mode .help-icon-btn:hover {
+            background: #d4a017;
+        }
+
+        body.dark-mode .ksc-notice {
+            background: #2d2d44;
+            border-color: #b8860b;
+        }
+
+        body.dark-mode .notice-text strong {
+            color: #ffd54f;
+        }
+
+        body.dark-mode .notice-text small {
+            color: #ffd54f;
+        }
+
+        body.dark-mode .mode-label {
+            color: #ffd54f;
+        }
+
+        body.dark-mode .mode-option {
+            background: #2d2d44;
+            border-color: #4d4d6c;
+        }
+
+        body.dark-mode .mode-option:hover {
+            border-color: #b8860b;
+            box-shadow: 0 2px 8px rgba(184,134,11,0.3);
+        }
+
+        body.dark-mode .mode-option:has(.mode-radio:checked) {
+            background: #3d3d2e;
+            border-color: #b8860b;
+        }
+
+        body.dark-mode .mode-title {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .mode-desc {
+            color: #aaa;
+        }
+
+        body.dark-mode .ksc-fields-container {
+            background: #2d2d44;
+            border-color: #4d4d6c;
+        }
+
+        body.dark-mode .fields-header {
+            border-bottom-color: #4d4d6c;
+        }
+
+        body.dark-mode .fields-header span {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .parse-for-ksc-btn {
+            background: #138496;
+        }
+
+        body.dark-mode .parse-for-ksc-btn:hover {
+            background: #17a2b8;
+        }
+
+        body.dark-mode .ksc-fields-list .no-fields-msg {
+            color: #aaa;
+        }
+
+        /* 다크 모드 - KSC 필드 체크박스 스타일 */
+        body.dark-mode .ksc-field-label {
+            background: #3d3d5c;
+            border-color: #4d4d6c;
+        }
+
+        body.dark-mode .ksc-field-label:hover {
+            background: #4d4d6c;
+            border-color: #6d6d8c;
+        }
+
+        body.dark-mode .ksc-field-label.checked {
+            background: #3d3d2e;
+            border-color: #b8860b;
+        }
+
+        body.dark-mode .field-name {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .field-size-badge {
+            background: #5a6268;
+        }
+
+        body.dark-mode .ksc-checkbox-controls {
+            border-top-color: #4d4d6c;
+        }
+
+        body.dark-mode .control-btn {
+            background: #2d2d44;
+            border-color: #4d4d6c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .control-btn:hover {
+            background: #3d3d5c;
+        }
+
+        body.dark-mode .control-btn.select-all:hover {
+            background: #1e4620;
+            border-color: #28a745;
+        }
+
+        body.dark-mode .control-btn.deselect-all:hover {
+            background: #4a1a1a;
+            border-color: #dc3545;
+        }
+
+        body.dark-mode .reparse-ksc-btn {
+            background: #5a6268;
+        }
+
+        body.dark-mode .reparse-ksc-btn:hover {
+            background: #6c757d;
+        }
+
+        body.dark-mode .no-valid-fields {
+            color: #ff6b6b;
+        }
+
+        /* 다크 모드 - KSC 필드 바이트 초과 경고 */
+        body.dark-mode .field-input.over-limit {
+            border-color: #dc3545;
+            background-color: #4a1a1a;
+        }
+
+        body.dark-mode .char-counter.over-limit {
+            color: #ff6b6b;
+        }
+
+        /* 다크 모드 - 결과 테이블 타입 배지 */
+        body.dark-mode .type-badge.ascii-badge {
+            background: #5a6268;
+        }
+
+        body.dark-mode .show-raw-btn {
+            background: #138496;
+        }
+
+        body.dark-mode .show-raw-btn:hover {
+            background: #17a2b8;
         }
 
         body.dark-mode .help-section {
@@ -2644,6 +3199,72 @@
             overflow-x: auto;
         }
 
+        /* KSC-5601 도움말 모달 스타일 */
+        .help-modal-body .highlight {
+            background: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #856404;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            padding: 12px;
+            border: 1px solid #007bff;
+            border-radius: 4px;
+            margin-bottom: 12px;
+        }
+
+        .mode-explanation {
+            background: #f8f9fa;
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .mode-explanation h5 {
+            margin: 0 0 10px 0;
+            color: #495057;
+        }
+
+        .help-code {
+            background: #2d2d44;
+            color: #e0e0e0;
+            padding: 12px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+
+        .example-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .example-table th,
+        .example-table td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #dee2e6;
+        }
+
+        .example-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+
+        .help-badge {
+            background: #007bff;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
         .help-tip {
             background: #fff3cd;
             border-left: 4px solid #ffc107;
@@ -2675,6 +3296,37 @@
         body.dark-mode .help-example {
             background: #1e1e1e;
             border-color: #444;
+            color: #e0e0e0;
+        }
+
+        /* 다크 모드 - KSC-5601 도움말 모달 */
+        body.dark-mode .help-modal-body .highlight {
+            background: #3d3520;
+            color: #ffd54f;
+        }
+
+        body.dark-mode .info-box {
+            background: #1e3a5f;
+            border-color: #2196f3;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .mode-explanation {
+            background: #2d2d44;
+            border-color: #4d4d6c;
+        }
+
+        body.dark-mode .mode-explanation h5 {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .example-table th {
+            background: #3d3d5c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .example-table td {
+            border-color: #4d4d6c;
             color: #e0e0e0;
         }
 
@@ -3614,6 +4266,131 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
             </div>
         </div>
 
+        <!-- KSC-5601 도움말 모달 -->
+        <div class="help-modal" id="ksc-help-modal">
+            <div class="help-content">
+                <button class="close-help">✕</button>
+                <h3>🌏 KSC-5601 인코딩 도움말</h3>
+                
+                <div class="help-modal-body">
+                    <section class="help-section">
+                        <h4>📌 KSC-5601 (EUC-KR)이란?</h4>
+                        <p>
+                            한국 산업 표준 완성형 인코딩입니다.<br>
+                            <strong class="highlight">KSC-5601 영역의 모든 문자는 2 bytes입니다.</strong>
+                        </p>
+                        <div class="info-box">
+                            <strong>2 bytes 문자:</strong><br>
+                            • 한글: 가, 나, 다...<br>
+                            • 전각 영문: Ａ, Ｂ, Ｃ... (넓은 글자)<br>
+                            • 전각 숫자: １, ２, ３...<br>
+                            • 전각 공백: 　(넓은 공백)
+                        </div>
+                        <div class="info-box">
+                            <strong>1 byte 문자 (ASCII):</strong><br>
+                            • 반각 영문: A, B, C...<br>
+                            • 반각 숫자: 1, 2, 3...<br>
+                            • 반각 공백: (일반 공백)
+                        </div>
+                    </section>
+                    
+                    <section class="help-section">
+                        <h4>💡 인코딩 모드</h4>
+                        
+                        <div class="mode-explanation">
+                            <h5>🔷 전각 전용 모드 (권장)</h5>
+                            <p>
+                                모든 문자를 2 bytes로 처리합니다.<br>
+                                계산: <code>글자 수 × 2 = 바이트 수</code>
+                            </p>
+                            <pre class="help-code">char name[20];  // 최대 10글자
+"홍길동"    → 6 bytes (3글자 × 2)
+"HONG"      → 8 bytes (4글자 × 2)
+"Hong 123"  → 14 bytes (7글자 × 2)</pre>
+                        </div>
+                        
+                        <div class="mode-explanation">
+                            <h5>🔶 혼용 모드</h5>
+                            <p>
+                                한글/한자는 2 bytes, ASCII는 1 byte로 처리합니다.<br>
+                                실무에서 전각/반각이 섞여 있을 때 사용합니다.
+                            </p>
+                            <pre class="help-code">char name[20];
+"홍길동"    → 6 bytes (한글 3자 × 2)
+"Hong"      → 4 bytes (ASCII 4자 × 1)
+"Hong길동"  → 10 bytes (4 + 6)</pre>
+                        </div>
+                    </section>
+                    
+                    <section class="help-section">
+                        <h4>🔧 사용 방법</h4>
+                        <ol>
+                            <li>구조체 정의 입력</li>
+                            <li>"구조체 파싱" 버튼 클릭</li>
+                            <li>인코딩 모드 선택 (전각 전용 / 혼용)</li>
+                            <li>KSC-5601 필드 체크</li>
+                            <li>파싱 실행</li>
+                        </ol>
+                    </section>
+                    
+                    <section class="help-section">
+                        <h4>⚠️ 주의사항</h4>
+                        <ul>
+                            <li><strong>설계서를 확인하세요:</strong> 전각인지 혼용인지 확인 필수</li>
+                            <li><strong>일반적으로 전각 전용:</strong> 대부분의 금융/통신 전문은 전각</li>
+                            <li><strong>테스트 필수:</strong> 샘플 데이터로 먼저 확인</li>
+                            <li><strong>글자 깨짐 발생 시:</strong> 인코딩 모드를 바꿔보세요</li>
+                        </ul>
+                    </section>
+                    
+                    <section class="help-section help-example">
+                        <h4>📖 실전 예시</h4>
+                        <pre class="help-code">typedef struct {
+    char trans_id[10];     // 거래ID (ASCII)
+    char cust_nm[20];      // 고객명 (KSC-5601, 전각)
+    char amount[15];       // 금액 (ASCII)
+    char addr[40];         // 주소 (KSC-5601, 전각)
+} TRANSACTION;</pre>
+                        
+                        <p><strong>설정:</strong></p>
+                        <ul>
+                            <li>인코딩 모드: <span class="help-badge">전각 전용</span></li>
+                            <li>KSC-5601 필드: cust_nm, addr</li>
+                        </ul>
+                        
+                        <p><strong>파싱 결과:</strong></p>
+                        <table class="example-table">
+                            <tr>
+                                <th>필드</th>
+                                <th>바이트</th>
+                                <th>최대 글자</th>
+                            </tr>
+                            <tr>
+                                <td>trans_id</td>
+                                <td>10</td>
+                                <td>10자 (ASCII)</td>
+                            </tr>
+                            <tr>
+                                <td>cust_nm</td>
+                                <td>20</td>
+                                <td class="highlight">10자 (전각)</td>
+                            </tr>
+                            <tr>
+                                <td>amount</td>
+                                <td>15</td>
+                                <td>15자 (ASCII)</td>
+                            </tr>
+                            <tr>
+                                <td>addr</td>
+                                <td>40</td>
+                                <td class="highlight">20자 (전각)</td>
+                            </tr>
+                        </table>
+                    </section>
+                </div>
+            </div>
+        </div>
+
         <!-- 테스트 케이스 선택 모달 -->
         <div class="test-modal" id="test-case-modal">
             <div class="test-content">
@@ -4360,11 +5137,164 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         <label>구조체 정의</label>
                         <textarea class="struct-definition" rows="8" placeholder="typedef struct { ... } 구조체명;"></textarea>
                     </div>
+                    
+                    <div class="input-row ksc-section" style="display: none;">
+                        <div class="ksc-header">
+                            <div class="ksc-title-area">
+                                <label>🌏 KSC-5601 필드 설정</label>
+                                <button type="button" class="help-icon-btn" data-help="ksc5601" title="도움말">
+                                    <span class="help-icon">?</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="ksc-notice">
+                            <div class="notice-icon">⚠️</div>
+                            <div class="notice-text">
+                                <strong>KSC-5601 필드는 모든 문자가 2바이트입니다</strong><br>
+                                <small>(한글, 전각 영문/숫자/공백 모두 포함)</small>
+                            </div>
+                        </div>
+                        
+                        <div class="encoding-mode-selector">
+                            <label class="mode-label">인코딩 처리 방식</label>
+                            <div class="mode-options">
+                                <label class="mode-option">
+                                    <input type="radio" 
+                                           name="encoding-mode-${index}" 
+                                           value="fullwidth" 
+                                           class="mode-radio"
+                                           checked>
+                                    <div class="mode-content">
+                                        <div class="mode-title">
+                                            <span class="mode-icon">🔷</span>
+                                            전각 전용 (권장)
+                                        </div>
+                                        <div class="mode-desc">
+                                            모든 문자 2 bytes. 글자수 × 2 = 바이트 수
+                                        </div>
+                                    </div>
+                                </label>
+                                
+                                <label class="mode-option">
+                                    <input type="radio" 
+                                           name="encoding-mode-${index}" 
+                                           value="mixed"
+                                           class="mode-radio">
+                                    <div class="mode-content">
+                                        <div class="mode-title">
+                                            <span class="mode-icon">🔶</span>
+                                            혼용 모드
+                                        </div>
+                                        <div class="mode-desc">
+                                            한글 2 bytes, ASCII 1 byte
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="ksc-fields-container">
+                            <div class="fields-header">
+                                <span>KSC-5601 필드 선택</span>
+                                <button type="button" class="parse-for-ksc-btn" data-index="${index}">
+                                    🔍 구조체 파싱
+                                </button>
+                            </div>
+                            
+                            <div class="ksc-fields-list" id="ksc-fields-${index}">
+                                <p class="no-fields-msg">구조체를 파싱하면 필드 목록이 표시됩니다</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `;
 
             // 3. 요소 반환
             return div;
+        }
+
+        /**
+         * =====================================================
+         * KSC-5601 필드 체크박스 목록 생성 함수
+         * 파싱된 필드를 기반으로 체크박스 UI 생성
+         * =====================================================
+         * @param {number} cardIndex - 구조체 카드 인덱스
+         * @param {Array} fields - 파싱된 필드 배열
+         * @param {Set} previousSelections - 이전 선택 상태
+         */
+        function generateKSCFieldCheckboxes(cardIndex, fields, previousSelections) {
+            if (previousSelections === undefined) {
+                previousSelections = new Set();
+            }
+            
+            const container = document.getElementById('ksc-fields-' + cardIndex);
+            
+            container.innerHTML = '';
+            
+            // CRLF 필드 제외하고 필드 생성
+            const validFields = fields.filter(function(f) {
+                return !f.name.toLowerCase().match(/crlf|cr_lf|newline|eol/);
+            });
+            
+            if (validFields.length === 0) {
+                container.innerHTML = '<p class="no-valid-fields">KSC-5601로 설정 가능한 필드가 없습니다</p>';
+                return;
+            }
+            
+            validFields.forEach(function(field, fieldIndex) {
+                const fieldDiv = document.createElement('div');
+                fieldDiv.className = 'ksc-field-item';
+                
+                // 자동 감지: name, nm, addr 등 포함
+                const patterns = /name|nm|addr|address|memo|remark|desc|title|content|msg|message/i;
+                const autoDetected = patterns.test(field.name);
+                
+                // 이전 선택 상태 또는 자동 감지
+                const isChecked = previousSelections.has(field.name) || 
+                                 (previousSelections.size === 0 && autoDetected);
+                
+                fieldDiv.innerHTML = 
+                    '<label class="ksc-field-label ' + (isChecked ? 'checked' : '') + '">' +
+                        '<input type="checkbox" ' +
+                               'class="ksc-field-checkbox" ' +
+                               'data-card="' + cardIndex + '" ' +
+                               'data-field="' + field.name + '" ' +
+                               'value="' + fieldIndex + '" ' +
+                               (isChecked ? 'checked' : '') + '>' +
+                        '<div class="field-info">' +
+                            '<span class="field-name">' + field.name + '</span>' +
+                            '<span class="field-size-badge">' + field.size + ' bytes</span>' +
+                            (autoDetected ? '<span class="auto-badge">자동감지</span>' : '') +
+                        '</div>' +
+                    '</label>';
+                
+                container.appendChild(fieldDiv);
+            });
+            
+            // 전체 선택/해제 컨트롤
+            const controlsDiv = document.createElement('div');
+            controlsDiv.className = 'ksc-checkbox-controls';
+            controlsDiv.innerHTML = 
+                '<button type="button" class="control-btn select-all" data-card="' + cardIndex + '">' +
+                    '☑️ 전체 선택' +
+                '</button>' +
+                '<button type="button" class="control-btn deselect-all" data-card="' + cardIndex + '">' +
+                    '☐ 전체 해제' +
+                '</button>';
+            container.appendChild(controlsDiv);
+            
+            // 체크박스 변경 시 라벨 스타일 업데이트
+            container.addEventListener('change', function(e) {
+                if (e.target.classList.contains('ksc-field-checkbox')) {
+                    const label = e.target.closest('.ksc-field-label');
+                    if (e.target.checked) {
+                        label.classList.add('checked');
+                    } else {
+                        label.classList.remove('checked');
+                    }
+                }
+            });
         }
 
         /**
@@ -4870,12 +5800,34 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         console.warn('구조체 "' + currentName + '": crlf 필드가 있으나 개행 인식 비활성화됨');
                     }
                     
+                    // KSC-5601 설정 수집 (신규)
+                    const kscFieldNames = [];
+                    card.querySelectorAll('.ksc-field-checkbox:checked').forEach(function(cb) {
+                        kscFieldNames.push(cb.dataset.field);
+                    });
+                    
+                    const encodingModeRadio = card.querySelector('input[name^="encoding-mode-"]:checked');
+                    const encodingMode = encodingModeRadio ? encodingModeRadio.value : 'fullwidth';
+                    
+                    // 필드에 KSC 정보 추가
+                    const fieldsWithKSC = parsed.fields.map(function(field) {
+                        const isKSC = kscFieldNames.includes(field.name);
+                        return {
+                            name: field.name,
+                            size: field.size,
+                            isKSC: isKSC,
+                            encodingMode: isKSC ? encodingMode : null
+                        };
+                    });
+                    
                     structDefs.push({
                         name: currentName,
                         kubun: kubunValue || null,
-                        fields: parsed.fields,
+                        fields: fieldsWithKSC,
                         totalSize: parsed.totalSize,
-                        hasCRLFField: hasCRLFField
+                        hasCRLFField: hasCRLFField,
+                        kscFields: kscFieldNames,
+                        encodingMode: encodingMode
                     });
                 } else {
                     // g. 파싱 실패 시 에러 표시 후 null 반환
@@ -5121,6 +6073,162 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
         /**
          * =====================================================
+         * KSC-5601 전각 디코딩 함수
+         * EUC-KR 인코딩된 바이트를 유니코드 문자열로 변환
+         * =====================================================
+         * @param {string} bytes - 디코딩할 바이트 문자열
+         * @returns {string} 디코딩된 문자열
+         */
+        function decodeKSC5601Fullwidth(bytes) {
+            try {
+                // EUC-KR 디코딩 시도
+                const decoder = new TextDecoder('euc-kr');
+                const uint8Array = new Uint8Array(
+                    Array.from(bytes).map(function(c) { return c.charCodeAt(0); })
+                );
+                const decoded = decoder.decode(uint8Array);
+                return decoded;
+            } catch (e) {
+                console.warn('KSC-5601 전각 디코딩 실패:', e);
+                // 폴백: 원본 반환
+                return bytes;
+            }
+        }
+
+        /**
+         * =====================================================
+         * KSC-5601 혼용 디코딩 함수
+         * 한글은 2바이트, ASCII는 1바이트로 처리
+         * =====================================================
+         * @param {string} bytes - 디코딩할 바이트 문자열
+         * @returns {string} 디코딩된 문자열
+         */
+        function decodeKSC5601Mixed(bytes) {
+            try {
+                let result = '';
+                let i = 0;
+                
+                while (i < bytes.length) {
+                    const byte1 = bytes.charCodeAt(i);
+                    
+                    // 멀티바이트 시작 (0x81-0xFE)
+                    if (byte1 >= 0x81 && byte1 <= 0xFE && i + 1 < bytes.length) {
+                        const byte2 = bytes.charCodeAt(i + 1);
+                        
+                        // 2바이트 문자 디코딩
+                        const decoder = new TextDecoder('euc-kr');
+                        const arr = new Uint8Array([byte1, byte2]);
+                        result += decoder.decode(arr);
+                        i += 2;
+                    } else {
+                        // ASCII 1바이트
+                        result += bytes[i];
+                        i++;
+                    }
+                }
+                
+                return result;
+            } catch (e) {
+                console.warn('KSC-5601 혼용 디코딩 실패:', e);
+                return bytes;
+            }
+        }
+
+        /**
+         * =====================================================
+         * KSC-5601 혼용 모드 바이트 계산 함수
+         * 한글은 2바이트, ASCII는 1바이트로 계산
+         * =====================================================
+         * @param {string} str - 계산할 문자열
+         * @returns {number} 바이트 수
+         */
+        function calculateKSCMixedBytes(str) {
+            let bytes = 0;
+            for (let i = 0; i < str.length; i++) {
+                const code = str.charCodeAt(i);
+                // 한글 (가-힣) 또는 기타 멀티바이트
+                if ((code >= 0xAC00 && code <= 0xD7A3) || code > 0x7F) {
+                    bytes += 2;
+                } else {
+                    bytes += 1;
+                }
+            }
+            return bytes;
+        }
+
+        /**
+         * =====================================================
+         * KSC-5601 전각 패딩 함수
+         * 모든 문자를 2바이트로 처리하여 패딩
+         * =====================================================
+         * @param {string} value - 패딩할 문자열
+         * @param {number} size - 목표 바이트 크기
+         * @returns {string} 패딩된 문자열
+         */
+        function padKSC5601Fullwidth(value, size) {
+            const maxChars = Math.floor(size / 2);
+            if (value.length > maxChars) {
+                return value.substring(0, maxChars);
+            }
+            if (value.length < maxChars) {
+                // 부족한 글자 수만큼 공백 (전각 공백 또는 일반 공백 2개)
+                const paddingChars = maxChars - value.length;
+                return value + ' '.repeat(paddingChars * 2);
+            }
+            return value;
+        }
+
+        /**
+         * =====================================================
+         * KSC-5601 혼용 패딩 함수
+         * 한글 2바이트, ASCII 1바이트로 계산하여 패딩
+         * =====================================================
+         * @param {string} value - 패딩할 문자열
+         * @param {number} size - 목표 바이트 크기
+         * @returns {string} 패딩된 문자열
+         */
+        function padKSC5601Mixed(value, size) {
+            const byteLength = calculateKSCMixedBytes(value);
+            if (byteLength > size) {
+                // 바이트 단위로 자르기
+                return truncateByKSCBytes(value, size);
+            }
+            if (byteLength < size) {
+                // ASCII 공백으로 패딩
+                return value + ' '.repeat(size - byteLength);
+            }
+            return value;
+        }
+
+        /**
+         * =====================================================
+         * KSC-5601 바이트 단위 문자열 자르기
+         * 멀티바이트 문자 경계를 고려하여 자름
+         * =====================================================
+         * @param {string} str - 자를 문자열
+         * @param {number} maxBytes - 최대 바이트 수
+         * @returns {string} 잘린 문자열
+         */
+        function truncateByKSCBytes(str, maxBytes) {
+            let bytes = 0;
+            let result = '';
+            for (let i = 0; i < str.length; i++) {
+                const char = str[i];
+                const code = char.charCodeAt(0);
+                const charBytes = ((code >= 0xAC00 && code <= 0xD7A3) || code > 0x7F) ? 2 : 1;
+                
+                if (bytes + charBytes <= maxBytes) {
+                    result += char;
+                    bytes += charBytes;
+                } else {
+                    break;
+                }
+            }
+            return result;
+        }
+
+        /**
+         * =====================================================
          * 라인 기반 파싱 함수 (개행 인식 ON 모드)
          * =====================================================
          * 
@@ -5258,13 +6366,27 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 matched.fields.forEach(field => {
                     const startPos = fieldOffset;
                     const endPos = startPos + field.size;
-                    const value = lineWithCRLF.substring(startPos, endPos);
+                    const rawBytes = lineWithCRLF.substring(startPos, endPos);
+                    
+                    // 표시용 값
+                    let displayValue = rawBytes;
+                    
+                    // KSC-5601 필드 처리
+                    if (field.isKSC) {
+                        if (field.encodingMode === 'fullwidth') {
+                            // 전각 전용: 모든 문자 2 bytes
+                            displayValue = decodeKSC5601Fullwidth(rawBytes);
+                        } else if (field.encodingMode === 'mixed') {
+                            // 혼용: 한글 2 bytes, ASCII 1 byte
+                            displayValue = decodeKSC5601Mixed(rawBytes);
+                        }
+                    }
                     
                     // 디버그: 각 필드 값 로깅
                     if (isDebugMode) {
-                        const hexValue = Array.from(value).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
-                        const displayValue = value.replace(/\r/g, '\\r').replace(/\n/g, '\\n');
-                        console.log(`  📍 ${field.name}[${field.size}]: "${displayValue}" | HEX: ${hexValue}`);
+                        const hexValue = Array.from(rawBytes).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
+                        const debugDisplay = rawBytes.replace(/\r/g, '\\r').replace(/\n/g, '\\n');
+                        console.log(`  📍 ${field.name}[${field.size}]: "${debugDisplay}" | HEX: ${hexValue}${field.isKSC ? ' | KSC: "' + displayValue + '"' : ''}`);
                     }
 
                     records.push({
@@ -5274,7 +6396,11 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         kubun: matched.kubun,
                         fieldName: field.name,
                         fieldSize: field.size,
-                        value,
+                        fieldType: field.isKSC 
+                            ? 'KSC-5601 (' + (field.encodingMode === 'fullwidth' ? '전각' : '혼용') + ')'
+                            : 'ASCII',
+                        value: displayValue.trim(),
+                        rawValue: rawBytes,
                         startPos,
                         endPos
                     });
@@ -5407,13 +6533,27 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 matched.fields.forEach(field => {
                     const startPos = currentPos + fieldOffset;
                     const endPos = startPos + field.size;
-                    const value = processedData.substring(startPos, endPos);
+                    const rawBytes = processedData.substring(startPos, endPos);
+                    
+                    // 표시용 값
+                    let displayValue = rawBytes;
+                    
+                    // KSC-5601 필드 처리
+                    if (field.isKSC) {
+                        if (field.encodingMode === 'fullwidth') {
+                            // 전각 전용: 모든 문자 2 bytes
+                            displayValue = decodeKSC5601Fullwidth(rawBytes);
+                        } else if (field.encodingMode === 'mixed') {
+                            // 혼용: 한글 2 bytes, ASCII 1 byte
+                            displayValue = decodeKSC5601Mixed(rawBytes);
+                        }
+                    }
                     
                     // 디버그: 각 필드 값 로깅
                     if (isDebugMode) {
-                        const hexValue = Array.from(value).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
-                        const displayValue = value.replace(/\r/g, '\\r').replace(/\n/g, '\\n');
-                        console.log(`  📍 ${field.name}[${field.size}]: "${displayValue}" | HEX: ${hexValue}`);
+                        const hexValue = Array.from(rawBytes).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
+                        const debugDisplay = rawBytes.replace(/\r/g, '\\r').replace(/\n/g, '\\n');
+                        console.log(`  📍 ${field.name}[${field.size}]: "${debugDisplay}" | HEX: ${hexValue}${field.isKSC ? ' | KSC: "' + displayValue + '"' : ''}`);
                     }
 
                     records.push({
@@ -5422,7 +6562,11 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         kubun: matched.kubun,
                         fieldName: field.name,
                         fieldSize: field.size,
-                        value,
+                        fieldType: field.isKSC 
+                            ? 'KSC-5601 (' + (field.encodingMode === 'fullwidth' ? '전각' : '혼용') + ')'
+                            : 'ASCII',
+                        value: displayValue.trim(),
+                        rawValue: rawBytes,
                         startPos,
                         endPos
                     });
@@ -6023,6 +7167,20 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
          *   - stats: 통계 정보 { totalBytes, parsedBytes, recordCount, errorBytes }
          *   - structDefs: 구조체 정의 배열
          */
+
+        /**
+         * 필드 타입 배지 HTML 생성 함수
+         * @param {string} fieldType - 필드 타입 ('ASCII', 'KSC-5601 (전각)', 'KSC-5601 (혼용)')
+         * @returns {string} 배지 HTML
+         */
+        function getFieldTypeBadge(fieldType) {
+            if (fieldType && fieldType.startsWith('KSC-5601')) {
+                const mode = fieldType.includes('전각') ? '전각' : '혼용';
+                return '<span class="type-badge ksc-badge" title="' + fieldType + '">KSC ' + mode + '</span>';
+            }
+            return '<span class="type-badge ascii-badge">ASCII</span>';
+        }
+
         function displayStructResults(parseResult) {
             // 1. struct-result-container 초기화
             const container = document.getElementById('struct-result-container');
@@ -6146,7 +7304,9 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 recordMap.get(idx).fields.push({
                     fieldName: record.fieldName,
                     fieldSize: record.fieldSize,
+                    fieldType: record.fieldType || 'ASCII',
                     value: record.value,
+                    rawValue: record.rawValue,
                     startPos: record.startPos,
                     endPos: record.endPos
                 });
@@ -6226,7 +7386,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 // thead 생성
                 const thead = document.createElement('thead');
                 const headerRow = document.createElement('tr');
-                const headers = ['필드명', '크기', '시작', '종료', '값'];
+                const headers = ['필드명', '타입', '크기', '시작', '종료', '값'];
 
                 headers.forEach(function(headerText) {
                     const th = document.createElement('th');
@@ -6259,6 +7419,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
                         const values = [
                             field.fieldName,   // 필드명
+                            field.fieldType || 'ASCII',  // 타입
                             field.fieldSize,   // 크기
                             field.startPos,    // 시작
                             field.endPos,      // 종료
@@ -6267,28 +7428,50 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
                         values.forEach(function(value, tdIndex) {
                             const td = document.createElement('td');
+                            
+                            // 타입 컬럼 (두번째 컬럼)
+                            if (tdIndex === 1) {
+                                td.className = 'field-type-cell';
+                                td.innerHTML = getFieldTypeBadge(value);
+                                tr.appendChild(td);
+                                return;
+                            }
 
                             // 값 컬럼 (마지막 컬럼)
-                            if (tdIndex === 4) {
+                            if (tdIndex === 5) {
+                                td.className = 'field-value-cell';
+                                
                                 // CRLF 필드: 편집 불가
                                 if (isCRLFField) {
                                     td.classList.add('readonly-value');
                                     td.classList.add('crlf-value');
-                                    td.textContent = value;
+                                    td.innerHTML = '<code>' + escapeHtml(value) + '</code>';
                                     td.title = 'CRLF 필드: 편집 불가';
                                 } else {
-                                    // 일반 필드: 편집 가능
-                                    td.classList.add('editable-value');
-                                    td.setAttribute('contenteditable', 'true');
-                                    td.setAttribute('data-record-index', recordIndex);
-                                    td.setAttribute('data-field-index', fieldIndex);
-                                    td.setAttribute('data-original-value', field.value);
-                                    td.setAttribute('data-field-size', field.fieldSize);
-                                    td.setAttribute('data-field-name', field.fieldName);
-                                    td.textContent = value;
+                                    // 값 표시 영역 생성
+                                    const valueSpan = document.createElement('span');
+                                    valueSpan.className = 'editable-value';
+                                    valueSpan.setAttribute('contenteditable', 'true');
+                                    valueSpan.setAttribute('data-record-index', recordIndex);
+                                    valueSpan.setAttribute('data-field-index', fieldIndex);
+                                    valueSpan.setAttribute('data-original-value', field.value);
+                                    valueSpan.setAttribute('data-field-size', field.fieldSize);
+                                    valueSpan.setAttribute('data-field-name', field.fieldName);
+                                    valueSpan.textContent = value;
+                                    td.appendChild(valueSpan);
                                     
-                                    // 수정 감지 이벤트
-                                    td.addEventListener('input', function() {
+                                    // 원본 버튼 추가 (rawValue가 있고 value와 다른 경우)
+                                    if (field.rawValue && field.rawValue !== field.value) {
+                                        const rawBtn = document.createElement('button');
+                                        rawBtn.className = 'show-raw-btn';
+                                        rawBtn.setAttribute('data-raw', escapeHtml(field.rawValue));
+                                        rawBtn.textContent = '원본';
+                                        rawBtn.title = '원본 바이트 보기';
+                                        td.appendChild(rawBtn);
+                                    }
+                                    
+                                    // 수정 감지 이벤트 (valueSpan에 바인딩)
+                                    valueSpan.addEventListener('input', function() {
                                         const originalValue = this.getAttribute('data-original-value');
                                         const currentValue = this.textContent;
                                         
@@ -6309,8 +7492,8 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                                         updateStructModifiedCount();
                                     });
                                     
-                                    // 포커스 아웃 시 길이 검증
-                                    td.addEventListener('blur', function() {
+                                    // 포커스 아웃 시 길이 검증 (valueSpan에 바인딩)
+                                    valueSpan.addEventListener('blur', function() {
                                         const fieldSize = parseInt(this.getAttribute('data-field-size'));
                                         let currentValue = this.textContent;
                                         
@@ -7311,6 +8494,80 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         }
                     }
                 }
+                
+                // =========================================
+                // KSC-5601 파싱 버튼 이벤트
+                // =========================================
+                if (e.target.classList.contains('parse-for-ksc-btn')) {
+                    const cardIndex = parseInt(e.target.dataset.index);
+                    const card = e.target.closest('.struct-card');
+                    
+                    // 1. 구조체 정의 텍스트 가져오기
+                    const structDefText = card.querySelector('.struct-definition').value.trim();
+                    
+                    if (!structDefText) {
+                        alert('구조체 정의를 먼저 입력하세요');
+                        return;
+                    }
+                    
+                    // 2. 구조체 파싱 (17단계 함수 재사용)
+                    const parsed = parseStructDefinition(structDefText);
+                    
+                    if (!parsed || !parsed.fields || parsed.fields.length === 0) {
+                        alert('구조체 파싱 실패. 형식을 확인하세요\n\n예: typedef struct { char name[20]; } STRUCT;');
+                        return;
+                    }
+                    
+                    // 3. 기존 선택 상태 저장 (재파싱 시 유지)
+                    const previousSelections = new Set();
+                    card.querySelectorAll('.ksc-field-checkbox:checked').forEach(function(cb) {
+                        previousSelections.add(cb.dataset.field);
+                    });
+                    
+                    // 4. KSC 필드 체크박스 목록 생성
+                    generateKSCFieldCheckboxes(cardIndex, parsed.fields, previousSelections);
+                    
+                    // 5. KSC 섹션 표시
+                    card.querySelector('.ksc-section').style.display = 'block';
+                    
+                    // 6. 버튼 상태 변경
+                    e.target.textContent = '✓ 파싱 완료';
+                    e.target.style.backgroundColor = '#28a745';
+                    e.target.disabled = true;
+                    
+                    // 7. 재파싱 버튼 추가
+                    if (!card.querySelector('.reparse-ksc-btn')) {
+                        const reparseBtn = document.createElement('button');
+                        reparseBtn.type = 'button';
+                        reparseBtn.className = 'reparse-ksc-btn';
+                        reparseBtn.dataset.index = cardIndex;
+                        reparseBtn.innerHTML = '🔄 재파싱';
+                        e.target.after(reparseBtn);
+                    }
+                    
+                    showTemporaryMessage('✓ ' + parsed.fields.length + '개 필드가 파싱되었습니다');
+                }
+                
+                // =========================================
+                // 재파싱 버튼 이벤트
+                // =========================================
+                if (e.target.classList.contains('reparse-ksc-btn')) {
+                    const cardIndex = parseInt(e.target.dataset.index);
+                    const card = e.target.closest('.struct-card');
+                    
+                    // 파싱 버튼 재활성화
+                    const parseBtn = card.querySelector('.parse-for-ksc-btn');
+                    parseBtn.disabled = false;
+                    parseBtn.textContent = '🔍 구조체 파싱';
+                    parseBtn.style.backgroundColor = '';
+                    
+                    // 재파싱 버튼 제거
+                    e.target.remove();
+                    
+                    // 파싱 버튼 클릭
+                    parseBtn.click();
+                }
+                
             });
 
             // =========================================
@@ -7333,6 +8590,35 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         console.error('복사 실패:', err);
                         // 폴백: 수동 복사 안내
                         alert('자동 복사에 실패했습니다. 텍스트를 직접 선택하여 복사해주세요.');
+                    });
+                }
+            });
+
+            // =========================================
+            // KSC 필드 전체 선택/해제 이벤트 위임
+            // =========================================
+            document.addEventListener('click', function(e) {
+                // 전체 선택
+                if (e.target.classList.contains('select-all')) {
+                    const cardIndex = e.target.dataset.card;
+                    const checkboxes = document.querySelectorAll(
+                        '.ksc-field-checkbox[data-card="' + cardIndex + '"]'
+                    );
+                    checkboxes.forEach(function(cb) {
+                        cb.checked = true;
+                        cb.closest('.ksc-field-label').classList.add('checked');
+                    });
+                }
+                
+                // 전체 해제
+                if (e.target.classList.contains('deselect-all')) {
+                    const cardIndex = e.target.dataset.card;
+                    const checkboxes = document.querySelectorAll(
+                        '.ksc-field-checkbox[data-card="' + cardIndex + '"]'
+                    );
+                    checkboxes.forEach(function(cb) {
+                        cb.checked = false;
+                        cb.closest('.ksc-field-label').classList.remove('checked');
                     });
                 }
             });
@@ -7813,8 +9099,26 @@ T000000000200000000000000003000`
                 });
             }
 
-            // 복사 버튼 클릭 이벤트 (이벤트 위임 사용)
+            // 복사 버튼 및 원본 버튼 클릭 이벤트 (이벤트 위임 사용)
             document.getElementById('struct-result-container').addEventListener('click', function(e) {
+                // 원본 보기 버튼 클릭 처리
+                if (e.target.classList.contains('show-raw-btn')) {
+                    const rawValue = e.target.getAttribute('data-raw');
+                    if (rawValue) {
+                        // 원본 바이트를 HEX로 변환하여 표시
+                        const decoded = rawValue.replace(/&amp;/g, '&')
+                                                .replace(/&lt;/g, '<')
+                                                .replace(/&gt;/g, '>')
+                                                .replace(/&quot;/g, '"');
+                        const hexValue = Array.from(decoded).map(function(c) {
+                            return c.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase();
+                        }).join(' ');
+                        
+                        alert('원본 바이트:\n' + decoded + '\n\nHEX:\n' + hexValue);
+                    }
+                    return;
+                }
+                
                 // 클릭된 요소가 복사 버튼인지 확인
                 if (!e.target.classList.contains('copy-record-btn')) {
                     return;
@@ -7839,16 +9143,21 @@ T000000000200000000000000003000`
 
                 const rows = tbody.querySelectorAll('tr');
                 
-                // 2. TSV 형식으로 변환 (필드명\t크기\t값)
+                // 2. TSV 형식으로 변환 (필드명\t타입\t크기\t값)
                 const tsvLines = [];
                 rows.forEach(function(row) {
                     const cells = row.querySelectorAll('td');
-                    // 5개 컬럼: 필드명, 크기, 시작, 종료, 값
-                    if (cells.length >= 5) {
+                    // 6개 컬럼: 필드명, 타입, 크기, 시작, 종료, 값
+                    if (cells.length >= 6) {
                         const fieldName = cells[0].textContent;  // 필드명
-                        const size = cells[1].textContent;       // 크기
-                        const value = cells[4].textContent;      // 값
-                        tsvLines.push(fieldName + '\t' + size + '\t' + value);
+                        const fieldType = cells[1].textContent;  // 타입
+                        const size = cells[2].textContent;       // 크기
+                        // 값 셀에서 editable-value span 또는 code 내용 추출
+                        const valueCell = cells[5];
+                        const editableSpan = valueCell.querySelector('.editable-value');
+                        const codeEl = valueCell.querySelector('code');
+                        const value = editableSpan ? editableSpan.textContent : (codeEl ? codeEl.textContent : valueCell.textContent);
+                        tsvLines.push(fieldName + '\t' + fieldType + '\t' + size + '\t' + value);
                     }
                 });
 
@@ -8361,6 +9670,43 @@ T000000000200000000000000003000`
                 if (e.key === 'Escape' && crlfHelpModal.classList.contains('show')) {
                     crlfHelpModal.classList.remove('show');
                 }
+                if (e.key === 'Escape' && kscHelpModal.classList.contains('show')) {
+                    kscHelpModal.classList.remove('show');
+                }
+            });
+
+            // =========================================
+            // KSC-5601 도움말 모달 이벤트 핸들러
+            // =========================================
+            const kscHelpModal = document.getElementById('ksc-help-modal');
+            const kscCloseBtn = kscHelpModal.querySelector('.close-help');
+
+            // help-icon-btn 클릭 이벤트 (이벤트 위임)
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('help-icon-btn') || 
+                    e.target.closest('.help-icon-btn')) {
+                    const btn = e.target.classList.contains('help-icon-btn') 
+                        ? e.target 
+                        : e.target.closest('.help-icon-btn');
+                    
+                    if (btn.dataset.help === 'ksc5601') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        kscHelpModal.classList.add('show');
+                    }
+                }
+            });
+
+            // KSC 모달 닫기 버튼
+            kscCloseBtn.addEventListener('click', function() {
+                kscHelpModal.classList.remove('show');
+            });
+
+            // KSC 모달 배경 클릭 시 닫기
+            kscHelpModal.addEventListener('click', function(e) {
+                if (e.target === kscHelpModal) {
+                    kscHelpModal.classList.remove('show');
+                }
             });
 
             // =========================================
@@ -8393,9 +9739,10 @@ T000000000200000000000000003000`
              * @param {Object} field - 필드 정의 객체
              * @param {number} index - 필드 인덱스
              * @param {boolean} recognizeCRLF - CRLF 인식 여부
+             * @param {string} encodingMode - 인코딩 모드 ('fullwidth' 또는 'mixed')
              * @returns {HTMLTableRowElement} 테이블 행 요소
              */
-            function createFieldRow(field, index, recognizeCRLF) {
+            function createFieldRow(field, index, recognizeCRLF, encodingMode) {
                 const tr = document.createElement('tr');
                 
                 // CRLF 필드 특수 처리
@@ -8427,8 +9774,103 @@ T000000000200000000000000003000`
                             <code class="preview-text" id="preview-field-${index}" data-field-size="${field.size}">\\r\\n</code>
                         </td>
                     `;
-                } else {
-                    // 일반 입력 필드
+                    return tr;
+                }
+                
+                // KSC-5601 필드 처리
+                if (field.isKSC) {
+                    const maxChars = encodingMode === 'fullwidth' 
+                        ? Math.floor(field.size / 2)
+                        : '가변';
+                    
+                    const placeholderText = encodingMode === 'fullwidth' 
+                        ? '최대 ' + maxChars + '자'
+                        : '최대 ' + field.size + ' bytes';
+                    
+                    const charCounterHtml = encodingMode === 'fullwidth'
+                        ? '<span class="current-chars">0</span>/' + maxChars + '자 (<span class="current-bytes">0</span>/' + field.size + 'B)'
+                        : '<span class="current-bytes">0</span>/' + field.size + 'B (<span class="current-chars">0</span>자)';
+                    
+                    tr.innerHTML = `
+                        <td>
+                            <span class="field-name">${field.name}</span>
+                            <span class="field-tag ksc-tag">KSC-5601</span>
+                        </td>
+                        <td class="field-size">${field.size}</td>
+                        <td>
+                            <input type="text"
+                                   class="field-input generate-field-input ksc-field-input"
+                                   data-field="${field.name}"
+                                   data-size="${field.size}"
+                                   data-index="${index}"
+                                   data-field-name="${field.name}"
+                                   data-field-size="${field.size}"
+                                   data-field-index="${index}"
+                                   data-ksc="true"
+                                   data-encoding-mode="${encodingMode}"
+                                   id="gen-field-${index}"
+                                   placeholder="${placeholderText}" />
+                            <div class="input-meta">
+                                <span class="char-counter" id="char-counter-${index}">
+                                    ${charCounterHtml}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="preview-cell">
+                            <code class="preview-text" id="preview-field-${index}" data-field-size="${field.size}"></code>
+                        </td>
+                    `;
+                    
+                    // KSC 필드 입력 이벤트 바인딩
+                    setTimeout(function() {
+                        const input = document.getElementById('gen-field-' + index);
+                        const counterEl = document.getElementById('char-counter-' + index);
+                        const previewEl = document.getElementById('preview-field-' + index);
+                        
+                        if (input) {
+                            input.addEventListener('input', function() {
+                                const value = this.value;
+                                const size = parseInt(this.dataset.fieldSize);
+                                const mode = this.dataset.encodingMode;
+                                
+                                // 바이트 수 계산
+                                let byteCount = 0;
+                                if (mode === 'fullwidth') {
+                                    byteCount = value.length * 2;
+                                } else {
+                                    // 혼용 모드: 한글 2바이트, ASCII 1바이트
+                                    for (let i = 0; i < value.length; i++) {
+                                        byteCount += value.charCodeAt(i) > 127 ? 2 : 1;
+                                    }
+                                }
+                                
+                                // 카운터 업데이트
+                                const charsSpan = counterEl.querySelector('.current-chars');
+                                const bytesSpan = counterEl.querySelector('.current-bytes');
+                                if (charsSpan) charsSpan.textContent = value.length;
+                                if (bytesSpan) bytesSpan.textContent = byteCount;
+                                
+                                // 바이트 초과 시 경고
+                                if (byteCount > size) {
+                                    counterEl.classList.add('over-limit');
+                                    input.classList.add('over-limit');
+                                } else {
+                                    counterEl.classList.remove('over-limit');
+                                    input.classList.remove('over-limit');
+                                }
+                                
+                                // 미리보기 업데이트
+                                if (previewEl) {
+                                    previewEl.textContent = value || '';
+                                }
+                            });
+                        }
+                    }, 0);
+                    
+                    return tr;
+                }
+                
+                // 일반 입력 필드
                     const isNumeric = isNumericField(field.name);
                     const isUserChoice = isUserChoiceField(field.name);
                     
@@ -8643,8 +10085,78 @@ T000000000200000000000000003000`
                             const fieldName = input.dataset.field;
                             const fieldSize = parseInt(input.dataset.size);
                             const value = input.value;
+                            const isKSC = input.dataset.ksc === 'true';
                             
-                            // 1. 글자 수 카운터 업데이트
+                            // KSC-5601 필드 처리
+                            if (isKSC) {
+                                const encodingMode = input.dataset.encodingMode;
+                                const row = input.closest('tr');
+                                const currentCharsSpan = row.querySelector('.current-chars');
+                                const currentBytesSpan = row.querySelector('.current-bytes');
+                                const previewCell = row.querySelector('.preview-text');
+                                
+                                if (encodingMode === 'fullwidth') {
+                                    // 전각 전용: 글자수 × 2 = 바이트
+                                    const charCount = value.length;
+                                    const byteCount = charCount * 2;
+                                    const maxChars = Math.floor(fieldSize / 2);
+                                    
+                                    if (currentCharsSpan) currentCharsSpan.textContent = charCount;
+                                    if (currentBytesSpan) currentBytesSpan.textContent = byteCount;
+                                    
+                                    if (charCount > maxChars) {
+                                        input.style.borderColor = '#dc3545';
+                                        input.style.backgroundColor = '#fff5f5';
+                                        if (currentCharsSpan) currentCharsSpan.style.color = '#dc3545';
+                                    } else if (charCount === maxChars) {
+                                        input.style.borderColor = '#28a745';
+                                        input.style.backgroundColor = '#f0fff4';
+                                        if (currentCharsSpan) currentCharsSpan.style.color = '#28a745';
+                                    } else {
+                                        input.style.borderColor = '#ced4da';
+                                        input.style.backgroundColor = '#fff';
+                                        if (currentCharsSpan) currentCharsSpan.style.color = '#6c757d';
+                                    }
+                                    
+                                    // 미리보기
+                                    if (previewCell) {
+                                        const paddedValue = padKSC5601Fullwidth(value, fieldSize);
+                                        previewCell.textContent = paddedValue;
+                                    }
+                                    
+                                } else {
+                                    // 혼용 모드
+                                    const charCount = value.length;
+                                    const byteCount = calculateKSCMixedBytes(value);
+                                    
+                                    if (currentCharsSpan) currentCharsSpan.textContent = charCount;
+                                    if (currentBytesSpan) currentBytesSpan.textContent = byteCount;
+                                    
+                                    if (byteCount > fieldSize) {
+                                        input.style.borderColor = '#dc3545';
+                                        input.style.backgroundColor = '#fff5f5';
+                                        if (currentBytesSpan) currentBytesSpan.style.color = '#dc3545';
+                                    } else if (byteCount === fieldSize) {
+                                        input.style.borderColor = '#28a745';
+                                        input.style.backgroundColor = '#f0fff4';
+                                        if (currentBytesSpan) currentBytesSpan.style.color = '#28a745';
+                                    } else {
+                                        input.style.borderColor = '#ced4da';
+                                        input.style.backgroundColor = '#fff';
+                                        if (currentBytesSpan) currentBytesSpan.style.color = '#6c757d';
+                                    }
+                                    
+                                    // 미리보기
+                                    if (previewCell) {
+                                        const paddedValue = padKSC5601Mixed(value, fieldSize);
+                                        previewCell.textContent = paddedValue;
+                                    }
+                                }
+                                
+                                return; // KSC 필드는 여기서 처리 완료
+                            }
+                            
+                            // 1. 글자 수 카운터 업데이트 (일반 필드)
                             const row = input.closest('tr');
                             const currentLength = row.querySelector('.current-length');
                             
@@ -8816,7 +10328,7 @@ T000000000200000000000000003000`
                 const tbody = document.getElementById('form-fields-body');
                 
                 structDef.fields.forEach(function(field, index) {
-                    const row = createFieldRow(field, index, recognizeCRLF);
+                    const row = createFieldRow(field, index, recognizeCRLF, structDef.encodingMode);
                     tbody.appendChild(row);
                 });
                 
