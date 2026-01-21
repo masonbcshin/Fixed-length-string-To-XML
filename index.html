@@ -1372,6 +1372,56 @@
             color: white;
         }
 
+        /* 결과 테이블 타입 배지 */
+        .type-badge.ksc-badge {
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            background: linear-gradient(135deg, #fd7e14 0%, #dc3545 100%);
+            color: white;
+        }
+
+        .type-badge.ascii-badge {
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            background: #6c757d;
+            color: white;
+        }
+
+        /* 원본 보기 버튼 */
+        .show-raw-btn {
+            padding: 4px 10px;
+            background: #17a2b8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            margin-left: 10px;
+            transition: all 0.2s;
+        }
+
+        .show-raw-btn:hover {
+            background: #138496;
+        }
+
+        /* 값 셀 스타일 */
+        .field-value-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .field-value-cell .editable-value {
+            flex: 1;
+            min-width: 0;
+        }
+
         .field-type-cell {
             text-align: center;
         }
@@ -2679,6 +2729,19 @@
 
         body.dark-mode .char-counter.over-limit {
             color: #ff6b6b;
+        }
+
+        /* 다크 모드 - 결과 테이블 타입 배지 */
+        body.dark-mode .type-badge.ascii-badge {
+            background: #5a6268;
+        }
+
+        body.dark-mode .show-raw-btn {
+            background: #138496;
+        }
+
+        body.dark-mode .show-raw-btn:hover {
+            background: #17a2b8;
         }
 
         body.dark-mode .help-section {
@@ -6882,6 +6945,20 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
          *   - stats: 통계 정보 { totalBytes, parsedBytes, recordCount, errorBytes }
          *   - structDefs: 구조체 정의 배열
          */
+
+        /**
+         * 필드 타입 배지 HTML 생성 함수
+         * @param {string} fieldType - 필드 타입 ('ASCII', 'KSC-5601 (전각)', 'KSC-5601 (혼용)')
+         * @returns {string} 배지 HTML
+         */
+        function getFieldTypeBadge(fieldType) {
+            if (fieldType && fieldType.startsWith('KSC-5601')) {
+                const mode = fieldType.includes('전각') ? '전각' : '혼용';
+                return '<span class="type-badge ksc-badge" title="' + fieldType + '">KSC ' + mode + '</span>';
+            }
+            return '<span class="type-badge ascii-badge">ASCII</span>';
+        }
+
         function displayStructResults(parseResult) {
             // 1. struct-result-container 초기화
             const container = document.getElementById('struct-result-container');
@@ -7005,7 +7082,9 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 recordMap.get(idx).fields.push({
                     fieldName: record.fieldName,
                     fieldSize: record.fieldSize,
+                    fieldType: record.fieldType || 'ASCII',
                     value: record.value,
+                    rawValue: record.rawValue,
                     startPos: record.startPos,
                     endPos: record.endPos
                 });
@@ -7085,7 +7164,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 // thead 생성
                 const thead = document.createElement('thead');
                 const headerRow = document.createElement('tr');
-                const headers = ['필드명', '크기', '시작', '종료', '값'];
+                const headers = ['필드명', '타입', '크기', '시작', '종료', '값'];
 
                 headers.forEach(function(headerText) {
                     const th = document.createElement('th');
@@ -7118,6 +7197,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
                         const values = [
                             field.fieldName,   // 필드명
+                            field.fieldType || 'ASCII',  // 타입
                             field.fieldSize,   // 크기
                             field.startPos,    // 시작
                             field.endPos,      // 종료
@@ -7126,28 +7206,50 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
                         values.forEach(function(value, tdIndex) {
                             const td = document.createElement('td');
+                            
+                            // 타입 컬럼 (두번째 컬럼)
+                            if (tdIndex === 1) {
+                                td.className = 'field-type-cell';
+                                td.innerHTML = getFieldTypeBadge(value);
+                                tr.appendChild(td);
+                                return;
+                            }
 
                             // 값 컬럼 (마지막 컬럼)
-                            if (tdIndex === 4) {
+                            if (tdIndex === 5) {
+                                td.className = 'field-value-cell';
+                                
                                 // CRLF 필드: 편집 불가
                                 if (isCRLFField) {
                                     td.classList.add('readonly-value');
                                     td.classList.add('crlf-value');
-                                    td.textContent = value;
+                                    td.innerHTML = '<code>' + escapeHtml(value) + '</code>';
                                     td.title = 'CRLF 필드: 편집 불가';
                                 } else {
-                                    // 일반 필드: 편집 가능
-                                    td.classList.add('editable-value');
-                                    td.setAttribute('contenteditable', 'true');
-                                    td.setAttribute('data-record-index', recordIndex);
-                                    td.setAttribute('data-field-index', fieldIndex);
-                                    td.setAttribute('data-original-value', field.value);
-                                    td.setAttribute('data-field-size', field.fieldSize);
-                                    td.setAttribute('data-field-name', field.fieldName);
-                                    td.textContent = value;
+                                    // 값 표시 영역 생성
+                                    const valueSpan = document.createElement('span');
+                                    valueSpan.className = 'editable-value';
+                                    valueSpan.setAttribute('contenteditable', 'true');
+                                    valueSpan.setAttribute('data-record-index', recordIndex);
+                                    valueSpan.setAttribute('data-field-index', fieldIndex);
+                                    valueSpan.setAttribute('data-original-value', field.value);
+                                    valueSpan.setAttribute('data-field-size', field.fieldSize);
+                                    valueSpan.setAttribute('data-field-name', field.fieldName);
+                                    valueSpan.textContent = value;
+                                    td.appendChild(valueSpan);
                                     
-                                    // 수정 감지 이벤트
-                                    td.addEventListener('input', function() {
+                                    // 원본 버튼 추가 (rawValue가 있고 value와 다른 경우)
+                                    if (field.rawValue && field.rawValue !== field.value) {
+                                        const rawBtn = document.createElement('button');
+                                        rawBtn.className = 'show-raw-btn';
+                                        rawBtn.setAttribute('data-raw', escapeHtml(field.rawValue));
+                                        rawBtn.textContent = '원본';
+                                        rawBtn.title = '원본 바이트 보기';
+                                        td.appendChild(rawBtn);
+                                    }
+                                    
+                                    // 수정 감지 이벤트 (valueSpan에 바인딩)
+                                    valueSpan.addEventListener('input', function() {
                                         const originalValue = this.getAttribute('data-original-value');
                                         const currentValue = this.textContent;
                                         
@@ -7168,8 +7270,8 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                                         updateStructModifiedCount();
                                     });
                                     
-                                    // 포커스 아웃 시 길이 검증
-                                    td.addEventListener('blur', function() {
+                                    // 포커스 아웃 시 길이 검증 (valueSpan에 바인딩)
+                                    valueSpan.addEventListener('blur', function() {
                                         const fieldSize = parseInt(this.getAttribute('data-field-size'));
                                         let currentValue = this.textContent;
                                         
@@ -8775,8 +8877,26 @@ T000000000200000000000000003000`
                 });
             }
 
-            // 복사 버튼 클릭 이벤트 (이벤트 위임 사용)
+            // 복사 버튼 및 원본 버튼 클릭 이벤트 (이벤트 위임 사용)
             document.getElementById('struct-result-container').addEventListener('click', function(e) {
+                // 원본 보기 버튼 클릭 처리
+                if (e.target.classList.contains('show-raw-btn')) {
+                    const rawValue = e.target.getAttribute('data-raw');
+                    if (rawValue) {
+                        // 원본 바이트를 HEX로 변환하여 표시
+                        const decoded = rawValue.replace(/&amp;/g, '&')
+                                                .replace(/&lt;/g, '<')
+                                                .replace(/&gt;/g, '>')
+                                                .replace(/&quot;/g, '"');
+                        const hexValue = Array.from(decoded).map(function(c) {
+                            return c.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase();
+                        }).join(' ');
+                        
+                        alert('원본 바이트:\n' + decoded + '\n\nHEX:\n' + hexValue);
+                    }
+                    return;
+                }
+                
                 // 클릭된 요소가 복사 버튼인지 확인
                 if (!e.target.classList.contains('copy-record-btn')) {
                     return;
@@ -8801,16 +8921,21 @@ T000000000200000000000000003000`
 
                 const rows = tbody.querySelectorAll('tr');
                 
-                // 2. TSV 형식으로 변환 (필드명\t크기\t값)
+                // 2. TSV 형식으로 변환 (필드명\t타입\t크기\t값)
                 const tsvLines = [];
                 rows.forEach(function(row) {
                     const cells = row.querySelectorAll('td');
-                    // 5개 컬럼: 필드명, 크기, 시작, 종료, 값
-                    if (cells.length >= 5) {
+                    // 6개 컬럼: 필드명, 타입, 크기, 시작, 종료, 값
+                    if (cells.length >= 6) {
                         const fieldName = cells[0].textContent;  // 필드명
-                        const size = cells[1].textContent;       // 크기
-                        const value = cells[4].textContent;      // 값
-                        tsvLines.push(fieldName + '\t' + size + '\t' + value);
+                        const fieldType = cells[1].textContent;  // 타입
+                        const size = cells[2].textContent;       // 크기
+                        // 값 셀에서 editable-value span 또는 code 내용 추출
+                        const valueCell = cells[5];
+                        const editableSpan = valueCell.querySelector('.editable-value');
+                        const codeEl = valueCell.querySelector('code');
+                        const value = editableSpan ? editableSpan.textContent : (codeEl ? codeEl.textContent : valueCell.textContent);
+                        tsvLines.push(fieldName + '\t' + fieldType + '\t' + size + '\t' + value);
                     }
                 });
 
