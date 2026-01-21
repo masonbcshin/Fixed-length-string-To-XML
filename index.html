@@ -3199,6 +3199,72 @@
             overflow-x: auto;
         }
 
+        /* KSC-5601 도움말 모달 스타일 */
+        .help-modal-body .highlight {
+            background: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #856404;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            padding: 12px;
+            border: 1px solid #007bff;
+            border-radius: 4px;
+            margin-bottom: 12px;
+        }
+
+        .mode-explanation {
+            background: #f8f9fa;
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .mode-explanation h5 {
+            margin: 0 0 10px 0;
+            color: #495057;
+        }
+
+        .help-code {
+            background: #2d2d44;
+            color: #e0e0e0;
+            padding: 12px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+
+        .example-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .example-table th,
+        .example-table td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #dee2e6;
+        }
+
+        .example-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+
+        .help-badge {
+            background: #007bff;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
         .help-tip {
             background: #fff3cd;
             border-left: 4px solid #ffc107;
@@ -3230,6 +3296,37 @@
         body.dark-mode .help-example {
             background: #1e1e1e;
             border-color: #444;
+            color: #e0e0e0;
+        }
+
+        /* 다크 모드 - KSC-5601 도움말 모달 */
+        body.dark-mode .help-modal-body .highlight {
+            background: #3d3520;
+            color: #ffd54f;
+        }
+
+        body.dark-mode .info-box {
+            background: #1e3a5f;
+            border-color: #2196f3;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .mode-explanation {
+            background: #2d2d44;
+            border-color: #4d4d6c;
+        }
+
+        body.dark-mode .mode-explanation h5 {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .example-table th {
+            background: #3d3d5c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .example-table td {
+            border-color: #4d4d6c;
             color: #e0e0e0;
         }
 
@@ -4165,6 +4262,131 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 <div class="help-tip">
                     <strong>💡 팁:</strong> 일반적인 전문 파일은 개행문자를 포함합니다.
                     확실하지 않다면 체크 상태로 두세요.
+                </div>
+            </div>
+        </div>
+
+        <!-- KSC-5601 도움말 모달 -->
+        <div class="help-modal" id="ksc-help-modal">
+            <div class="help-content">
+                <button class="close-help">✕</button>
+                <h3>🌏 KSC-5601 인코딩 도움말</h3>
+                
+                <div class="help-modal-body">
+                    <section class="help-section">
+                        <h4>📌 KSC-5601 (EUC-KR)이란?</h4>
+                        <p>
+                            한국 산업 표준 완성형 인코딩입니다.<br>
+                            <strong class="highlight">KSC-5601 영역의 모든 문자는 2 bytes입니다.</strong>
+                        </p>
+                        <div class="info-box">
+                            <strong>2 bytes 문자:</strong><br>
+                            • 한글: 가, 나, 다...<br>
+                            • 전각 영문: Ａ, Ｂ, Ｃ... (넓은 글자)<br>
+                            • 전각 숫자: １, ２, ３...<br>
+                            • 전각 공백: 　(넓은 공백)
+                        </div>
+                        <div class="info-box">
+                            <strong>1 byte 문자 (ASCII):</strong><br>
+                            • 반각 영문: A, B, C...<br>
+                            • 반각 숫자: 1, 2, 3...<br>
+                            • 반각 공백: (일반 공백)
+                        </div>
+                    </section>
+                    
+                    <section class="help-section">
+                        <h4>💡 인코딩 모드</h4>
+                        
+                        <div class="mode-explanation">
+                            <h5>🔷 전각 전용 모드 (권장)</h5>
+                            <p>
+                                모든 문자를 2 bytes로 처리합니다.<br>
+                                계산: <code>글자 수 × 2 = 바이트 수</code>
+                            </p>
+                            <pre class="help-code">char name[20];  // 최대 10글자
+"홍길동"    → 6 bytes (3글자 × 2)
+"HONG"      → 8 bytes (4글자 × 2)
+"Hong 123"  → 14 bytes (7글자 × 2)</pre>
+                        </div>
+                        
+                        <div class="mode-explanation">
+                            <h5>🔶 혼용 모드</h5>
+                            <p>
+                                한글/한자는 2 bytes, ASCII는 1 byte로 처리합니다.<br>
+                                실무에서 전각/반각이 섞여 있을 때 사용합니다.
+                            </p>
+                            <pre class="help-code">char name[20];
+"홍길동"    → 6 bytes (한글 3자 × 2)
+"Hong"      → 4 bytes (ASCII 4자 × 1)
+"Hong길동"  → 10 bytes (4 + 6)</pre>
+                        </div>
+                    </section>
+                    
+                    <section class="help-section">
+                        <h4>🔧 사용 방법</h4>
+                        <ol>
+                            <li>구조체 정의 입력</li>
+                            <li>"구조체 파싱" 버튼 클릭</li>
+                            <li>인코딩 모드 선택 (전각 전용 / 혼용)</li>
+                            <li>KSC-5601 필드 체크</li>
+                            <li>파싱 실행</li>
+                        </ol>
+                    </section>
+                    
+                    <section class="help-section">
+                        <h4>⚠️ 주의사항</h4>
+                        <ul>
+                            <li><strong>설계서를 확인하세요:</strong> 전각인지 혼용인지 확인 필수</li>
+                            <li><strong>일반적으로 전각 전용:</strong> 대부분의 금융/통신 전문은 전각</li>
+                            <li><strong>테스트 필수:</strong> 샘플 데이터로 먼저 확인</li>
+                            <li><strong>글자 깨짐 발생 시:</strong> 인코딩 모드를 바꿔보세요</li>
+                        </ul>
+                    </section>
+                    
+                    <section class="help-section help-example">
+                        <h4>📖 실전 예시</h4>
+                        <pre class="help-code">typedef struct {
+    char trans_id[10];     // 거래ID (ASCII)
+    char cust_nm[20];      // 고객명 (KSC-5601, 전각)
+    char amount[15];       // 금액 (ASCII)
+    char addr[40];         // 주소 (KSC-5601, 전각)
+} TRANSACTION;</pre>
+                        
+                        <p><strong>설정:</strong></p>
+                        <ul>
+                            <li>인코딩 모드: <span class="help-badge">전각 전용</span></li>
+                            <li>KSC-5601 필드: cust_nm, addr</li>
+                        </ul>
+                        
+                        <p><strong>파싱 결과:</strong></p>
+                        <table class="example-table">
+                            <tr>
+                                <th>필드</th>
+                                <th>바이트</th>
+                                <th>최대 글자</th>
+                            </tr>
+                            <tr>
+                                <td>trans_id</td>
+                                <td>10</td>
+                                <td>10자 (ASCII)</td>
+                            </tr>
+                            <tr>
+                                <td>cust_nm</td>
+                                <td>20</td>
+                                <td class="highlight">10자 (전각)</td>
+                            </tr>
+                            <tr>
+                                <td>amount</td>
+                                <td>15</td>
+                                <td>15자 (ASCII)</td>
+                            </tr>
+                            <tr>
+                                <td>addr</td>
+                                <td>40</td>
+                                <td class="highlight">20자 (전각)</td>
+                            </tr>
+                        </table>
+                    </section>
                 </div>
             </div>
         </div>
@@ -9447,6 +9669,43 @@ T000000000200000000000000003000`
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape' && crlfHelpModal.classList.contains('show')) {
                     crlfHelpModal.classList.remove('show');
+                }
+                if (e.key === 'Escape' && kscHelpModal.classList.contains('show')) {
+                    kscHelpModal.classList.remove('show');
+                }
+            });
+
+            // =========================================
+            // KSC-5601 도움말 모달 이벤트 핸들러
+            // =========================================
+            const kscHelpModal = document.getElementById('ksc-help-modal');
+            const kscCloseBtn = kscHelpModal.querySelector('.close-help');
+
+            // help-icon-btn 클릭 이벤트 (이벤트 위임)
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('help-icon-btn') || 
+                    e.target.closest('.help-icon-btn')) {
+                    const btn = e.target.classList.contains('help-icon-btn') 
+                        ? e.target 
+                        : e.target.closest('.help-icon-btn');
+                    
+                    if (btn.dataset.help === 'ksc5601') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        kscHelpModal.classList.add('show');
+                    }
+                }
+            });
+
+            // KSC 모달 닫기 버튼
+            kscCloseBtn.addEventListener('click', function() {
+                kscHelpModal.classList.remove('show');
+            });
+
+            // KSC 모달 배경 클릭 시 닫기
+            kscHelpModal.addEventListener('click', function(e) {
+                if (e.target === kscHelpModal) {
+                    kscHelpModal.classList.remove('show');
                 }
             });
 
