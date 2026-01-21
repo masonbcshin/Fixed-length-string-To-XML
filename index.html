@@ -5489,12 +5489,34 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         console.warn('구조체 "' + currentName + '": crlf 필드가 있으나 개행 인식 비활성화됨');
                     }
                     
+                    // KSC-5601 설정 수집 (신규)
+                    const kscFieldNames = [];
+                    card.querySelectorAll('.ksc-field-checkbox:checked').forEach(function(cb) {
+                        kscFieldNames.push(cb.dataset.field);
+                    });
+                    
+                    const encodingModeRadio = card.querySelector('input[name^="encoding-mode-"]:checked');
+                    const encodingMode = encodingModeRadio ? encodingModeRadio.value : 'fullwidth';
+                    
+                    // 필드에 KSC 정보 추가
+                    const fieldsWithKSC = parsed.fields.map(function(field) {
+                        const isKSC = kscFieldNames.includes(field.name);
+                        return {
+                            name: field.name,
+                            size: field.size,
+                            isKSC: isKSC,
+                            encodingMode: isKSC ? encodingMode : null
+                        };
+                    });
+                    
                     structDefs.push({
                         name: currentName,
                         kubun: kubunValue || null,
-                        fields: parsed.fields,
+                        fields: fieldsWithKSC,
                         totalSize: parsed.totalSize,
-                        hasCRLFField: hasCRLFField
+                        hasCRLFField: hasCRLFField,
+                        kscFields: kscFieldNames,
+                        encodingMode: encodingMode
                     });
                 } else {
                     // g. 파싱 실패 시 에러 표시 후 null 반환
