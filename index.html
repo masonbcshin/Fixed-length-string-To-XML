@@ -5192,6 +5192,15 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         <button data-case="ksc_mixed">혼용 모드 (한글 2B/ASCII 1B)</button>
                     </div>
                 </div>
+                
+                <!-- 단일 구조체 테스트 -->
+                <div class="test-group">
+                    <h5>📋 단일 구조체</h5>
+                    <div class="test-buttons">
+                        <button data-case="single_struct_ascii">ASCII 단일 구조체</button>
+                        <button data-case="single_struct_ksc">KSC 단일 구조체</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -11174,6 +11183,37 @@ T000000000200000000000000003000`
                         // 비고(10B): "정상종료" 혼용 = C1A4 BBF3 C1BE B7E1 20 20
                         0xC1, 0xA4, 0xBB, 0xF3, 0xC1, 0xBE, 0xB7, 0xE1, 0x20, 0x20
                     )
+                },
+                
+                // ========== 단일 구조체 테스트 케이스 ==========
+                single_struct_ascii: {
+                    name: 'ASCII 단일 구조체',
+                    description: '구조체 1개, ASCII 데이터만 사용하는 간단한 테스트',
+                    mode: 'single',
+                    struct: `typedef struct {
+    char name[10];     // 이름
+    char age[3];       // 나이
+    char grade[2];     // 등급
+} PERSON;`,
+                    data: 'HONG      025A1'
+                },
+                single_struct_ksc: {
+                    name: 'KSC 단일 구조체',
+                    description: '구조체 1개, KSC-5601 전각 데이터 (타입을 KSC 전각으로 변경하여 확인)',
+                    mode: 'single-ksc',
+                    struct: `typedef struct {
+    char name[10];     // 이름 (KSC-5601 전각)
+    char age[4];       // 나이 (전각 숫자 2자리)
+    char grade[2];     // 등급 (전각 영문 1자리)
+} PERSON;`,
+                    // 이름(10B): "홍길동" + 전각공백 2개
+                    // 나이(4B): "25" 전각
+                    // 등급(2B): "A" 전각
+                    data: String.fromCharCode(
+                        0xC8, 0xAB, 0xB1, 0xE6, 0xB5, 0xBF, 0xA1, 0xA1, 0xA1, 0xA1,  // 홍길동 + 공백
+                        0xA3, 0xB2, 0xA3, 0xB5,  // 25
+                        0xA3, 0xC1               // A
+                    )
                 }
             };
 
@@ -11231,7 +11271,14 @@ T000000000200000000000000003000`
                     // 4. 구조체 정의 설정
                     let sampleStructs;
                     
-                    if (testCase.mode === 'ksc-fullwidth') {
+                    // 단일 구조체 모드: testCase.struct가 있으면 직접 사용
+                    if (testCase.struct) {
+                        sampleStructs = [{
+                            name: 'SINGLE',
+                            kubun: '',
+                            definition: testCase.struct
+                        }];
+                    } else if (testCase.mode === 'ksc-fullwidth') {
                         // === KSC-5601 전각 모드용 구조체 ===
                         sampleStructs = [
                             {
