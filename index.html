@@ -12122,15 +12122,23 @@ T000000000200000000000000003000`
                     return;
                 }
                 
-                // Latin1 문자열로 변환
+                // 원본 유니코드 텍스트 (표시용)
+                const originalText = kscInputText.value;
+                
+                // Latin1 문자열로 변환 (바이트 데이터용)
                 let latin1Str = '';
                 for (let i = 0; i < encodedBytes.length; i++) {
                     latin1Str += String.fromCharCode(encodedBytes[i]);
                 }
                 
                 // 대상 필드에 적용
-                kscInputTargetField.textContent = latin1Str;
+                // textContent에는 디코딩된 텍스트를 표시 (KSC5601.decode 사용)
+                const decodedText = KSC5601.decode(encodedBytes);
+                kscInputTargetField.textContent = decodedText;
+                // data-raw-value에는 바이트 데이터 저장 (재생성 시 사용)
                 kscInputTargetField.setAttribute('data-raw-value', latin1Str);
+                // data-original-value도 디코딩된 텍스트로 설정
+                kscInputTargetField.setAttribute('data-original-value', decodedText);
                 kscInputTargetField.classList.add('modified');
                 
                 // 전역 데이터 업데이트
@@ -12139,7 +12147,9 @@ T000000000200000000000000003000`
                 if (window.structParsedDataCurrent && 
                     window.structParsedDataCurrent[recIdx] && 
                     window.structParsedDataCurrent[recIdx].fields[fldIdx]) {
-                    window.structParsedDataCurrent[recIdx].fields[fldIdx].value = latin1Str;
+                    // value는 디코딩된 텍스트 (표시 및 비교용)
+                    window.structParsedDataCurrent[recIdx].fields[fldIdx].value = decodedText;
+                    // rawValue는 바이트 데이터 (재생성 시 사용)
                     window.structParsedDataCurrent[recIdx].fields[fldIdx].rawValue = latin1Str;
                 }
                 
