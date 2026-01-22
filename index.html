@@ -6840,16 +6840,19 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
             // 2. 필드 추출 정규식
             // char 또는 unsigned char 타입의 배열 필드 매칭
-            // unsigned char도 char로 처리
-            const fieldPattern = /char\s+(\w+)\s*\[\s*(\d+)\s*\]/g;
+            // unsigned char도 char로 처리 (크기 동일)
+            const fieldPattern = /(unsigned\s+)?char\s+(\w+)\s*\[\s*(\d+)\s*\]/g;
 
             // 3. matchAll로 모든 매칭 결과 순회
             const matches = cleanedText.matchAll(fieldPattern);
             const fields = [];
 
             for (const match of matches) {
-                const fieldName = match[1];
-                const size = parseInt(match[2], 10);
+                // match[1]: "unsigned " (선택적)
+                // match[2]: 필드명
+                // match[3]: 배열 크기
+                const fieldName = match[2];
+                const size = parseInt(match[3], 10);
 
                 // 필드 정보를 fields 배열에 추가
                 fields.push({
