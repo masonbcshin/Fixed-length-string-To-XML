@@ -6218,6 +6218,71 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
         /**
          * =====================================================
+         * 필드별 KSC-5601 인코딩 감지 함수
+         * 개별 필드의 바이트 데이터가 KSC-5601인지 판단
+         * =====================================================
+         * 
+         * @param {string} fieldBytes - 필드의 바이트 문자열 (Latin1)
+         * @param {string} fieldName - 필드명 (로깅용)
+         * @returns {Object} { isKSC: boolean, encodingMode: string|null, confidence: number }
+         */
+        function detectFieldEncoding(fieldBytes, fieldName) {
+            // CRLF 필드는 ASCII
+            if (fieldName && fieldName.toLowerCase().match(/crlf|cr_lf|newline/)) {
+                return { isKSC: false, encodingMode: null, confidence: 0 };
+            }
+
+            // 빈 필드 또는 공백만 있는 필드
+            if (!fieldBytes || fieldBytes.trim().length === 0) {
+                // 전각 공백 체크 (0xA1A1)
+                let hasFullwidthSpace = false;
+                for (let i = 0; i < fieldBytes.length - 1; i++) {
+                    const b1 = fieldBytes.charCodeAt(i);
+                    const b2 = fieldBytes.charCodeAt(i + 1);
+                    if (b1 === 0xA1 && b2 === 0xA1) {
+                        hasFullwidthSpace = true;
+                        break;
+                    }
+                }
+                if (hasFullwidthSpace) {
+                    return { isKSC: true, encodingMode: 'fullwidth', confidence: 80 };
+                }
+                return { isKSC: false, encodingMode: null, confidence: 0 };
+            }
+
+            // KSC-5601 감지 실행
+            const detection = detectKSC5601Encoding(fieldBytes);
+            
+            if (detection.isKSC5601) {
+                // 혼용 모드인지 전각 모드인지 판단
+                // ASCII 문자가 섞여있고, 한글이 있으면 혼용 가능성
+                let hasAscii = false;
+                let hasKSCChar = false;
+                
+                for (let i = 0; i < fieldBytes.length; i++) {
+                    const code = fieldBytes.charCodeAt(i);
+                    if (code >= 0x20 && code <= 0x7E) {
+                        hasAscii = true;
+                    }
+                    if (code >= 0x80) {
+                        hasKSCChar = true;
+                    }
+                }
+                
+                // 기본적으로 전각 모드 (금융/통신 전문 표준)
+                // 혼용 모드는 사용자가 필요 시 변경
+                return { 
+                    isKSC: true, 
+                    encodingMode: 'fullwidth',
+                    confidence: detection.confidence
+                };
+            }
+
+            return { isKSC: false, encodingMode: null, confidence: 0 };
+        }
+
+        /**
+         * =====================================================
          * 입력 데이터 인코딩 타입 자동 감지 및 처리
          * =====================================================
          * 
@@ -7267,15 +7332,31 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     const endPos = startPos + field.size;
                     const rawBytes = lineWithCRLF.substring(startPos, endPos);
                     
+                    // 필드별 인코딩 자동 감지
+                    let fieldIsKSC = field.isKSC;
+                    let fieldEncodingMode = field.encodingMode;
+                    
+                    // 구조체 정의에서 명시적으로 설정되지 않은 경우에만 자동 감지
+                    if (!field.isKSC) {
+                        const fieldDetection = detectFieldEncoding(rawBytes, field.name);
+                        if (fieldDetection.isKSC) {
+                            fieldIsKSC = true;
+                            fieldEncodingMode = fieldDetection.encodingMode;
+                            if (isDebugMode) {
+                                console.log(`  🔍 필드 "${field.name}" KSC-5601 자동 감지 (신뢰도: ${fieldDetection.confidence}%)`);
+                            }
+                        }
+                    }
+                    
                     // 표시용 값
                     let displayValue = rawBytes;
                     
-                    // KSC-5601 필드 처리
-                    if (field.isKSC) {
-                        if (field.encodingMode === 'fullwidth') {
+                    // KSC-5601 필드 처리 (자동 감지 또는 명시적 설정)
+                    if (fieldIsKSC) {
+                        if (fieldEncodingMode === 'fullwidth') {
                             // 전각 전용: 모든 문자 2 bytes
                             displayValue = decodeKSC5601Fullwidth(rawBytes);
-                        } else if (field.encodingMode === 'mixed') {
+                        } else if (fieldEncodingMode === 'mixed') {
                             // 혼용: 한글 2 bytes, ASCII 1 byte
                             displayValue = decodeKSC5601Mixed(rawBytes);
                         }
@@ -7285,7 +7366,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     if (isDebugMode) {
                         const hexValue = Array.from(rawBytes).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
                         const debugDisplay = rawBytes.replace(/\r/g, '\\r').replace(/\n/g, '\\n');
-                        console.log(`  📍 ${field.name}[${field.size}]: "${debugDisplay}" | HEX: ${hexValue}${field.isKSC ? ' | KSC: "' + displayValue + '"' : ''}`);
+                        console.log(`  📍 ${field.name}[${field.size}]: "${debugDisplay}" | HEX: ${hexValue}${fieldIsKSC ? ' | KSC: "' + displayValue + '"' : ''}`);
                     }
 
                     records.push({
@@ -7295,13 +7376,15 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         kubun: matched.kubun,
                         fieldName: field.name,
                         fieldSize: field.size,
-                        fieldType: field.isKSC 
-                            ? 'KSC-5601 (' + (field.encodingMode === 'fullwidth' ? '전각' : '혼용') + ')'
+                        fieldType: fieldIsKSC 
+                            ? 'KSC-5601 (' + (fieldEncodingMode === 'fullwidth' ? '전각' : '혼용') + ')'
                             : 'ASCII',
                         value: displayValue.trim(),
                         rawValue: rawBytes,
                         startPos,
-                        endPos
+                        endPos,
+                        isKSC: fieldIsKSC,
+                        encodingMode: fieldEncodingMode
                     });
 
                     fieldOffset += field.size;
@@ -7442,15 +7525,31 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     const endPos = startPos + field.size;
                     const rawBytes = processedData.substring(startPos, endPos);
                     
+                    // 필드별 인코딩 자동 감지
+                    let fieldIsKSC = field.isKSC;
+                    let fieldEncodingMode = field.encodingMode;
+                    
+                    // 구조체 정의에서 명시적으로 설정되지 않은 경우에만 자동 감지
+                    if (!field.isKSC) {
+                        const fieldDetection = detectFieldEncoding(rawBytes, field.name);
+                        if (fieldDetection.isKSC) {
+                            fieldIsKSC = true;
+                            fieldEncodingMode = fieldDetection.encodingMode;
+                            if (isDebugMode) {
+                                console.log(`  🔍 필드 "${field.name}" KSC-5601 자동 감지 (신뢰도: ${fieldDetection.confidence}%)`);
+                            }
+                        }
+                    }
+                    
                     // 표시용 값
                     let displayValue = rawBytes;
                     
-                    // KSC-5601 필드 처리
-                    if (field.isKSC) {
-                        if (field.encodingMode === 'fullwidth') {
+                    // KSC-5601 필드 처리 (자동 감지 또는 명시적 설정)
+                    if (fieldIsKSC) {
+                        if (fieldEncodingMode === 'fullwidth') {
                             // 전각 전용: 모든 문자 2 bytes
                             displayValue = decodeKSC5601Fullwidth(rawBytes);
-                        } else if (field.encodingMode === 'mixed') {
+                        } else if (fieldEncodingMode === 'mixed') {
                             // 혼용: 한글 2 bytes, ASCII 1 byte
                             displayValue = decodeKSC5601Mixed(rawBytes);
                         }
@@ -7460,7 +7559,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     if (isDebugMode) {
                         const hexValue = Array.from(rawBytes).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
                         const debugDisplay = rawBytes.replace(/\r/g, '\\r').replace(/\n/g, '\\n');
-                        console.log(`  📍 ${field.name}[${field.size}]: "${debugDisplay}" | HEX: ${hexValue}${field.isKSC ? ' | KSC: "' + displayValue + '"' : ''}`);
+                        console.log(`  📍 ${field.name}[${field.size}]: "${debugDisplay}" | HEX: ${hexValue}${fieldIsKSC ? ' | KSC: "' + displayValue + '"' : ''}`);
                     }
 
                     records.push({
@@ -7469,11 +7568,13 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         kubun: matched.kubun,
                         fieldName: field.name,
                         fieldSize: field.size,
-                        fieldType: field.isKSC 
-                            ? 'KSC-5601 (' + (field.encodingMode === 'fullwidth' ? '전각' : '혼용') + ')'
+                        fieldType: fieldIsKSC 
+                            ? 'KSC-5601 (' + (fieldEncodingMode === 'fullwidth' ? '전각' : '혼용') + ')'
                             : 'ASCII',
                         value: displayValue.trim(),
                         rawValue: rawBytes,
+                        isKSC: fieldIsKSC,
+                        encodingMode: fieldEncodingMode,
                         startPos,
                         endPos
                     });
