@@ -5522,6 +5522,23 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
     <script>
         /**
          * =====================================================
+         * 모바일 디버깅용 전역 에러 핸들러
+         * JavaScript 에러 발생 시 화면에 표시
+         * =====================================================
+         */
+        window.onerror = function(message, source, lineno, colno, error) {
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ff4444;color:white;padding:15px;z-index:99999;font-size:14px;max-height:50vh;overflow:auto;';
+            errorDiv.innerHTML = '<strong>⚠️ JavaScript 에러</strong><br>' +
+                '<b>메시지:</b> ' + message + '<br>' +
+                '<b>위치:</b> 라인 ' + lineno + ', 열 ' + colno + '<br>' +
+                '<button onclick="this.parentElement.remove()" style="margin-top:10px;padding:5px 10px;">닫기</button>';
+            document.body.insertBefore(errorDiv, document.body.firstChild);
+            return false;
+        };
+
+        /**
+         * =====================================================
          * 전역 변수
          * =====================================================
          */
@@ -11433,6 +11450,7 @@ T000000000200000000000000003000`
              */
             testButtons.forEach(function(button) {
                 button.addEventListener('click', function() {
+                    try {
                     const caseType = this.getAttribute('data-case');
                     const testCase = testCases[caseType];
                     
@@ -11646,6 +11664,10 @@ T000000000200000000000000003000`
                           '테스트: ' + testCase.name + '\n' +
                           '설명: ' + (testCase.description || '') + '\n\n' +
                           modeInfo);
+                    } catch (e) {
+                        alert('⚠️ 테스트 케이스 로드 에러:\n' + e.message);
+                        console.error('테스트 케이스 로드 에러:', e);
+                    }
                 });
             });
 
@@ -11661,40 +11683,47 @@ T000000000200000000000000003000`
              * 버튼 클릭 또는 인코딩 옵션 변경 시 호출
              */
             function executeStructParsing() {
-                // 1. collectStructDefinitions() 호출
-                const structDefs = collectStructDefinitions();
-                
-                // null이면 중단 (에러는 함수 내부에서 표시)
-                if (structDefs === null) {
+                try {
+                    // 1. collectStructDefinitions() 호출
+                    const structDefs = collectStructDefinitions();
+                    
+                    // null이면 중단 (에러는 함수 내부에서 표시)
+                    if (structDefs === null) {
+                        return null;
+                    }
+
+                    // 2. struct-data 값 가져오기, trim
+                    const data = document.getElementById('struct-data').value.trim();
+                    
+                    // 비어있으면 displayError("데이터를 입력하세요")
+                    if (data === '') {
+                        displayError('데이터를 입력하세요', 'struct-result-container');
+                        return null;
+                    }
+
+                    // 3. parseStructData(data, structDefs) 호출
+                    const result = parseStructData(data, structDefs);
+                    
+                    // structDefs를 result에 추가
+                    result.structDefs = structDefs;
+
+                    // 4. displayStructResults(result) 호출
+                    displayStructResults(result);
+
+                    // 5. 성공 시 콘솔에 로그
+                    const count = result.stats.recordCount;
+                    const percent = result.stats.totalBytes > 0 
+                        ? ((result.stats.parsedBytes / result.stats.totalBytes) * 100).toFixed(1)
+                        : 0;
+                    console.log('파싱 완료: 레코드 ' + count + '개, 성공률 ' + percent + '%');
+                    
+                    return result;
+                } catch (e) {
+                    // 에러 발생 시 화면에 표시
+                    displayError('파싱 중 에러 발생: ' + e.message, 'struct-result-container');
+                    console.error('executeStructParsing 에러:', e);
                     return null;
                 }
-
-                // 2. struct-data 값 가져오기, trim
-                const data = document.getElementById('struct-data').value.trim();
-                
-                // 비어있으면 displayError("데이터를 입력하세요")
-                if (data === '') {
-                    displayError('데이터를 입력하세요', 'struct-result-container');
-                    return null;
-                }
-
-                // 3. parseStructData(data, structDefs) 호출
-                const result = parseStructData(data, structDefs);
-                
-                // structDefs를 result에 추가
-                result.structDefs = structDefs;
-
-                // 4. displayStructResults(result) 호출
-                displayStructResults(result);
-
-                // 5. 성공 시 콘솔에 로그
-                const count = result.stats.recordCount;
-                const percent = result.stats.totalBytes > 0 
-                    ? ((result.stats.parsedBytes / result.stats.totalBytes) * 100).toFixed(1)
-                    : 0;
-                console.log('파싱 완료: 레코드 ' + count + '개, 성공률 ' + percent + '%');
-                
-                return result;
             }
 
             // 구조체 파싱 실행 버튼 클릭 이벤트
