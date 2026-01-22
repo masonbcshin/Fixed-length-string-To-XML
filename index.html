@@ -324,7 +324,49 @@
 
         .help-content.expanded {
             padding: 16px;
-            max-height: 500px;
+            max-height: 1200px;
+        }
+        
+        /* 디버그 가이드 스타일 */
+        .debug-guide {
+            background: #e8f4fc;
+            border: 1px solid #b8daff;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        
+        .debug-guide h5 {
+            margin: 0 0 10px 0;
+            color: #004085;
+            font-size: 13px;
+            border-bottom: 1px solid #b8daff;
+            padding-bottom: 5px;
+        }
+        
+        .debug-guide h5:not(:first-child) {
+            margin-top: 15px;
+        }
+        
+        .debug-guide ol,
+        .debug-guide ul {
+            margin: 5px 0 10px 0;
+            padding-left: 20px;
+        }
+        
+        .debug-guide li {
+            margin: 4px 0;
+            font-size: 12px;
+            color: #495057;
+        }
+        
+        .debug-guide kbd {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 3px;
+            padding: 2px 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
         }
 
         .help-content h4 {
@@ -2938,6 +2980,27 @@
         body.dark-mode .help-content pre {
             background: #1a1a2e;
         }
+        
+        /* 다크모드 - 디버그 가이드 */
+        body.dark-mode .debug-guide {
+            background: #1e3a5f;
+            border-color: #2d5a8f;
+        }
+        
+        body.dark-mode .debug-guide h5 {
+            color: #90caf9;
+            border-color: #2d5a8f;
+        }
+        
+        body.dark-mode .debug-guide li {
+            color: #b0bec5;
+        }
+        
+        body.dark-mode .debug-guide kbd {
+            background: #2d2d44;
+            border-color: #3d3d5c;
+            color: #e0e0e0;
+        }
 
         body.dark-mode #result-table,
         body.dark-mode .result-table {
@@ -4576,12 +4639,19 @@
                 <p>고정 길이 데이터를 C 구조체 정의에 따라 파싱합니다.</p>
                 
                 <h4>1. 구조체 정의 형식</h4>
-                <p><code>typedef struct { ... } 구조체명;</code> 형식으로 입력합니다.</p>
-                <pre>typedef struct {
+                <p>다음 두 가지 형식을 모두 지원합니다:</p>
+                <pre>// 형식 1: typedef struct
+typedef struct {
     char record_kubun[1];  // 레코드 구분
     char bank_cd[2];       // 은행 코드
     char cust_id[7];       // 고객 ID
-} DHF_H;</pre>
+} DHF_H;
+
+// 형식 2: struct Name (typedef 없이)
+struct MyStruct {
+    char field1[10];
+    char field2[20];
+};</pre>
                 
                 <h4>2. 데이터 입력 규칙</h4>
                 <ul>
@@ -4603,6 +4673,49 @@
                     <li>데이터 길이가 구조체 총 크기와 다르면 경고가 표시됩니다</li>
                     <li>char 배열만 정확히 지원됩니다 (int, short 등은 char로 처리)</li>
                 </ul>
+                
+                <h4>🔍 5. 디버그 모드 사용법</h4>
+                <p>디버그 모드를 활성화하면 브라우저 콘솔(F12)에서 상세한 파싱 과정을 확인할 수 있습니다.</p>
+                <div class="debug-guide">
+                    <h5>📌 디버그 모드 활성화 방법</h5>
+                    <ol>
+                        <li>상단 옵션에서 <strong>🔍 디버그 모드</strong> 체크박스 선택</li>
+                        <li>브라우저 개발자 도구 열기: <kbd>F12</kbd> 또는 <kbd>Ctrl+Shift+I</kbd></li>
+                        <li><strong>Console</strong> 탭 선택</li>
+                        <li>파싱 실행 후 로그 확인</li>
+                    </ol>
+                    
+                    <h5>📊 출력되는 디버그 정보</h5>
+                    <ul>
+                        <li><strong>📋 모드</strong>: 파싱 모드 (line-by-line / continuous)</li>
+                        <li><strong>📊 전체 라인/바이트 수</strong>: 입력 데이터 크기</li>
+                        <li><strong>📐 정의된 구조체</strong>: 등록된 구조체명과 구분값</li>
+                        <li><strong>📝 라인별 미리보기</strong>: 각 라인의 길이, 구분값, HEX 값</li>
+                    </ul>
+                    
+                    <h5>✅ 레코드별 상세 정보</h5>
+                    <ul>
+                        <li><strong>구분값 매칭</strong>: 어떤 구조체에 매칭되었는지</li>
+                        <li><strong>길이 비교</strong>: 예상 크기 vs 실제 크기 (일치/부족/초과)</li>
+                        <li><strong>필드별 추출</strong>: 각 필드명, 크기, 값, HEX 값</li>
+                        <li><strong>KSC 디코딩</strong>: KSC-5601 필드의 디코딩 결과</li>
+                    </ul>
+                    
+                    <h5>⚠️ 에러 추적</h5>
+                    <ul>
+                        <li><strong>❌ 매칭 실패</strong>: 구분값에 해당하는 구조체를 찾지 못한 경우</li>
+                        <li><strong>등록된 구분값 목록</strong>: 현재 정의된 모든 구분값 표시</li>
+                        <li><strong>에러 바이트/라인</strong>: 파싱되지 않은 데이터 통계</li>
+                    </ul>
+                    
+                    <h5>💡 활용 팁</h5>
+                    <ul>
+                        <li>구조체 정의가 올바른지 확인할 때 사용</li>
+                        <li>데이터 길이 문제 디버깅에 유용</li>
+                        <li>HEX 값으로 인코딩 문제 확인 가능</li>
+                        <li>KSC-5601 한글 깨짐 문제 추적에 활용</li>
+                    </ul>
+                </div>
             </div>
         </div>
 
@@ -5083,6 +5196,12 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
             // - \s*\{([^}]+)\}: 중괄호와 내용 (캡처 그룹 2)
             // - \s*(\w+)\s*;: typedef 별칭 이름 (캡처 그룹 3)
             structPattern: /typedef\s+struct\s+(\w+)?\s*\{([^}]+)\}\s*(\w+)\s*;/g,
+            
+            // 일반 struct 블록 추출 (typedef 없음):
+            // - struct\s+(\w+): "struct 이름" 키워드와 구조체명 (캡처 그룹 1)
+            // - \s*\{([^}]+)\}: 중괄호와 내용 (캡처 그룹 2)
+            // - \s*;: 세미콜론으로 종료
+            plainStructPattern: /struct\s+(\w+)\s*\{([^}]+)\}\s*;/g,
             
             // 필드 추출:
             // - (unsigned\s+)?: 선택적 unsigned 키워드 (캡처 그룹 1)
@@ -6122,18 +6241,17 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
             // 결과 배열
             const result = [];
             
-            // typedef struct 블록들 추출
-            let structMatch;
-            while ((structMatch = structPattern.exec(cleanedText)) !== null) {
-                const fieldsContent = structMatch[2]; // 중괄호 안의 내용
-                const structName = structMatch[3];    // typedef 구조체명 (마지막 이름)
-                
-                // 필드 배열
+            /**
+             * 필드 추출 헬퍼 함수
+             * @param {string} fieldsContent - 중괄호 안의 필드 정의 문자열
+             * @param {string} structName - 구조체명 (로깅용)
+             * @returns {Array} 필드 배열
+             */
+            function extractFields(fieldsContent, structName) {
                 const fields = [];
-                
-                // 필드들 추출 - 새로운 정규식 인스턴스 사용
                 const fieldPattern = getRegex('fieldPattern');
                 let fieldMatch;
+                
                 while ((fieldMatch = fieldPattern.exec(fieldsContent)) !== null) {
                     const unsignedPrefix = fieldMatch[1] ? fieldMatch[1].trim() : '';
                     const baseType = fieldMatch[2];
@@ -6159,6 +6277,46 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         size: arraySize * typeSize
                     });
                 }
+                
+                return fields;
+            }
+            
+            // === 1. typedef struct 블록들 추출 ===
+            let structMatch;
+            while ((structMatch = structPattern.exec(cleanedText)) !== null) {
+                const fieldsContent = structMatch[2]; // 중괄호 안의 내용
+                const structName = structMatch[3];    // typedef 구조체명 (마지막 이름)
+                
+                // 필드 추출
+                const fields = extractFields(fieldsContent, structName);
+                
+                // 빈 구조체 검증 - fields가 0개인 구조체는 제외
+                if (fields.length === 0) {
+                    console.warn('parseStructDefinitions: 구조체 "' + structName + '"에 유효한 필드가 없어 제외됩니다.');
+                    continue;
+                }
+                
+                // 구조체 객체 추가
+                result.push({
+                    name: structName,
+                    fields: fields
+                });
+            }
+            
+            // === 2. 일반 struct Name {...}; 블록들 추출 ===
+            const plainStructPattern = getRegex('plainStructPattern');
+            while ((structMatch = plainStructPattern.exec(cleanedText)) !== null) {
+                const structName = structMatch[1];    // struct 바로 뒤의 이름
+                const fieldsContent = structMatch[2]; // 중괄호 안의 내용
+                
+                // 이미 typedef로 파싱된 구조체명인지 확인 (중복 방지)
+                const isDuplicate = result.some(function(r) { return r.name === structName; });
+                if (isDuplicate) {
+                    continue;
+                }
+                
+                // 필드 추출
+                const fields = extractFields(fieldsContent, structName);
                 
                 // 빈 구조체 검증 - fields가 0개인 구조체는 제외
                 if (fields.length === 0) {
@@ -6398,15 +6556,16 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 return null;
             }
 
-            // 1. kubun이 null이 아닌 구조체들을 순회하며 매칭 시도
-            for (let i = 0; i < structDefs.length; i++) {
-                const structDef = structDefs[i];
-                const kubun = structDef.kubun;
+            // 1. kubun이 있는 구조체들을 kubun 길이 내림차순으로 정렬하여 매칭
+            // (긴 kubun을 먼저 매칭해야 "H"와 "HD"가 있을 때 "HD"가 우선 매칭됨)
+            const structsWithKubun = structDefs
+                .filter(function(s) { return s.kubun !== null && s.kubun !== undefined; })
+                .sort(function(a, b) { return b.kubun.length - a.kubun.length; });
 
-                // kubun이 null이면 건너뛰기
-                if (kubun === null || kubun === undefined) {
-                    continue;
-                }
+            // 2. 정렬된 순서대로 매칭 시도 (긴 kubun부터)
+            for (let i = 0; i < structsWithKubun.length; i++) {
+                const structDef = structsWithKubun[i];
+                const kubun = structDef.kubun;
 
                 // kubun 길이만큼 data에서 추출하여 비교
                 const kubunLength = kubun.length;
@@ -6418,14 +6577,14 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 }
             }
 
-            // 2. 모두 실패 시 kubun이 null인 구조체 반환 (fallback)
+            // 3. 모두 실패 시 kubun이 null인 구조체 반환 (fallback)
             for (let i = 0; i < structDefs.length; i++) {
                 if (structDefs[i].kubun === null || structDefs[i].kubun === undefined) {
                     return structDefs[i];
                 }
             }
 
-            // 3. fallback도 없으면 null 반환
+            // 4. fallback도 없으면 null 반환
             return null;
         }
 
@@ -6711,8 +6870,10 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 .replace(/\\r/g, '\r');
 
             // 2. 줄 단위로 분리
+            // 주의: trimEnd()로 우측 공백이 제거되면 고정 길이 레코드의 경우
+            // 길이 불일치 경고가 발생할 수 있음 (파싱은 정상 진행됨)
             const lines = processedText.split(/\r?\n/)
-                .map(line => line.trimEnd())  // 우측 공백만 제거
+                .map(line => line.replace(/\r+$/, ''))  // 줄 끝 캐리지 리턴만 제거 (공백 유지)
                 .filter(line => line.length > 0);  // 빈 줄 제거
 
             console.log(`라인 기반 파싱: 총 ${lines.length}개 라인`);
