@@ -7378,8 +7378,20 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     let fieldIsKSC = field.isKSC;
                     let fieldEncodingMode = field.encodingMode;
                     
-                    // 구조체 정의에서 명시적으로 설정되지 않은 경우에만 자동 감지
-                    if (!field.isKSC) {
+                    // 1. 먼저 저장된 타입 오버라이드 확인 (재파싱 시 타입 유지)
+                    const overrideKey = matched.name + '_' + field.name;
+                    if (window.structFieldTypeOverrides && window.structFieldTypeOverrides[overrideKey]) {
+                        const savedType = window.structFieldTypeOverrides[overrideKey];
+                        if (savedType.startsWith('KSC-5601')) {
+                            fieldIsKSC = true;
+                            fieldEncodingMode = savedType.includes('전각') ? 'fullwidth' : 'mixed';
+                            if (isDebugMode) {
+                                console.log(`  📌 필드 "${field.name}" 타입 복원: ${savedType}`);
+                            }
+                        }
+                    }
+                    // 2. 구조체 정의에서 명시적으로 설정되지 않은 경우에만 자동 감지
+                    else if (!field.isKSC) {
                         const fieldDetection = detectFieldEncoding(rawBytes, field.name);
                         if (fieldDetection.isKSC) {
                             fieldIsKSC = true;
@@ -7393,8 +7405,15 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     // 표시용 값
                     let displayValue = rawBytes;
                     
+                    // 입력 데이터가 유니코드인지 확인 (한글 유니코드 범위: 0xAC00-0xD7A3)
+                    const isUnicodeInput = rawBytes.split('').some(c => {
+                        const code = c.charCodeAt(0);
+                        return code >= 0xAC00 && code <= 0xD7A3;
+                    });
+                    
                     // KSC-5601 필드 처리 (자동 감지 또는 명시적 설정)
-                    if (fieldIsKSC) {
+                    if (fieldIsKSC && !isUnicodeInput) {
+                        // 바이트 데이터인 경우에만 디코딩
                         if (fieldEncodingMode === 'fullwidth') {
                             // 전각 전용: 모든 문자 2 bytes
                             displayValue = decodeKSC5601Fullwidth(rawBytes);
@@ -7403,12 +7422,13 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                             displayValue = decodeKSC5601Mixed(rawBytes);
                         }
                     }
+                    // 유니코드 입력인 경우 그대로 표시 (이미 디코딩된 상태)
                     
                     // 디버그: 각 필드 값 로깅
                     if (isDebugMode) {
                         const hexValue = Array.from(rawBytes).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
                         const debugDisplay = rawBytes.replace(/\r/g, '\\r').replace(/\n/g, '\\n');
-                        console.log(`  📍 ${field.name}[${field.size}]: "${debugDisplay}" | HEX: ${hexValue}${fieldIsKSC ? ' | KSC: "' + displayValue + '"' : ''}`);
+                        console.log(`  📍 ${field.name}[${field.size}]: "${debugDisplay}" | HEX: ${hexValue}${fieldIsKSC ? ' | KSC: "' + displayValue + '"' : ''}${isUnicodeInput ? ' (유니코드)' : ''}`);
                     }
 
                     records.push({
@@ -7422,7 +7442,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                             ? 'KSC-5601 (' + (fieldEncodingMode === 'fullwidth' ? '전각' : '혼용') + ')'
                             : 'ASCII',
                         value: displayValue.trim(),
-                        rawValue: rawBytes,
+                        rawValue: isUnicodeInput ? null : rawBytes,  // 유니코드 입력 시 rawValue는 null (재생성 시 새로 인코딩)
                         startPos,
                         endPos,
                         isKSC: fieldIsKSC,
@@ -7571,8 +7591,20 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     let fieldIsKSC = field.isKSC;
                     let fieldEncodingMode = field.encodingMode;
                     
-                    // 구조체 정의에서 명시적으로 설정되지 않은 경우에만 자동 감지
-                    if (!field.isKSC) {
+                    // 1. 먼저 저장된 타입 오버라이드 확인 (재파싱 시 타입 유지)
+                    const overrideKey = matched.name + '_' + field.name;
+                    if (window.structFieldTypeOverrides && window.structFieldTypeOverrides[overrideKey]) {
+                        const savedType = window.structFieldTypeOverrides[overrideKey];
+                        if (savedType.startsWith('KSC-5601')) {
+                            fieldIsKSC = true;
+                            fieldEncodingMode = savedType.includes('전각') ? 'fullwidth' : 'mixed';
+                            if (isDebugMode) {
+                                console.log(`  📌 필드 "${field.name}" 타입 복원: ${savedType}`);
+                            }
+                        }
+                    }
+                    // 2. 구조체 정의에서 명시적으로 설정되지 않은 경우에만 자동 감지
+                    else if (!field.isKSC) {
                         const fieldDetection = detectFieldEncoding(rawBytes, field.name);
                         if (fieldDetection.isKSC) {
                             fieldIsKSC = true;
@@ -7586,8 +7618,15 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     // 표시용 값
                     let displayValue = rawBytes;
                     
+                    // 입력 데이터가 유니코드인지 확인 (한글 유니코드 범위: 0xAC00-0xD7A3)
+                    const isUnicodeInput = rawBytes.split('').some(c => {
+                        const code = c.charCodeAt(0);
+                        return code >= 0xAC00 && code <= 0xD7A3;
+                    });
+                    
                     // KSC-5601 필드 처리 (자동 감지 또는 명시적 설정)
-                    if (fieldIsKSC) {
+                    if (fieldIsKSC && !isUnicodeInput) {
+                        // 바이트 데이터인 경우에만 디코딩
                         if (fieldEncodingMode === 'fullwidth') {
                             // 전각 전용: 모든 문자 2 bytes
                             displayValue = decodeKSC5601Fullwidth(rawBytes);
@@ -7596,12 +7635,13 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                             displayValue = decodeKSC5601Mixed(rawBytes);
                         }
                     }
+                    // 유니코드 입력인 경우 그대로 표시 (이미 디코딩된 상태)
                     
                     // 디버그: 각 필드 값 로깅
                     if (isDebugMode) {
                         const hexValue = Array.from(rawBytes).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
                         const debugDisplay = rawBytes.replace(/\r/g, '\\r').replace(/\n/g, '\\n');
-                        console.log(`  📍 ${field.name}[${field.size}]: "${debugDisplay}" | HEX: ${hexValue}${fieldIsKSC ? ' | KSC: "' + displayValue + '"' : ''}`);
+                        console.log(`  📍 ${field.name}[${field.size}]: "${debugDisplay}" | HEX: ${hexValue}${fieldIsKSC ? ' | KSC: "' + displayValue + '"' : ''}${isUnicodeInput ? ' (유니코드)' : ''}`);
                     }
 
                     records.push({
@@ -7614,7 +7654,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                             ? 'KSC-5601 (' + (fieldEncodingMode === 'fullwidth' ? '전각' : '혼용') + ')'
                             : 'ASCII',
                         value: displayValue.trim(),
-                        rawValue: rawBytes,
+                        rawValue: isUnicodeInput ? null : rawBytes,  // 유니코드 입력 시 rawValue는 null (재생성 시 새로 인코딩)
                         isKSC: fieldIsKSC,
                         encodingMode: fieldEncodingMode,
                         startPos,
