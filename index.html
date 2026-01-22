@@ -6398,15 +6398,16 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 return null;
             }
 
-            // 1. kubun이 null이 아닌 구조체들을 순회하며 매칭 시도
-            for (let i = 0; i < structDefs.length; i++) {
-                const structDef = structDefs[i];
-                const kubun = structDef.kubun;
+            // 1. kubun이 있는 구조체들을 kubun 길이 내림차순으로 정렬하여 매칭
+            // (긴 kubun을 먼저 매칭해야 "H"와 "HD"가 있을 때 "HD"가 우선 매칭됨)
+            const structsWithKubun = structDefs
+                .filter(function(s) { return s.kubun !== null && s.kubun !== undefined; })
+                .sort(function(a, b) { return b.kubun.length - a.kubun.length; });
 
-                // kubun이 null이면 건너뛰기
-                if (kubun === null || kubun === undefined) {
-                    continue;
-                }
+            // 2. 정렬된 순서대로 매칭 시도 (긴 kubun부터)
+            for (let i = 0; i < structsWithKubun.length; i++) {
+                const structDef = structsWithKubun[i];
+                const kubun = structDef.kubun;
 
                 // kubun 길이만큼 data에서 추출하여 비교
                 const kubunLength = kubun.length;
@@ -6418,14 +6419,14 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 }
             }
 
-            // 2. 모두 실패 시 kubun이 null인 구조체 반환 (fallback)
+            // 3. 모두 실패 시 kubun이 null인 구조체 반환 (fallback)
             for (let i = 0; i < structDefs.length; i++) {
                 if (structDefs[i].kubun === null || structDefs[i].kubun === undefined) {
                     return structDefs[i];
                 }
             }
 
-            // 3. fallback도 없으면 null 반환
+            // 4. fallback도 없으면 null 반환
             return null;
         }
 
@@ -6711,8 +6712,10 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 .replace(/\\r/g, '\r');
 
             // 2. 줄 단위로 분리
+            // 주의: trimEnd()로 우측 공백이 제거되면 고정 길이 레코드의 경우
+            // 길이 불일치 경고가 발생할 수 있음 (파싱은 정상 진행됨)
             const lines = processedText.split(/\r?\n/)
-                .map(line => line.trimEnd())  // 우측 공백만 제거
+                .map(line => line.replace(/\r+$/, ''))  // 줄 끝 캐리지 리턴만 제거 (공백 유지)
                 .filter(line => line.length > 0);  // 빈 줄 제거
 
             console.log(`라인 기반 파싱: 총 ${lines.length}개 라인`);
