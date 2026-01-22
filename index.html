@@ -5192,6 +5192,15 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         <button data-case="ksc_mixed">혼용 모드 (한글 2B/ASCII 1B)</button>
                     </div>
                 </div>
+                
+                <!-- 단일 구조체 테스트 -->
+                <div class="test-group">
+                    <h5>📋 단일 구조체</h5>
+                    <div class="test-buttons">
+                        <button data-case="single_struct_ascii">ASCII 단일 구조체</button>
+                        <button data-case="single_struct_ksc">KSC 단일 구조체</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -9321,15 +9330,32 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                                         updateStructModifiedCount();
                                     });
                                     
-                                    // 붙여넣기 이벤트 - rawValue 무효화 (복사/붙여넣기 시 새로 인코딩 필요)
+                                    // 붙여넣기 이벤트 - rawValue 무효화 및 바이트 길이 검증
                                     valueSpan.addEventListener('paste', function(e) {
                                         const recIdx = parseInt(this.getAttribute('data-record-index'));
                                         const fldIdx = parseInt(this.getAttribute('data-field-index'));
+                                        const fieldSize = parseInt(this.getAttribute('data-field-size'));
+                                        const self = this;
                                         
-                                        // 붙여넣기 후 rawValue를 null로 설정 (비동기 처리)
+                                        // 붙여넣기 후 처리 (비동기)
                                         setTimeout(() => {
-                                            const currentValue = this.textContent;
-                                            const originalValue = this.getAttribute('data-original-value');
+                                            let currentValue = self.textContent;
+                                            const originalValue = self.getAttribute('data-original-value');
+                                            
+                                            // 현재 필드 타입 가져오기
+                                            let fieldType = 'ASCII';
+                                            if (window.structParsedDataCurrent[recIdx] && 
+                                                window.structParsedDataCurrent[recIdx].fields[fldIdx]) {
+                                                fieldType = window.structParsedDataCurrent[recIdx].fields[fldIdx].fieldType || 'ASCII';
+                                            }
+                                            
+                                            // 바이트 길이 계산 및 자르기
+                                            const byteLength = calculateByteLength(currentValue, fieldType);
+                                            if (byteLength > fieldSize) {
+                                                currentValue = truncateToByteSize(currentValue, fieldSize, fieldType);
+                                                self.textContent = currentValue;
+                                                console.log(`필드 [${fldIdx}] 붙여넣기: 바이트 초과로 자름 (${byteLength} → ${fieldSize})`);
+                                            }
                                             
                                             if (window.structParsedDataCurrent[recIdx] && 
                                                 window.structParsedDataCurrent[recIdx].fields[fldIdx]) {
@@ -9341,8 +9367,10 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                                             
                                             // 수정 표시
                                             if (currentValue !== originalValue) {
-                                                this.classList.add('modified');
+                                                self.classList.add('modified');
                                             }
+                                            self.classList.remove('byte-overflow');
+                                            self.title = `${calculateByteLength(currentValue, fieldType)}/${fieldSize} bytes`;
                                             
                                             updateStructModifiedCount();
                                         }, 0);
@@ -10578,6 +10606,52 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 return true;
             });
 
+            test('빈 값 패딩 - KSC-5601 전각', function() {
+                // 빈 값일 때 전각 공백으로 패딩되는지 확인
+                const bytes = encodeToKSCFullwidthBytes('', 10);
+                
+                if (bytes.length !== 10) return '패딩 길이 불일치 (예상: 10, 실제: ' + bytes.length + ')';
+                
+                // 모든 바이트가 전각 공백 (0xA1A1)인지 확인
+                for (let i = 0; i < 10; i += 2) {
+                    if (bytes[i] !== 0xA1 || bytes[i+1] !== 0xA1) {
+                        return '전각 공백 패딩 실패 (위치: ' + i + ')';
+                    }
+                }
+                
+                return true;
+            });
+
+            test('빈 값 패딩 - ASCII', function() {
+                // 빈 값일 때 ASCII 공백으로 패딩되는지 확인
+                const bytes = encodeByFieldTypeToBytes('', 'ASCII', 10, '');
+                
+                if (bytes.length !== 10) return '패딩 길이 불일치';
+                
+                // 모든 바이트가 ASCII 공백 (0x20)인지 확인
+                for (let i = 0; i < 10; i++) {
+                    if (bytes[i] !== 0x20) {
+                        return 'ASCII 공백 패딩 실패 (위치: ' + i + ', 값: 0x' + bytes[i].toString(16) + ')';
+                    }
+                }
+                
+                return true;
+            });
+
+            test('복사/붙여넣기 시뮬레이션 - KSC 데이터 인코딩', function() {
+                // 화면에서 복사된 유니코드 텍스트가 KSC로 제대로 인코딩되는지 확인
+                const copiedText = '홍길동';  // 복사된 유니코드 텍스트
+                const bytes = encodeToKSCFullwidthBytes(copiedText, 10);
+                
+                if (bytes.length !== 10) return '바이트 길이 불일치';
+                
+                // 디코딩 후 원본과 비교
+                const decoded = KSC5601.decode(bytes).trim();
+                if (decoded !== copiedText) return '인코딩/디코딩 실패: "' + decoded + '"';
+                
+                return true;
+            });
+
             return { passed: passed, failed: failed, results: results };
         }
 
@@ -11123,6 +11197,37 @@ T000000000200000000000000003000`
                         // 비고(10B): "정상종료" 혼용 = C1A4 BBF3 C1BE B7E1 20 20
                         0xC1, 0xA4, 0xBB, 0xF3, 0xC1, 0xBE, 0xB7, 0xE1, 0x20, 0x20
                     )
+                },
+                
+                // ========== 단일 구조체 테스트 케이스 ==========
+                single_struct_ascii: {
+                    name: 'ASCII 단일 구조체',
+                    description: '구조체 1개, ASCII 데이터만 사용하는 간단한 테스트',
+                    mode: 'single',
+                    struct: `typedef struct {
+    char name[10];     // 이름
+    char age[3];       // 나이
+    char grade[2];     // 등급
+} PERSON;`,
+                    data: 'HONG      025A1'
+                },
+                single_struct_ksc: {
+                    name: 'KSC 단일 구조체',
+                    description: '구조체 1개, KSC-5601 전각 데이터 (타입을 KSC 전각으로 변경하여 확인)',
+                    mode: 'single-ksc',
+                    struct: `typedef struct {
+    char name[10];     // 이름 (KSC-5601 전각)
+    char age[4];       // 나이 (전각 숫자 2자리)
+    char grade[2];     // 등급 (전각 영문 1자리)
+} PERSON;`,
+                    // 이름(10B): "홍길동" + 전각공백 2개
+                    // 나이(4B): "25" 전각
+                    // 등급(2B): "A" 전각
+                    data: String.fromCharCode(
+                        0xC8, 0xAB, 0xB1, 0xE6, 0xB5, 0xBF, 0xA1, 0xA1, 0xA1, 0xA1,  // 홍길동 + 공백
+                        0xA3, 0xB2, 0xA3, 0xB5,  // 25
+                        0xA3, 0xC1               // A
+                    )
                 }
             };
 
@@ -11180,7 +11285,14 @@ T000000000200000000000000003000`
                     // 4. 구조체 정의 설정
                     let sampleStructs;
                     
-                    if (testCase.mode === 'ksc-fullwidth') {
+                    // 단일 구조체 모드: testCase.struct가 있으면 직접 사용
+                    if (testCase.struct) {
+                        sampleStructs = [{
+                            name: 'SINGLE',
+                            kubun: '',
+                            definition: testCase.struct
+                        }];
+                    } else if (testCase.mode === 'ksc-fullwidth') {
                         // === KSC-5601 전각 모드용 구조체 ===
                         sampleStructs = [
                             {
