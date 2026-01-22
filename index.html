@@ -4268,6 +4268,22 @@
             background: #138496;
         }
         
+        .btn-download-regenerated {
+            padding: 8px 16px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn-download-regenerated:hover {
+            background: #545b62;
+        }
+        
         /* 필드 편집 힌트 */
         .edit-hint {
             font-size: 12px;
@@ -7925,6 +7941,10 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
         /**
          * XML 파싱 결과를 기반으로 통데이터 재생성
          */
+        /**
+         * XML 파싱 결과를 기반으로 통데이터 재생성
+         * KSC-5601 (FULL 타입) 필드의 글자 깨짐 방지를 위해 바이트 배열 기반으로 처리
+         */
         function regenerateXMLTelegram() {
             const parsedData = window.xmlParsedDataCurrent;
             
@@ -7933,7 +7953,10 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 return;
             }
             
-            let regeneratedData = '';
+            // 바이트 배열로 데이터 생성 (KSC-5601 깨짐 방지)
+            const byteArrays = [];
+            let totalBytes = 0;
+            let hasFullType = false;
             
             // 각 필드를 순서대로 조합
             parsedData.forEach(function(field) {
@@ -7943,9 +7966,24 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 
                 // FULL 타입: KSC-5601 인코딩 적용
                 if (type === 'FULL') {
-                    // 이미 인코딩된 원본 데이터 사용 (파싱 시 저장된 바이트 데이터)
-                    // FULL 타입은 편집 불가이므로 원본 value 그대로 사용
-                    regeneratedData += value;
+                    hasFullType = true;
+                    // 원본 바이트 데이터를 Uint8Array로 변환
+                    const bytes = new Uint8Array(size);
+                    for (let i = 0; i < value.length && i < size; i++) {
+                        bytes[i] = value.charCodeAt(i) & 0xFF;
+                    }
+                    // 전각 공백(0xA1A1)으로 패딩
+                    let pos = value.length;
+                    while (pos + 2 <= size) {
+                        bytes[pos] = 0xA1;
+                        bytes[pos + 1] = 0xA1;
+                        pos += 2;
+                    }
+                    if (pos < size) {
+                        bytes[pos] = 0x20;
+                    }
+                    byteArrays.push(bytes);
+                    totalBytes += size;
                     return;
                 }
                 
@@ -7963,17 +8001,48 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     value = value.substring(0, size);
                 }
                 
-                regeneratedData += value;
+                // ASCII 바이트 배열로 변환
+                const bytes = new Uint8Array(size);
+                for (let i = 0; i < value.length && i < size; i++) {
+                    bytes[i] = value.charCodeAt(i) & 0xFF;
+                }
+                byteArrays.push(bytes);
+                totalBytes += size;
             });
+            
+            // 모든 바이트 배열을 하나로 합치기
+            const regeneratedBytes = new Uint8Array(totalBytes);
+            let offset = 0;
+            byteArrays.forEach(function(bytes) {
+                regeneratedBytes.set(bytes, offset);
+                offset += bytes.length;
+            });
+            
+            // Latin-1 문자열로 변환 (입력창에 적용할 때 사용)
+            let regeneratedData = '';
+            for (let i = 0; i < regeneratedBytes.length; i++) {
+                regeneratedData += String.fromCharCode(regeneratedBytes[i]);
+            }
+            
+            // 표시용 데이터 생성 (KSC-5601 디코딩하여 한글로 표시)
+            let displayText = '';
+            if (hasFullType) {
+                // FULL 타입이 있으면 디코딩하여 표시
+                displayText = KSC5601.decode(regeneratedBytes);
+            } else {
+                // ASCII 전용이면 그대로 표시
+                displayText = regeneratedData;
+            }
             
             // 결과 표시
             const container = document.getElementById('xml-regenerated-container');
             container.style.display = 'block';
             container.innerHTML = `
                 <h4>✅ 재생성된 통데이터</h4>
-                <div class="regenerated-data-content" id="xml-regenerated-data">${escapeHtml(regeneratedData)}</div>
+                <div class="regenerated-data-content" id="xml-regenerated-data">${escapeHtml(displayText)}</div>
                 <div style="margin-top: 10px; font-size: 13px; color: #666;">
-                    총 ${regeneratedData.length} bytes
+                    총 ${totalBytes} bytes
+                    ${hasFullType ? ' | <span style="color: #7b1fa2;">KSC-5601 (FULL) 포함</span>' : ''}
                 </div>
                 <div class="regenerated-actions">
                     <button class="btn-copy-regenerated" id="copy-xml-regenerated">
@@ -7982,13 +8051,23 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     <button class="btn-apply-to-input" id="apply-xml-to-input">
                         📥 입력창에 적용
                     </button>
+                    <button class="btn-download-regenerated" id="download-xml-regenerated" style="background: #6c757d;">
+                        💾 파일로 저장
+                    </button>
                 </div>
             `;
+            
+            // 바이트 배열을 전역에 저장 (복사/다운로드용)
+            window.xmlRegeneratedBytes = regeneratedBytes;
+            window.xmlRegeneratedData = regeneratedData;
             
             // 복사 버튼 이벤트
             document.getElementById('copy-xml-regenerated').addEventListener('click', function() {
                 navigator.clipboard.writeText(regeneratedData).then(function() {
-                    showTemporaryMessage('✓ 클립보드에 복사되었습니다.');
+                    showTemporaryMessage('✓ 클립보드에 복사되었습니다. (바이트 데이터 유지)');
+                }).catch(function(err) {
+                    console.error('클립보드 복사 실패:', err);
+                    showTemporaryMessage('⚠️ 복사 실패. 파일로 저장을 이용해주세요.');
                 });
             });
             
@@ -7999,6 +8078,20 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     telegramInput.value = regeneratedData;
                     showTemporaryMessage('✓ 통데이터 입력창에 적용되었습니다.');
                 }
+            });
+            
+            // 파일 다운로드 버튼 이벤트 (바이너리 데이터 정확히 저장)
+            document.getElementById('download-xml-regenerated').addEventListener('click', function() {
+                const blob = new Blob([regeneratedBytes], { type: 'application/octet-stream' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'telegram_data.dat';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showTemporaryMessage('✓ 파일로 저장되었습니다. (바이트 데이터 정확히 보존)');
             });
             
             // 스크롤 이동
@@ -8473,6 +8566,198 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 return value.substring(0, size);
             }
             return value;
+        }
+
+        /**
+         * 인코딩 모드에 따라 값을 바이트 배열로 인코딩 (재생성용)
+         * KSC-5601 필드의 글자 깨짐 방지를 위해 Uint8Array 반환
+         * @param {string} value - 인코딩할 값
+         * @param {string} fieldType - 필드 타입 ('ASCII', 'KSC-5601 (전각)', 'KSC-5601 (혼용)')
+         * @param {number} size - 필드 크기
+         * @param {string} rawValue - 원본 바이트 값 (KSC 필드의 경우)
+         * @returns {Uint8Array} 인코딩된 바이트 배열
+         */
+        function encodeByFieldTypeToBytes(value, fieldType, size, rawValue) {
+            // KSC 필드 처리
+            if (fieldType && fieldType.startsWith('KSC-5601')) {
+                const mode = fieldType.includes('전각') ? 'fullwidth' : 'mixed';
+                
+                // rawValue가 있고 값이 변경되지 않았으면 원본 바이트 사용
+                if (rawValue) {
+                    const originalDecoded = decodeByMode(rawValue, mode).trim();
+                    
+                    if (value === originalDecoded) {
+                        // 원본 바이트를 Uint8Array로 변환
+                        const bytes = new Uint8Array(size);
+                        for (let i = 0; i < rawValue.length && i < size; i++) {
+                            bytes[i] = rawValue.charCodeAt(i) & 0xFF;
+                        }
+                        // 패딩 처리
+                        if (rawValue.length < size) {
+                            if (mode === 'fullwidth') {
+                                // 전각 공백 (0xA1A1)으로 패딩
+                                let pos = rawValue.length;
+                                while (pos + 2 <= size) {
+                                    bytes[pos] = 0xA1;
+                                    bytes[pos + 1] = 0xA1;
+                                    pos += 2;
+                                }
+                                // 홀수 바이트가 남으면 ASCII 공백
+                                if (pos < size) {
+                                    bytes[pos] = 0x20;
+                                }
+                            } else {
+                                // ASCII 공백으로 패딩
+                                for (let i = rawValue.length; i < size; i++) {
+                                    bytes[i] = 0x20;
+                                }
+                            }
+                        }
+                        return bytes;
+                    }
+                }
+                
+                // 값이 변경되었거나 rawValue가 없는 경우: 새로 인코딩
+                if (mode === 'fullwidth') {
+                    return encodeToKSCFullwidthBytes(value, size);
+                } else {
+                    return encodeToKSCMixedBytes(value, size);
+                }
+            }
+            
+            // ASCII 모드 (기본)
+            const bytes = new Uint8Array(size);
+            for (let i = 0; i < value.length && i < size; i++) {
+                bytes[i] = value.charCodeAt(i) & 0xFF;
+            }
+            // ASCII 공백으로 패딩
+            for (let i = value.length; i < size; i++) {
+                bytes[i] = 0x20;
+            }
+            return bytes;
+        }
+
+        /**
+         * KSC-5601 전각 모드 인코딩 - 바이트 배열 반환 (재생성용)
+         * @param {string} text - 인코딩할 문자열
+         * @param {number} size - 필드 크기 (바이트)
+         * @returns {Uint8Array} 인코딩된 바이트 배열
+         */
+        function encodeToKSCFullwidthBytes(text, size) {
+            try {
+                const encoded = KSC5601.encode(text);
+                const bytes = new Uint8Array(size);
+                
+                // 인코딩된 데이터 복사
+                const copyLen = Math.min(encoded.length, size);
+                for (let i = 0; i < copyLen; i++) {
+                    bytes[i] = encoded[i];
+                }
+                
+                // 전각 공백 (0xA1A1)으로 패딩
+                let pos = copyLen;
+                while (pos + 2 <= size) {
+                    bytes[pos] = 0xA1;
+                    bytes[pos + 1] = 0xA1;
+                    pos += 2;
+                }
+                // 홀수 바이트가 남으면 ASCII 공백
+                if (pos < size) {
+                    bytes[pos] = 0x20;
+                }
+                
+                return bytes;
+            } catch (e) {
+                console.error('KSC 전각 바이트 인코딩 실패:', e);
+                const bytes = new Uint8Array(size);
+                for (let i = 0; i < text.length && i < size; i++) {
+                    bytes[i] = text.charCodeAt(i) & 0xFF;
+                }
+                for (let i = text.length; i < size; i++) {
+                    bytes[i] = 0x20;
+                }
+                return bytes;
+            }
+        }
+
+        /**
+         * KSC-5601 혼용 모드 인코딩 - 바이트 배열 반환 (재생성용)
+         * @param {string} text - 인코딩할 문자열
+         * @param {number} size - 필드 크기 (바이트)
+         * @returns {Uint8Array} 인코딩된 바이트 배열
+         */
+        function encodeToKSCMixedBytes(text, size) {
+            try {
+                const result = [];
+                
+                for (let i = 0; i < text.length && result.length < size; i++) {
+                    const char = text[i];
+                    const code = char.charCodeAt(0);
+                    
+                    // 공백: 전각 공백 A1A1 (2바이트)
+                    if (code === 0x20) {
+                        if (result.length + 2 <= size) {
+                            result.push(0xA1, 0xA1);
+                        }
+                    } else if (code < 0x80) {
+                        // ASCII: 1바이트 그대로
+                        if (result.length + 1 <= size) {
+                            result.push(code);
+                        }
+                    } else if (code >= 0xAC00 && code <= 0xD7A3) {
+                        // 한글 완성형: KSC5601로 2바이트 인코딩
+                        if (result.length + 2 <= size) {
+                            const kscCode = KSC5601.unicodeToKSC5601(code);
+                            if (kscCode) {
+                                result.push((kscCode >> 8) & 0xFF, kscCode & 0xFF);
+                            } else {
+                                result.push(0xA1, 0xA1); // 변환 불가 시 전각 공백
+                            }
+                        }
+                    } else if (code >= 0x3131 && code <= 0x3163) {
+                        // 한글 자모
+                        if (result.length + 2 <= size) {
+                            const kscCode = KSC5601.unicodeJamoToKSC5601(code);
+                            if (kscCode) {
+                                result.push((kscCode >> 8) & 0xFF, kscCode & 0xFF);
+                            } else {
+                                result.push(0xA1, 0xA1);
+                            }
+                        }
+                    } else {
+                        // 기타 비ASCII 문자: 2바이트로 처리
+                        if (result.length + 2 <= size) {
+                            const encoded = KSC5601.encode(char);
+                            if (encoded && encoded.length === 2) {
+                                result.push(encoded[0], encoded[1]);
+                            } else {
+                                result.push(0xA1, 0xA1);
+                            }
+                        }
+                    }
+                }
+                
+                // 전각 공백으로 패딩
+                while (result.length + 2 <= size) {
+                    result.push(0xA1, 0xA1);
+                }
+                // 홀수 바이트가 남으면 ASCII 공백
+                if (result.length < size) {
+                    result.push(0x20);
+                }
+                
+                return new Uint8Array(result);
+            } catch (e) {
+                console.error('KSC 혼용 바이트 인코딩 실패:', e);
+                const bytes = new Uint8Array(size);
+                for (let i = 0; i < text.length && i < size; i++) {
+                    bytes[i] = text.charCodeAt(i) & 0xFF;
+                }
+                for (let i = text.length; i < size; i++) {
+                    bytes[i] = 0x20;
+                }
+                return bytes;
+            }
         }
 
         function displayStructResults(parseResult) {
@@ -8990,6 +9275,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
 
         /**
          * 구조체 파싱 결과를 기반으로 통데이터 재생성
+         * KSC-5601 필드의 글자 깨짐 방지를 위해 바이트 배열 기반으로 처리
          */
         function regenerateStructTelegram() {
             const parsedData = window.structParsedDataCurrent;
@@ -9003,11 +9289,14 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
             const recognizeCRLF = document.getElementById('recognize-crlf').checked;
             const isLineByLine = stats && stats.mode === 'line-by-line';
             
-            let regeneratedData = '';
+            // 바이트 배열로 데이터 생성 (KSC-5601 깨짐 방지)
+            const byteArrays = [];
+            let totalBytes = 0;
+            let hasKSCField = false;
             
             // 각 레코드를 순서대로 조합
             parsedData.forEach(function(record, recordIdx) {
-                let recordData = '';
+                const recordBytes = [];
                 
                 if (record.fields && record.fields.length > 0) {
                     record.fields.forEach(function(field) {
@@ -9022,50 +9311,88 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         
                         if (isCRLFField) {
                             if (recognizeCRLF) {
-                                // 개행문자 인식 활성화: 무조건 실제 \r\n 개행문자로 변환
-                                value = '\r\n';
+                                // 개행문자 인식 활성화: \r\n 바이트로 변환
+                                recordBytes.push(new Uint8Array([0x0D, 0x0A]));
+                                totalBytes += 2;
                             } else {
                                 // 개행문자 인식 비활성화: 일반 필드처럼 패딩 처리
-                                if (value.length < size) {
-                                    value = value + ' '.repeat(size - value.length);
-                                } else if (value.length > size) {
-                                    value = value.substring(0, size);
+                                const bytes = new Uint8Array(size);
+                                for (let i = 0; i < value.length && i < size; i++) {
+                                    bytes[i] = value.charCodeAt(i) & 0xFF;
                                 }
+                                for (let i = value.length; i < size; i++) {
+                                    bytes[i] = 0x20;
+                                }
+                                recordBytes.push(bytes);
+                                totalBytes += size;
                             }
                         } else {
-                            // KSC 또는 ASCII 필드: 타입에 따라 인코딩
-                            value = encodeByFieldType(value, fieldType, size, rawValue);
+                            // KSC 또는 ASCII 필드: 바이트 배열로 인코딩
+                            if (fieldType && fieldType.startsWith('KSC-5601')) {
+                                hasKSCField = true;
+                            }
+                            const bytes = encodeByFieldTypeToBytes(value, fieldType, size, rawValue);
+                            recordBytes.push(bytes);
+                            totalBytes += bytes.length;
                         }
-                        
-                        recordData += value;
                     });
                 }
                 
-                regeneratedData += recordData;
+                byteArrays.push(...recordBytes);
                 
-                // 라인 단위 모드에서는 각 레코드 끝에 개행 추가 (마지막 레코드 제외, CRLF가 없는 경우)
+                // 라인 단위 모드에서는 각 레코드 끝에 개행 추가 (마지막 레코드 제외)
                 if (isLineByLine && recordIdx < parsedData.length - 1) {
                     // 레코드 끝에 CRLF가 이미 있는지 확인
-                    if (!recordData.endsWith('\r\n') && !recordData.endsWith('\n')) {
-                        regeneratedData += '\r\n';
+                    const lastBytes = recordBytes[recordBytes.length - 1];
+                    const hasCRLF = lastBytes && lastBytes.length >= 2 && 
+                                    lastBytes[lastBytes.length - 2] === 0x0D && 
+                                    lastBytes[lastBytes.length - 1] === 0x0A;
+                    if (!hasCRLF) {
+                        byteArrays.push(new Uint8Array([0x0D, 0x0A]));
+                        totalBytes += 2;
                     }
                 }
             });
+            
+            // 모든 바이트 배열을 하나로 합치기
+            const regeneratedBytes = new Uint8Array(totalBytes);
+            let offset = 0;
+            byteArrays.forEach(function(bytes) {
+                regeneratedBytes.set(bytes, offset);
+                offset += bytes.length;
+            });
+            
+            // Latin-1 문자열로 변환 (입력창에 적용할 때 사용)
+            let regeneratedData = '';
+            for (let i = 0; i < regeneratedBytes.length; i++) {
+                regeneratedData += String.fromCharCode(regeneratedBytes[i]);
+            }
+            
+            // 표시용 데이터 생성 (KSC-5601 디코딩하여 한글로 표시)
+            let displayText = '';
+            if (hasKSCField) {
+                // KSC-5601 필드가 있으면 디코딩하여 표시
+                displayText = KSC5601.decode(regeneratedBytes);
+            } else {
+                // ASCII 전용이면 그대로 표시
+                displayText = regeneratedData;
+            }
+            
+            // 개행문자 이스케이프 처리 (표시용)
+            const displayData = displayText
+                .replace(/\r/g, '\\r')
+                .replace(/\n/g, '\\n');
             
             // 결과 표시
             const container = document.getElementById('struct-regenerated-container');
             container.style.display = 'block';
             
-            // 표시용 데이터 (이스케이프 시퀀스 처리)
-            const displayData = regeneratedData
-                .replace(/\r/g, '\\r')
-                .replace(/\n/g, '\\n');
-            
             container.innerHTML = `
                 <h4>✅ 재생성된 통데이터</h4>
                 <div class="regenerated-data-content" id="struct-regenerated-data">${escapeHtml(displayData)}</div>
                 <div style="margin-top: 10px; font-size: 13px; color: #666;">
-                    총 ${regeneratedData.length} bytes | ${parsedData.length}개 레코드
+                    총 ${totalBytes} bytes | ${parsedData.length}개 레코드
+                    ${hasKSCField ? ' | <span style="color: #7b1fa2;">KSC-5601 포함</span>' : ''}
                 </div>
                 <div class="regenerated-actions">
                     <button class="btn-copy-regenerated" id="copy-struct-regenerated">
@@ -9074,17 +9401,28 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     <button class="btn-apply-to-input" id="apply-struct-to-input">
                         📥 입력창에 적용
                     </button>
+                    <button class="btn-download-regenerated" id="download-struct-regenerated" style="background: #6c757d;">
+                        💾 파일로 저장
+                    </button>
                 </div>
             `;
             
-            // 복사 버튼 이벤트 (클로저를 사용하여 regeneratedData 직접 참조 - attribute 사용 시 개행문자 손상 방지)
+            // 바이트 배열을 전역에 저장 (복사/다운로드용)
+            window.structRegeneratedBytes = regeneratedBytes;
+            window.structRegeneratedData = regeneratedData;
+            
+            // 복사 버튼 이벤트 - Latin-1 문자열로 복사 (바이트 값 유지)
             document.getElementById('copy-struct-regenerated').addEventListener('click', function() {
+                // 클립보드에 복사 시 바이트 데이터를 Latin-1 문자열로 유지
                 navigator.clipboard.writeText(regeneratedData).then(function() {
-                    showTemporaryMessage('✓ 클립보드에 복사되었습니다.');
+                    showTemporaryMessage('✓ 클립보드에 복사되었습니다. (바이트 데이터 유지)');
+                }).catch(function(err) {
+                    console.error('클립보드 복사 실패:', err);
+                    showTemporaryMessage('⚠️ 복사 실패. 파일로 저장을 이용해주세요.');
                 });
             });
             
-            // 입력창에 적용 버튼 이벤트 (클로저를 사용하여 regeneratedData 직접 참조 - attribute 사용 시 개행문자 손상 방지)
+            // 입력창에 적용 버튼 이벤트
             document.getElementById('apply-struct-to-input').addEventListener('click', function() {
                 const dataInput = document.getElementById('struct-data');
                 if (dataInput) {
@@ -9108,6 +9446,21 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                     
                     showTemporaryMessage('✓ 통데이터 입력창에 적용되었습니다. 타입 정보가 보존됩니다.');
                 }
+            });
+            
+            // 파일 다운로드 버튼 이벤트 (바이너리 데이터 정확히 저장)
+            document.getElementById('download-struct-regenerated').addEventListener('click', function() {
+                // Blob을 사용하여 바이너리 데이터 그대로 저장
+                const blob = new Blob([regeneratedBytes], { type: 'application/octet-stream' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'telegram_data.dat';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showTemporaryMessage('✓ 파일로 저장되었습니다. (바이트 데이터 정확히 보존)');
             });
             
             // 스크롤 이동
