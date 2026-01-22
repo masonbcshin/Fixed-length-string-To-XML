@@ -4077,6 +4077,27 @@
             background: #ffe69c !important;
         }
         
+        /* 바이트 초과 경고 스타일 */
+        .editable-value.byte-overflow {
+            background: #f8d7da !important;
+            border-left: 3px solid #dc3545;
+            animation: pulse-warning 0.5s ease;
+        }
+        
+        .editable-value.byte-overflow:hover {
+            background: #f5c6cb !important;
+        }
+        
+        @keyframes pulse-warning {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        body.dark-mode .editable-value.byte-overflow {
+            background: #4a1a1a !important;
+            border-left-color: #dc3545;
+        }
+        
         body.dark-mode .editable-value:hover {
             background: #1a3a5c !important;
         }
@@ -8442,6 +8463,87 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
         }
 
         /**
+         * 필드 타입에 따른 바이트 길이 계산
+         * @param {string} text - 계산할 문자열
+         * @param {string} fieldType - 필드 타입 ('ASCII', 'KSC-5601 (전각)', 'KSC-5601 (혼용)')
+         * @returns {number} 바이트 길이
+         */
+        function calculateByteLength(text, fieldType) {
+            if (!text) return 0;
+            
+            if (fieldType && fieldType.startsWith('KSC-5601')) {
+                if (fieldType.includes('전각')) {
+                    // KSC-5601 전각: 모든 문자 2바이트
+                    return text.length * 2;
+                } else {
+                    // KSC-5601 혼용: 한글/특수 2바이트, ASCII 1바이트
+                    let bytes = 0;
+                    for (let i = 0; i < text.length; i++) {
+                        const code = text.charCodeAt(i);
+                        if (code < 0x80) {
+                            // ASCII (공백 포함)
+                            if (code === 0x20) {
+                                bytes += 2;  // 공백은 전각 공백으로 2바이트
+                            } else {
+                                bytes += 1;
+                            }
+                        } else {
+                            bytes += 2;  // 한글, 특수문자 등
+                        }
+                    }
+                    return bytes;
+                }
+            }
+            
+            // ASCII: 1바이트
+            return text.length;
+        }
+
+        /**
+         * 필드 타입에 따라 바이트 단위로 문자열 자르기
+         * @param {string} text - 자를 문자열
+         * @param {number} maxBytes - 최대 바이트 수
+         * @param {string} fieldType - 필드 타입
+         * @returns {string} 잘린 문자열
+         */
+        function truncateToByteSize(text, maxBytes, fieldType) {
+            if (!text) return '';
+            
+            if (fieldType && fieldType.startsWith('KSC-5601')) {
+                if (fieldType.includes('전각')) {
+                    // KSC-5601 전각: 모든 문자 2바이트
+                    const maxChars = Math.floor(maxBytes / 2);
+                    return text.substring(0, maxChars);
+                } else {
+                    // KSC-5601 혼용: 바이트 단위로 계산하며 자르기
+                    let result = '';
+                    let bytes = 0;
+                    
+                    for (let i = 0; i < text.length; i++) {
+                        const char = text[i];
+                        const code = char.charCodeAt(0);
+                        let charBytes;
+                        
+                        if (code < 0x80) {
+                            charBytes = (code === 0x20) ? 2 : 1;
+                        } else {
+                            charBytes = 2;
+                        }
+                        
+                        if (bytes + charBytes > maxBytes) break;
+                        
+                        result += char;
+                        bytes += charBytes;
+                    }
+                    return result;
+                }
+            }
+            
+            // ASCII: 문자 = 바이트
+            return text.substring(0, maxBytes);
+        }
+
+        /**
          * 유니코드 한글을 EUC-KR 바이트로 변환 (혼용 모드용)
          * 한글만 EUC-KR로 변환, ASCII는 처리하지 않음
          * @param {string} char - 단일 문자
@@ -9179,12 +9281,32 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                                     valueSpan.addEventListener('input', function() {
                                         const originalValue = this.getAttribute('data-original-value');
                                         const currentValue = this.textContent;
+                                        const recIdx = parseInt(this.getAttribute('data-record-index'));
+                                        const fldIdx = parseInt(this.getAttribute('data-field-index'));
+                                        const fieldSize = parseInt(this.getAttribute('data-field-size'));
+                                        
+                                        // 현재 필드 타입 가져오기
+                                        let fieldType = 'ASCII';
+                                        if (window.structParsedDataCurrent[recIdx] && 
+                                            window.structParsedDataCurrent[recIdx].fields[fldIdx]) {
+                                            fieldType = window.structParsedDataCurrent[recIdx].fields[fldIdx].fieldType || 'ASCII';
+                                        }
+                                        
+                                        // 타입에 따른 바이트 길이 계산
+                                        const byteLength = calculateByteLength(currentValue, fieldType);
+                                        
+                                        // 바이트 초과 경고 표시
+                                        if (byteLength > fieldSize) {
+                                            this.classList.add('byte-overflow');
+                                            this.title = `바이트 초과: ${byteLength}/${fieldSize} bytes`;
+                                        } else {
+                                            this.classList.remove('byte-overflow');
+                                            this.title = `${byteLength}/${fieldSize} bytes`;
+                                        }
                                         
                                         if (currentValue !== originalValue) {
                                             this.classList.add('modified');
                                             // 현재 파싱 데이터 업데이트
-                                            const recIdx = parseInt(this.getAttribute('data-record-index'));
-                                            const fldIdx = parseInt(this.getAttribute('data-field-index'));
                                             if (window.structParsedDataCurrent[recIdx] && 
                                                 window.structParsedDataCurrent[recIdx].fields[fldIdx]) {
                                                 window.structParsedDataCurrent[recIdx].fields[fldIdx].value = currentValue;
@@ -9230,16 +9352,27 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                                     valueSpan.addEventListener('blur', function() {
                                         const fieldSize = parseInt(this.getAttribute('data-field-size'));
                                         let currentValue = this.textContent;
+                                        const recIdx = parseInt(this.getAttribute('data-record-index'));
+                                        const fldIdx = parseInt(this.getAttribute('data-field-index'));
                                         
-                                        // 길이 초과 시 자르기
-                                        if (currentValue.length > fieldSize) {
-                                            currentValue = currentValue.substring(0, fieldSize);
+                                        // 현재 필드 타입 가져오기
+                                        let fieldType = 'ASCII';
+                                        if (window.structParsedDataCurrent[recIdx] && 
+                                            window.structParsedDataCurrent[recIdx].fields[fldIdx]) {
+                                            fieldType = window.structParsedDataCurrent[recIdx].fields[fldIdx].fieldType || 'ASCII';
+                                        }
+                                        
+                                        // 타입에 따른 바이트 길이 계산 및 자르기
+                                        const byteLength = calculateByteLength(currentValue, fieldType);
+                                        if (byteLength > fieldSize) {
+                                            // 바이트 단위로 자르기
+                                            currentValue = truncateToByteSize(currentValue, fieldSize, fieldType);
                                             this.textContent = currentValue;
+                                            this.classList.remove('byte-overflow');
+                                            this.title = `${fieldSize}/${fieldSize} bytes (자동 자름)`;
                                         }
                                         
                                         // 현재 파싱 데이터 업데이트
-                                        const recIdx = parseInt(this.getAttribute('data-record-index'));
-                                        const fldIdx = parseInt(this.getAttribute('data-field-index'));
                                         if (window.structParsedDataCurrent[recIdx] && 
                                             window.structParsedDataCurrent[recIdx].fields[fldIdx]) {
                                             window.structParsedDataCurrent[recIdx].fields[fldIdx].value = currentValue;
