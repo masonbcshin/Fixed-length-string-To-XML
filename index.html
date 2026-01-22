@@ -10450,14 +10450,17 @@ T000000000200000000000000003000`
                 }
             });
 
-            // 구조체 파싱 실행 버튼 클릭 이벤트
-            document.getElementById('struct-parse-btn').addEventListener('click', function() {
+            /**
+             * 구조체 파싱 실행 함수 (재사용 가능)
+             * 버튼 클릭 또는 인코딩 옵션 변경 시 호출
+             */
+            function executeStructParsing() {
                 // 1. collectStructDefinitions() 호출
                 const structDefs = collectStructDefinitions();
                 
                 // null이면 중단 (에러는 함수 내부에서 표시)
                 if (structDefs === null) {
-                    return;
+                    return null;
                 }
 
                 // 2. struct-data 값 가져오기, trim
@@ -10466,7 +10469,7 @@ T000000000200000000000000003000`
                 // 비어있으면 displayError("데이터를 입력하세요")
                 if (data === '') {
                     displayError('데이터를 입력하세요', 'struct-result-container');
-                    return;
+                    return null;
                 }
 
                 // 3. parseStructData(data, structDefs) 호출
@@ -10484,6 +10487,28 @@ T000000000200000000000000003000`
                     ? ((result.stats.parsedBytes / result.stats.totalBytes) * 100).toFixed(1)
                     : 0;
                 console.log('파싱 완료: 레코드 ' + count + '개, 성공률 ' + percent + '%');
+                
+                return result;
+            }
+
+            // 구조체 파싱 실행 버튼 클릭 이벤트
+            document.getElementById('struct-parse-btn').addEventListener('click', function() {
+                executeStructParsing();
+            });
+
+            // 입력 인코딩 옵션 변경 시 재파싱
+            document.getElementById('input-encoding').addEventListener('change', function() {
+                const hasData = document.getElementById('struct-data').value.trim().length > 0;
+                const hasResults = document.getElementById('struct-result-container').children.length > 0;
+                
+                // 데이터와 결과가 모두 있을 때만 재파싱
+                if (hasData && hasResults) {
+                    const selectedEncoding = this.value;
+                    const encodingName = selectedEncoding === 'auto' ? '자동 감지' : 
+                                        selectedEncoding === 'ksc5601' ? 'KSC-5601' : 'ASCII';
+                    console.log(`🔄 인코딩 변경: ${encodingName} → 재파싱 실행`);
+                    executeStructParsing();
+                }
             });
 
             // 구조체 초기화 버튼 클릭 이벤트
@@ -10577,7 +10602,24 @@ T000000000200000000000000003000`
                 }
                 
                 console.log(`필드 [${fieldIndex}] 디코딩 모드 변경: ${mode} → "${newValue}"`);
+                
+                // 안내 메시지: 디코딩만 변경됨 (바이트 위치는 그대로)
+                // 전체 재파싱이 필요하면 입력 인코딩 옵션을 변경하세요
             });
+            
+            /**
+             * 전체 필드 인코딩 일괄 변경 함수
+             * 모든 필드의 디코딩 모드를 변경하고 재디코딩
+             * @param {string} mode - 'ascii', 'fullwidth', 'mixed'
+             */
+            window.changeAllFieldsEncoding = function(mode) {
+                const selects = document.querySelectorAll('.decoding-mode-select');
+                selects.forEach(select => {
+                    select.value = mode;
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+                console.log(`모든 필드 인코딩 변경: ${mode}`);
+            };
 
             // 복사 버튼 및 원본 버튼 클릭 이벤트 (이벤트 위임 사용)
             document.getElementById('struct-result-container').addEventListener('click', function(e) {
