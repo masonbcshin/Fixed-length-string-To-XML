@@ -9283,7 +9283,13 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
             // 4. 각 레코드마다 테이블 생성
             let globalFieldIndex = 0;  // 전역 필드 인덱스 (수정 추적용)
             
-            recordMap.forEach(function(record, recordIndex) {
+            // recordMap의 values를 배열로 변환하여 인덱스 기반으로 순회
+            // (Map의 key와 배열 인덱스가 다를 수 있으므로 배열 인덱스 사용)
+            const recordArray = Array.from(recordMap.values());
+            recordArray.forEach(function(record, arrayIndex) {
+                // arrayIndex가 실제 window.structParsedDataCurrent의 인덱스
+                const recordIndex = arrayIndex;
+                
                 // 그룹 컨테이너 생성
                 const groupDiv = document.createElement('div');
                 groupDiv.className = 'struct-result-group';
@@ -9516,12 +9522,17 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                                             
                                             // 현재 필드 타입 가져오기
                                             let fieldType = 'ASCII';
-                                            if (window.structParsedDataCurrent[recIdx] && 
+                                            if (window.structParsedDataCurrent && 
+                                                window.structParsedDataCurrent[recIdx] && 
+                                                window.structParsedDataCurrent[recIdx].fields && 
                                                 window.structParsedDataCurrent[recIdx].fields[fldIdx]) {
                                                 fieldType = window.structParsedDataCurrent[recIdx].fields[fldIdx].fieldType || 'ASCII';
                                             }
                                             
-                                            // ASCII 필드에 비-ASCII 문자가 있으면 필터링 및 경고
+                                            console.log(`붙여넣기: recIdx=${recIdx}, fldIdx=${fldIdx}, fieldType="${fieldType}"`);
+                                            
+                                            // ASCII 필드에만 비-ASCII 문자 필터링 적용
+                                            // KSC-5601 필드는 필터링하지 않음
                                             if (fieldType === 'ASCII') {
                                                 let hasNonAscii = false;
                                                 let filteredValue = '';
