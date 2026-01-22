@@ -5701,6 +5701,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                             result.push(kscCode & 0xFF);
                         } else {
                             // 변환 불가 시 전각 물음표 대체
+                            console.warn(`KSC-5601 변환 불가: '${char}' (U+${code.toString(16).toUpperCase()}) → 물음표로 대체`);
                             result.push(0xA3);
                             result.push(0xBF);
                         }
@@ -8905,9 +8906,15 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
          * @returns {Uint8Array} 인코딩된 바이트 배열
          */
         function encodeByFieldTypeToBytes(value, fieldType, size, rawValue) {
+            const isDebugMode = document.getElementById('debug-mode')?.checked;
+            
             // KSC 필드 처리
             if (fieldType && fieldType.startsWith('KSC-5601')) {
                 const mode = fieldType.includes('전각') ? 'fullwidth' : 'mixed';
+                
+                if (isDebugMode) {
+                    console.log(`🔄 인코딩: "${value}" (타입: ${fieldType}, 크기: ${size}, rawValue: ${rawValue ? '있음' : '없음'})`);
+                }
                 
                 // rawValue가 있고 값이 변경되지 않았으면 원본 바이트 사용
                 if (rawValue) {
@@ -8954,11 +8961,39 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
             
             // ASCII 모드 (기본)
             const bytes = new Uint8Array(size);
-            for (let i = 0; i < value.length && i < size; i++) {
-                bytes[i] = value.charCodeAt(i) & 0xFF;
+            let bytePos = 0;
+            
+            for (let i = 0; i < value.length && bytePos < size; i++) {
+                const code = value.charCodeAt(i);
+                
+                // 유니코드 전각 문자를 반각 ASCII로 변환
+                let asciiCode = code;
+                if (code === 0x3000) {
+                    // 전각 공백 → 반각 공백
+                    asciiCode = 0x20;
+                } else if (code >= 0xFF01 && code <= 0xFF5E) {
+                    // 전각 ASCII → 반각 ASCII
+                    asciiCode = code - 0xFF01 + 0x21;
+                } else if (code >= 0xAC00 && code <= 0xD7A3) {
+                    // 한글 → 건너뛰기 (ASCII 필드에 한글은 넣을 수 없음)
+                    if (isDebugMode) {
+                        console.warn(`ASCII 필드에 한글 '${value[i]}' 제외`);
+                    }
+                    continue;
+                } else if (code > 0x7F) {
+                    // 기타 비-ASCII 문자 → 건너뛰기
+                    if (isDebugMode) {
+                        console.warn(`ASCII 필드에 비-ASCII 문자 '${value[i]}' (U+${code.toString(16)}) 제외`);
+                    }
+                    continue;
+                }
+                
+                bytes[bytePos] = asciiCode & 0x7F;  // ASCII는 7비트만 사용
+                bytePos++;
             }
+            
             // ASCII 공백으로 패딩
-            for (let i = value.length; i < size; i++) {
+            for (let i = bytePos; i < size; i++) {
                 bytes[i] = 0x20;
             }
             return bytes;
@@ -9518,6 +9553,34 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                                             if (window.structParsedDataCurrent[recIdx] && 
                                                 window.structParsedDataCurrent[recIdx].fields[fldIdx]) {
                                                 fieldType = window.structParsedDataCurrent[recIdx].fields[fldIdx].fieldType || 'ASCII';
+                                            }
+                                            
+                                            // ASCII 필드에 비-ASCII 문자가 있으면 필터링 및 경고
+                                            if (fieldType === 'ASCII') {
+                                                let hasNonAscii = false;
+                                                let filteredValue = '';
+                                                for (let i = 0; i < currentValue.length; i++) {
+                                                    const code = currentValue.charCodeAt(i);
+                                                    // 전각 문자를 반각으로 변환
+                                                    if (code === 0x3000) {
+                                                        filteredValue += ' ';
+                                                    } else if (code >= 0xFF01 && code <= 0xFF5E) {
+                                                        filteredValue += String.fromCharCode(code - 0xFF01 + 0x21);
+                                                    } else if (code <= 0x7F) {
+                                                        filteredValue += currentValue[i];
+                                                    } else {
+                                                        // 한글 등 비-ASCII 문자 제외
+                                                        hasNonAscii = true;
+                                                    }
+                                                }
+                                                if (hasNonAscii) {
+                                                    console.warn(`ASCII 필드에 비-ASCII 문자 제외됨`);
+                                                    currentValue = filteredValue;
+                                                    self.textContent = currentValue;
+                                                    // 시각적 피드백
+                                                    self.style.animation = 'pulse-warning 0.5s ease';
+                                                    setTimeout(() => { self.style.animation = ''; }, 500);
+                                                }
                                             }
                                             
                                             // 바이트 길이 계산 및 자르기
