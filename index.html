@@ -7026,21 +7026,14 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 console.log('🔤 인코딩 수동 선택: ASCII');
             }
 
-            // 3. KSC-5601 감지 시 필드 기본값 적용
-            //    감지된 인코딩이 KSC-5601이면 모든 필드를 KSC 전각으로 기본 설정
-            //    (유저가 파싱 결과에서 필드별로 변경 가능)
+            // 3. 필드별 인코딩 자동 감지로 변경
+            //    전체 데이터 감지 결과는 참고용으로만 사용
+            //    각 필드는 파싱 시 개별적으로 인코딩 감지됨
             if (encodingInfo.type === 'KSC5601') {
-                console.log('📌 KSC-5601 감지됨: 모든 필드를 KSC 전각으로 기본 설정합니다.');
-                structDefs.forEach(structDef => {
-                    structDef.fields.forEach(field => {
-                        // CRLF 필드는 제외
-                        if (field.name.toLowerCase() !== 'crlf') {
-                            field.isKSC = true;
-                            field.encodingMode = 'fullwidth';  // 기본: 전각 모드
-                        }
-                    });
-                });
+                console.log('📌 KSC-5601 데이터 감지됨: 필드별로 개별 인코딩 감지를 수행합니다.');
             }
+            // 주의: 모든 필드를 강제로 KSC로 설정하지 않음
+            // 필드별 감지는 parseLineByLine/parseContinuous에서 수행
 
             // 4. 데이터 전처리 및 파싱 분기
             let result;
