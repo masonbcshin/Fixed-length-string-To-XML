@@ -7026,6 +7026,25 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 return { records: [], stats: { totalBytes: 0, parsedBytes: 0, recordCount: 0, errorBytes: 0 } };
             }
 
+            // =====================================================
+            // 재생성된 바이트 데이터 우선 사용 (KSC-5601 데이터 손실 방지)
+            // 입력창에 적용 후 바로 재파싱하는 경우 바이트 데이터 사용
+            // =====================================================
+            if (window.structAppliedFromRegenerate && 
+                window.structRegeneratedBytes && 
+                window.structRegeneratedDisplayText === dataText) {
+                // 바이트 데이터를 Latin-1 문자열로 변환하여 파싱에 사용
+                let byteData = '';
+                for (let i = 0; i < window.structRegeneratedBytes.length; i++) {
+                    byteData += String.fromCharCode(window.structRegeneratedBytes[i]);
+                }
+                dataText = byteData;
+                console.log('📌 재생성된 바이트 데이터 사용 (KSC-5601 바이트 보존)');
+                
+                // 플래그 초기화 (한 번만 사용)
+                window.structAppliedFromRegenerate = false;
+            }
+
             // 1. 옵션 읽기
             const recognizeCRLF = document.getElementById('recognize-crlf').checked;
             const inputEncodingSelect = document.getElementById('input-encoding');
@@ -9440,7 +9459,13 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
             document.getElementById('apply-struct-to-input').addEventListener('click', function() {
                 const dataInput = document.getElementById('struct-data');
                 if (dataInput) {
-                    dataInput.value = regeneratedData;
+                    // 입력창에는 디코딩된 텍스트 표시 (한글 정상 표시)
+                    // 바이트 데이터는 window.structRegeneratedBytes에 보관되어 파싱 시 사용됨
+                    dataInput.value = displayText;
+                    
+                    // 바이트 데이터 적용 플래그 설정 (파싱 시 바이트 데이터 우선 사용)
+                    window.structAppliedFromRegenerate = true;
+                    window.structRegeneratedDisplayText = displayText;
                     
                     // 사용자가 변경한 필드별 타입 정보 저장 (재파싱 시 복원용)
                     if (window.structParsedDataCurrent && window.structParsedDataCurrent.length > 0) {
@@ -9458,7 +9483,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         console.log('필드 타입 정보 저장됨:', window.structFieldTypeOverrides);
                     }
                     
-                    showTemporaryMessage('✓ 통데이터 입력창에 적용되었습니다. 타입 정보가 보존됩니다.');
+                    showTemporaryMessage('✓ 통데이터 입력창에 적용되었습니다. (KSC-5601 바이트 데이터 보존)');
                 }
             });
             
@@ -11196,6 +11221,20 @@ T000000000200000000000000003000`
                 executeStructParsing();
             });
 
+            // 입력창 변경 시 재생성된 바이트 데이터 무효화
+            // 사용자가 직접 입력창을 수정하면 바이트 데이터와 불일치하므로 무효화
+            document.getElementById('struct-data').addEventListener('input', function() {
+                if (window.structAppliedFromRegenerate) {
+                    // 입력창 값이 재생성 데이터와 다르면 무효화
+                    if (this.value !== window.structRegeneratedDisplayText) {
+                        window.structAppliedFromRegenerate = false;
+                        window.structRegeneratedBytes = null;
+                        window.structRegeneratedDisplayText = null;
+                        console.log('📌 입력창 수정됨: 재생성 바이트 데이터 무효화');
+                    }
+                }
+            });
+
             // 입력 인코딩 옵션 변경 시 재파싱
             document.getElementById('input-encoding').addEventListener('change', function() {
                 const hasData = document.getElementById('struct-data').value.trim().length > 0;
@@ -12136,15 +12175,23 @@ T000000000200000000000000003000`
                     return;
                 }
                 
-                // Latin1 문자열로 변환
+                // 원본 유니코드 텍스트 (표시용)
+                const originalText = kscInputText.value;
+                
+                // Latin1 문자열로 변환 (바이트 데이터용)
                 let latin1Str = '';
                 for (let i = 0; i < encodedBytes.length; i++) {
                     latin1Str += String.fromCharCode(encodedBytes[i]);
                 }
                 
                 // 대상 필드에 적용
-                kscInputTargetField.textContent = latin1Str;
+                // textContent에는 디코딩된 텍스트를 표시 (KSC5601.decode 사용)
+                const decodedText = KSC5601.decode(encodedBytes);
+                kscInputTargetField.textContent = decodedText;
+                // data-raw-value에는 바이트 데이터 저장 (재생성 시 사용)
                 kscInputTargetField.setAttribute('data-raw-value', latin1Str);
+                // data-original-value도 디코딩된 텍스트로 설정
+                kscInputTargetField.setAttribute('data-original-value', decodedText);
                 kscInputTargetField.classList.add('modified');
                 
                 // 전역 데이터 업데이트
@@ -12153,7 +12200,9 @@ T000000000200000000000000003000`
                 if (window.structParsedDataCurrent && 
                     window.structParsedDataCurrent[recIdx] && 
                     window.structParsedDataCurrent[recIdx].fields[fldIdx]) {
-                    window.structParsedDataCurrent[recIdx].fields[fldIdx].value = latin1Str;
+                    // value는 디코딩된 텍스트 (표시 및 비교용)
+                    window.structParsedDataCurrent[recIdx].fields[fldIdx].value = decodedText;
+                    // rawValue는 바이트 데이터 (재생성 시 사용)
                     window.structParsedDataCurrent[recIdx].fields[fldIdx].rawValue = latin1Str;
                 }
                 
