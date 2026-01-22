@@ -3638,9 +3638,63 @@
             background: white;
             width: 400px;
             max-width: 90%;
+            max-height: 85vh;
             padding: 25px;
             border-radius: 8px;
             position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .test-modal .test-content h4 {
+            flex-shrink: 0;
+        }
+        
+        .test-modal .test-groups-container {
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 5px;
+        }
+        
+        /* 스크롤바 스타일 */
+        .test-modal .test-groups-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .test-modal .test-groups-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        .test-modal .test-groups-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+        
+        .test-modal .test-groups-container::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+        
+        /* 모바일 대응 */
+        @media (max-height: 600px) {
+            .test-modal .test-content {
+                max-height: 90vh;
+                padding: 15px;
+            }
+            
+            .test-modal .test-buttons button {
+                padding: 10px 15px;
+                font-size: 13px;
+            }
+            
+            .test-modal .test-group {
+                margin-bottom: 15px;
+            }
+            
+            .test-modal .test-group h5 {
+                font-size: 13px;
+                margin-bottom: 8px;
+            }
         }
 
         .test-modal .test-content h4 {
@@ -3796,6 +3850,23 @@
 
         body.dark-mode .test-modal .test-content h4 {
             color: #e0e0e0;
+        }
+        
+        body.dark-mode .test-modal .test-groups-container::-webkit-scrollbar-track {
+            background: #3d3d3d;
+        }
+        
+        body.dark-mode .test-modal .test-groups-container::-webkit-scrollbar-thumb {
+            background: #5a5a5a;
+        }
+        
+        body.dark-mode .test-modal .test-groups-container::-webkit-scrollbar-thumb:hover {
+            background: #6a6a6a;
+        }
+        
+        body.dark-mode .test-modal .test-group h5 {
+            border-bottom-color: #4a4a4a;
+            color: #b0b0b0;
         }
 
         body.dark-mode .help-tip strong {
@@ -4096,6 +4167,57 @@
         body.dark-mode .editable-value.byte-overflow {
             background: #4a1a1a !important;
             border-left-color: #dc3545;
+        }
+        
+        /* 바이트 길이 표시 뱃지 */
+        .byte-info-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 6px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 4px;
+            background: #e3f2fd;
+            color: #1565c0;
+            margin-left: 8px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        
+        .byte-info-badge.byte-ok {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .byte-info-badge.byte-warning {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+        
+        .byte-info-badge.byte-error {
+            background: #ffebee;
+            color: #c62828;
+            animation: pulse-warning 0.5s ease;
+        }
+        
+        body.dark-mode .byte-info-badge {
+            background: #1a3a5c;
+            color: #64b5f6;
+        }
+        
+        body.dark-mode .byte-info-badge.byte-ok {
+            background: #1b3a2f;
+            color: #81c784;
+        }
+        
+        body.dark-mode .byte-info-badge.byte-warning {
+            background: #3a2a1a;
+            color: #ffb74d;
+        }
+        
+        body.dark-mode .byte-info-badge.byte-error {
+            background: #4a1a1a;
+            color: #ef9a9a;
         }
         
         body.dark-mode .editable-value:hover {
@@ -5163,42 +5285,44 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 <button class="close-test">✕</button>
                 <h4>🧪 테스트 케이스 선택</h4>
                 
-                <!-- 개행 인식 ON 테스트 (라인 단위 파싱) -->
-                <div class="test-group">
-                    <h5>📄 개행 인식 ON (라인 단위)</h5>
-                    <div class="test-buttons">
-                        <button data-case="normal">✅ 정상 데이터</button>
-                        <button data-case="short">⚠️ 길이 부족</button>
-                        <button data-case="long">📏 길이 초과</button>
-                        <button data-case="mismatch">❌ 매칭 실패</button>
-                        <button data-case="mixed">🔀 혼합</button>
+                <div class="test-groups-container">
+                    <!-- 개행 인식 ON 테스트 (라인 단위 파싱) -->
+                    <div class="test-group">
+                        <h5>📄 개행 인식 ON (라인 단위)</h5>
+                        <div class="test-buttons">
+                            <button data-case="normal">✅ 정상 데이터</button>
+                            <button data-case="short">⚠️ 길이 부족</button>
+                            <button data-case="long">📏 길이 초과</button>
+                            <button data-case="mismatch">❌ 매칭 실패</button>
+                            <button data-case="mixed">🔀 혼합</button>
+                        </div>
                     </div>
-                </div>
-                
-                <!-- 개행 인식 OFF 테스트 (연속 데이터 파싱) -->
-                <div class="test-group">
-                    <h5>🔗 개행 인식 OFF (연속 데이터)</h5>
-                    <div class="test-buttons">
-                        <button data-case="continuous">📦 연속 데이터</button>
-                        <button data-case="continuous_multi">🔄 연속 다중 레코드</button>
+                    
+                    <!-- 개행 인식 OFF 테스트 (연속 데이터 파싱) -->
+                    <div class="test-group">
+                        <h5>🔗 개행 인식 OFF (연속 데이터)</h5>
+                        <div class="test-buttons">
+                            <button data-case="continuous">📦 연속 데이터</button>
+                            <button data-case="continuous_multi">🔄 연속 다중 레코드</button>
+                        </div>
                     </div>
-                </div>
-                
-                <!-- KSC-5601 테스트 (한글 인코딩) -->
-                <div class="test-group">
-                    <h5>🔤 KSC-5601 (한글 인코딩)</h5>
-                    <div class="test-buttons">
-                        <button data-case="ksc_fullwidth">전각 모드 (모든 문자 2B)</button>
-                        <button data-case="ksc_mixed">혼용 모드 (한글 2B/ASCII 1B)</button>
+                    
+                    <!-- KSC-5601 테스트 (한글 인코딩) -->
+                    <div class="test-group">
+                        <h5>🔤 KSC-5601 (한글 인코딩)</h5>
+                        <div class="test-buttons">
+                            <button data-case="ksc_fullwidth">전각 모드 (모든 문자 2B)</button>
+                            <button data-case="ksc_mixed">혼용 모드 (한글 2B/ASCII 1B)</button>
+                        </div>
                     </div>
-                </div>
-                
-                <!-- 단일 구조체 테스트 -->
-                <div class="test-group">
-                    <h5>📋 단일 구조체</h5>
-                    <div class="test-buttons">
-                        <button data-case="single_struct_ascii">ASCII 단일 구조체</button>
-                        <button data-case="single_struct_ksc">KSC 단일 구조체</button>
+                    
+                    <!-- 단일 구조체 테스트 -->
+                    <div class="test-group">
+                        <h5>📋 단일 구조체</h5>
+                        <div class="test-buttons">
+                            <button data-case="single_struct_ascii">ASCII 단일 구조체</button>
+                            <button data-case="single_struct_ksc">KSC 단일 구조체</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -7060,9 +7184,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
             // 재생성된 바이트 데이터 우선 사용 (KSC-5601 데이터 손실 방지)
             // 입력창에 적용 후 바로 재파싱하는 경우 바이트 데이터 사용
             // =====================================================
-            if (window.structAppliedFromRegenerate && 
-                window.structRegeneratedBytes && 
-                window.structRegeneratedDisplayText === dataText) {
+            if (window.structAppliedFromRegenerate && window.structRegeneratedBytes) {
                 // 바이트 데이터를 Latin-1 문자열로 변환하여 파싱에 사용
                 let byteData = '';
                 for (let i = 0; i < window.structRegeneratedBytes.length; i++) {
@@ -7070,6 +7192,7 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 }
                 dataText = byteData;
                 console.log('📌 재생성된 바이트 데이터 사용 (KSC-5601 바이트 보존)');
+                console.log(`📌 바이트 길이: ${window.structRegeneratedBytes.length}`);
                 
                 // 플래그 초기화 (한 번만 사용)
                 window.structAppliedFromRegenerate = false;
@@ -9286,6 +9409,20 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                                     });
                                     td.appendChild(kscInputBtn);
                                     
+                                    // 바이트 길이 표시 뱃지 추가
+                                    const byteInfoBadge = document.createElement('span');
+                                    byteInfoBadge.className = 'byte-info-badge';
+                                    const initByteLen = calculateByteLength(field.value, fieldType);
+                                    byteInfoBadge.textContent = `${initByteLen}/${field.fieldSize}B`;
+                                    if (initByteLen > field.fieldSize) {
+                                        byteInfoBadge.classList.add('byte-error');
+                                    } else if (initByteLen > field.fieldSize * 0.9) {
+                                        byteInfoBadge.classList.add('byte-warning');
+                                    } else {
+                                        byteInfoBadge.classList.add('byte-ok');
+                                    }
+                                    td.appendChild(byteInfoBadge);
+                                    
                                     // 수정 감지 이벤트 (valueSpan에 바인딩)
                                     valueSpan.addEventListener('input', function() {
                                         const originalValue = this.getAttribute('data-original-value');
@@ -9311,6 +9448,20 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                                         } else {
                                             this.classList.remove('byte-overflow');
                                             this.title = `${byteLength}/${fieldSize} bytes`;
+                                        }
+                                        
+                                        // 바이트 뱃지 업데이트
+                                        const badge = this.closest('td').querySelector('.byte-info-badge');
+                                        if (badge) {
+                                            badge.textContent = `${byteLength}/${fieldSize}B`;
+                                            badge.classList.remove('byte-ok', 'byte-warning', 'byte-error');
+                                            if (byteLength > fieldSize) {
+                                                badge.classList.add('byte-error');
+                                            } else if (byteLength > fieldSize * 0.9) {
+                                                badge.classList.add('byte-warning');
+                                            } else {
+                                                badge.classList.add('byte-ok');
+                                            }
                                         }
                                         
                                         if (currentValue !== originalValue) {
@@ -9369,8 +9520,23 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                                             if (currentValue !== originalValue) {
                                                 self.classList.add('modified');
                                             }
+                                            const finalByteLen = calculateByteLength(currentValue, fieldType);
                                             self.classList.remove('byte-overflow');
-                                            self.title = `${calculateByteLength(currentValue, fieldType)}/${fieldSize} bytes`;
+                                            self.title = `${finalByteLen}/${fieldSize} bytes`;
+                                            
+                                            // 바이트 뱃지 업데이트
+                                            const badge = self.closest('td').querySelector('.byte-info-badge');
+                                            if (badge) {
+                                                badge.textContent = `${finalByteLen}/${fieldSize}B`;
+                                                badge.classList.remove('byte-ok', 'byte-warning', 'byte-error');
+                                                if (finalByteLen > fieldSize) {
+                                                    badge.classList.add('byte-error');
+                                                } else if (finalByteLen > fieldSize * 0.9) {
+                                                    badge.classList.add('byte-warning');
+                                                } else {
+                                                    badge.classList.add('byte-ok');
+                                                }
+                                            }
                                             
                                             updateStructModifiedCount();
                                         }, 0);
@@ -11643,16 +11809,43 @@ T000000000200000000000000003000`
                 }, 500);
                 
                 // 전역 데이터 업데이트
+                const newFieldType = mode === 'fullwidth' ? 'KSC-5601 (전각)' : 
+                                     mode === 'mixed' ? 'KSC-5601 (혼용)' : 'ASCII';
+                                     
                 if (window.structParsedDataCurrent && 
                     window.structParsedDataCurrent[recordIndex] && 
                     window.structParsedDataCurrent[recordIndex].fields[fieldIndex]) {
                     window.structParsedDataCurrent[recordIndex].fields[fieldIndex].value = newValue;
-                    window.structParsedDataCurrent[recordIndex].fields[fieldIndex].fieldType = 
-                        mode === 'fullwidth' ? 'KSC-5601 (전각)' : 
-                        mode === 'mixed' ? 'KSC-5601 (혼용)' : 'ASCII';
+                    window.structParsedDataCurrent[recordIndex].fields[fieldIndex].fieldType = newFieldType;
                 }
                 
-                console.log(`필드 [${fieldIndex}] 디코딩 모드 변경: ${mode} → "${newValue}"`);
+                // 타입 변경에 따른 바이트 길이 재계산 및 표시
+                const fieldSize = parseInt(valueSpan.getAttribute('data-field-size'));
+                const byteLength = calculateByteLength(newValue, newFieldType);
+                
+                if (byteLength > fieldSize) {
+                    valueSpan.classList.add('byte-overflow');
+                    valueSpan.title = `바이트 초과: ${byteLength}/${fieldSize} bytes`;
+                } else {
+                    valueSpan.classList.remove('byte-overflow');
+                    valueSpan.title = `${byteLength}/${fieldSize} bytes`;
+                }
+                
+                // 바이트 뱃지 업데이트
+                const badge = tr.querySelector('.byte-info-badge');
+                if (badge) {
+                    badge.textContent = `${byteLength}/${fieldSize}B`;
+                    badge.classList.remove('byte-ok', 'byte-warning', 'byte-error');
+                    if (byteLength > fieldSize) {
+                        badge.classList.add('byte-error');
+                    } else if (byteLength > fieldSize * 0.9) {
+                        badge.classList.add('byte-warning');
+                    } else {
+                        badge.classList.add('byte-ok');
+                    }
+                }
+                
+                console.log(`필드 [${fieldIndex}] 디코딩 모드 변경: ${mode} → "${newValue}" (${byteLength}/${fieldSize} bytes)`);
                 
                 // 안내 메시지: 디코딩만 변경됨 (바이트 위치는 그대로)
                 // 전체 재파싱이 필요하면 입력 인코딩 옵션을 변경하세요
@@ -12516,6 +12709,22 @@ T000000000200000000000000003000`
                     window.structParsedDataCurrent[recIdx].fields[fldIdx].value = decodedText;
                     // rawValue는 바이트 데이터 (재생성 시 사용)
                     window.structParsedDataCurrent[recIdx].fields[fldIdx].rawValue = latin1Str;
+                }
+                
+                // 바이트 뱃지 업데이트
+                const fieldSize = parseInt(kscInputTargetField.getAttribute('data-field-size'));
+                const badge = kscInputTargetField.closest('td').querySelector('.byte-info-badge');
+                if (badge) {
+                    const byteLen = encodedBytes.length;
+                    badge.textContent = `${byteLen}/${fieldSize}B`;
+                    badge.classList.remove('byte-ok', 'byte-warning', 'byte-error');
+                    if (byteLen > fieldSize) {
+                        badge.classList.add('byte-error');
+                    } else if (byteLen > fieldSize * 0.9) {
+                        badge.classList.add('byte-warning');
+                    } else {
+                        badge.classList.add('byte-ok');
+                    }
                 }
                 
                 // 수정 카운터 업데이트
