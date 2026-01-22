@@ -9145,6 +9145,33 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                                         updateStructModifiedCount();
                                     });
                                     
+                                    // 붙여넣기 이벤트 - rawValue 무효화 (복사/붙여넣기 시 새로 인코딩 필요)
+                                    valueSpan.addEventListener('paste', function(e) {
+                                        const recIdx = parseInt(this.getAttribute('data-record-index'));
+                                        const fldIdx = parseInt(this.getAttribute('data-field-index'));
+                                        
+                                        // 붙여넣기 후 rawValue를 null로 설정 (비동기 처리)
+                                        setTimeout(() => {
+                                            const currentValue = this.textContent;
+                                            const originalValue = this.getAttribute('data-original-value');
+                                            
+                                            if (window.structParsedDataCurrent[recIdx] && 
+                                                window.structParsedDataCurrent[recIdx].fields[fldIdx]) {
+                                                window.structParsedDataCurrent[recIdx].fields[fldIdx].value = currentValue;
+                                                // 붙여넣기 시 항상 rawValue를 null로 설정 (새로 인코딩 필요)
+                                                window.structParsedDataCurrent[recIdx].fields[fldIdx].rawValue = null;
+                                                console.log(`필드 [${fldIdx}] 붙여넣기: rawValue 무효화, 값="${currentValue}"`);
+                                            }
+                                            
+                                            // 수정 표시
+                                            if (currentValue !== originalValue) {
+                                                this.classList.add('modified');
+                                            }
+                                            
+                                            updateStructModifiedCount();
+                                        }, 0);
+                                    });
+                                    
                                     // 포커스 아웃 시 길이 검증 (valueSpan에 바인딩)
                                     valueSpan.addEventListener('blur', function() {
                                         const fieldSize = parseInt(this.getAttribute('data-field-size'));
