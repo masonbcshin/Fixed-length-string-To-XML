@@ -10220,6 +10220,125 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 return true;
             });
 
+            // =========================================
+            // 테스트 케이스 15: 바이트 배열 기반 인코딩 (통데이터 재생성용)
+            // =========================================
+            test('encodeToKSCFullwidthBytes - 한글 인코딩', function() {
+                const bytes = encodeToKSCFullwidthBytes('홍길동', 10);
+                
+                // Uint8Array 타입 확인
+                if (!(bytes instanceof Uint8Array)) return 'Uint8Array가 아님';
+                
+                // 크기 확인 (10바이트)
+                if (bytes.length !== 10) return '바이트 길이 불일치 (예상: 10, 실제: ' + bytes.length + ')';
+                
+                // 디코딩하여 원본 확인
+                const decoded = KSC5601.decode(bytes).trim();
+                if (decoded !== '홍길동') return '디코딩 실패: "' + decoded + '"';
+                
+                return true;
+            });
+
+            test('encodeToKSCFullwidthBytes - 영문 전각 인코딩', function() {
+                const bytes = encodeToKSCFullwidthBytes('ABC', 10);
+                
+                // 크기 확인 (10바이트)
+                if (bytes.length !== 10) return '바이트 길이 불일치';
+                
+                // 전각 영문 확인: A = 0xA3C1, B = 0xA3C2, C = 0xA3C3
+                if (bytes[0] !== 0xA3 || bytes[1] !== 0xC1) return 'A 인코딩 실패';
+                if (bytes[2] !== 0xA3 || bytes[3] !== 0xC2) return 'B 인코딩 실패';
+                if (bytes[4] !== 0xA3 || bytes[5] !== 0xC3) return 'C 인코딩 실패';
+                
+                // 나머지는 전각 공백 (0xA1A1)
+                if (bytes[6] !== 0xA1 || bytes[7] !== 0xA1) return '패딩 공백 1 실패';
+                if (bytes[8] !== 0xA1 || bytes[9] !== 0xA1) return '패딩 공백 2 실패';
+                
+                return true;
+            });
+
+            test('encodeToKSCMixedBytes - 혼용 모드 인코딩', function() {
+                const bytes = encodeToKSCMixedBytes('홍ABC', 12);
+                
+                // 크기 확인 (12바이트)
+                if (bytes.length !== 12) return '바이트 길이 불일치';
+                
+                // 홍 (2바이트) + A,B,C (각 1바이트) = 5바이트 + 패딩
+                // 한글 '홍' 확인 (EUC-KR)
+                if (bytes[0] < 0xB0 || bytes[0] > 0xC8) return '한글 첫 바이트 범위 오류';
+                
+                // ASCII 'A', 'B', 'C' 확인
+                if (bytes[2] !== 0x41) return 'A 인코딩 실패 (실제: 0x' + bytes[2].toString(16) + ')';
+                if (bytes[3] !== 0x42) return 'B 인코딩 실패';
+                if (bytes[4] !== 0x43) return 'C 인코딩 실패';
+                
+                return true;
+            });
+
+            test('encodeByFieldTypeToBytes - ASCII 필드', function() {
+                const bytes = encodeByFieldTypeToBytes('TEST', 'ASCII', 10, '');
+                
+                // 크기 확인
+                if (bytes.length !== 10) return '바이트 길이 불일치';
+                
+                // ASCII 문자 확인
+                if (bytes[0] !== 0x54) return 'T 인코딩 실패'; // 'T'
+                if (bytes[1] !== 0x45) return 'E 인코딩 실패'; // 'E'
+                if (bytes[2] !== 0x53) return 'S 인코딩 실패'; // 'S'
+                if (bytes[3] !== 0x54) return 'T 인코딩 실패'; // 'T'
+                
+                // 나머지는 ASCII 공백 (0x20)
+                for (let i = 4; i < 10; i++) {
+                    if (bytes[i] !== 0x20) return '패딩 공백 실패 (위치: ' + i + ')';
+                }
+                
+                return true;
+            });
+
+            test('encodeByFieldTypeToBytes - KSC-5601 전각 필드', function() {
+                const bytes = encodeByFieldTypeToBytes('김철수', 'KSC-5601 (전각)', 10, '');
+                
+                // 크기 확인
+                if (bytes.length !== 10) return '바이트 길이 불일치';
+                
+                // 디코딩하여 원본 확인
+                const decoded = KSC5601.decode(bytes).trim();
+                if (decoded !== '김철수') return '디코딩 실패: "' + decoded + '"';
+                
+                return true;
+            });
+
+            test('바이트 배열 합치기 - 통데이터 재생성 시뮬레이션', function() {
+                // 여러 필드의 바이트 배열을 합치는 시뮬레이션
+                const nameBytes = encodeToKSCFullwidthBytes('홍길동', 10);
+                const codeBytes = encodeByFieldTypeToBytes('001', 'ASCII', 5, '');
+                const addrBytes = encodeToKSCFullwidthBytes('서울', 8);
+                
+                // 총 바이트 수: 10 + 5 + 8 = 23
+                const totalBytes = new Uint8Array(23);
+                totalBytes.set(nameBytes, 0);
+                totalBytes.set(codeBytes, 10);
+                totalBytes.set(addrBytes, 15);
+                
+                if (totalBytes.length !== 23) return '총 바이트 길이 불일치';
+                
+                // 각 필드 분리 후 디코딩 검증
+                const parsedName = KSC5601.decode(totalBytes.slice(0, 10)).trim();
+                if (parsedName !== '홍길동') return '이름 필드 디코딩 실패: "' + parsedName + '"';
+                
+                // ASCII 코드 필드 확인
+                let codeStr = '';
+                for (let i = 10; i < 15; i++) {
+                    codeStr += String.fromCharCode(totalBytes[i]);
+                }
+                if (codeStr.trim() !== '001') return '코드 필드 실패: "' + codeStr + '"';
+                
+                const parsedAddr = KSC5601.decode(totalBytes.slice(15, 23)).trim();
+                if (parsedAddr !== '서울') return '주소 필드 디코딩 실패: "' + parsedAddr + '"';
+                
+                return true;
+            });
+
             return { passed: passed, failed: failed, results: results };
         }
 
