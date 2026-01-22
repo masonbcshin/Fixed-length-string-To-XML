@@ -8662,23 +8662,18 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 </div>
             `;
             
-            // 원본 데이터 저장 (복사용)
-            container.setAttribute('data-raw-value', regeneratedData);
-            
-            // 복사 버튼 이벤트
+            // 복사 버튼 이벤트 (클로저를 사용하여 regeneratedData 직접 참조 - attribute 사용 시 개행문자 손상 방지)
             document.getElementById('copy-struct-regenerated').addEventListener('click', function() {
-                const rawValue = document.getElementById('struct-regenerated-container').getAttribute('data-raw-value');
-                navigator.clipboard.writeText(rawValue).then(function() {
+                navigator.clipboard.writeText(regeneratedData).then(function() {
                     showTemporaryMessage('✓ 클립보드에 복사되었습니다.');
                 });
             });
             
-            // 입력창에 적용 버튼 이벤트
+            // 입력창에 적용 버튼 이벤트 (클로저를 사용하여 regeneratedData 직접 참조 - attribute 사용 시 개행문자 손상 방지)
             document.getElementById('apply-struct-to-input').addEventListener('click', function() {
-                const rawValue = document.getElementById('struct-regenerated-container').getAttribute('data-raw-value');
                 const dataInput = document.getElementById('struct-data');
                 if (dataInput) {
-                    dataInput.value = rawValue;
+                    dataInput.value = regeneratedData;
                     
                     // 사용자가 변경한 필드별 타입 정보 저장 (재파싱 시 복원용)
                     if (window.structParsedDataCurrent && window.structParsedDataCurrent.length > 0) {
