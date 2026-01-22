@@ -4785,7 +4785,7 @@ struct MyStruct {
                 <small>
                     ℹ️ 체크 시: 각 레코드 끝에 CRLF(2 bytes) 존재로 간주<br>
                     📝 체크 해제: 줄바꿈 제거 후 연속 데이터로 처리<br>
-                    🔤 입력 인코딩: <strong>자동 감지</strong>=KSC-5601 여부 자동 판단, <strong>ASCII</strong>=순수 ASCII, <strong>KSC-5601</strong>=한글 2바이트 바이트 데이터
+                    🔤 입력 인코딩: KSC-5601 감지 시 모든 필드를 <strong>KSC 전각</strong>으로 기본 표시 (파싱 결과에서 필드별 변경 가능)
                 </small>
             </div>
             
@@ -5817,8 +5817,9 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                             <span class="hint-icon">💡</span>
                             <span class="hint-text">
                                 <strong>KSC-5601 (한글) 필드</strong>가 있나요?
-                                파싱 결과에서 각 필드의 <em>타입 드롭다운</em>을 변경하여 
-                                <code>ASCII</code> / <code>KSC 전각</code> / <code>KSC 혼용</code> 모드를 선택할 수 있습니다.
+                                입력 인코딩을 <em>자동 감지</em>하면 KSC-5601 데이터 여부를 판단하고,
+                                감지 시 모든 필드를 <code>KSC 전각</code>으로 기본 표시합니다.
+                                파싱 결과에서 필드별로 <code>ASCII</code> / <code>KSC 전각</code> / <code>KSC 혼용</code> 변경 가능합니다.
                             </span>
                             <button type="button" class="help-icon-btn" data-help="ksc5601" title="KSC-5601 도움말">
                                 <span class="help-icon">?</span>
@@ -6568,12 +6569,17 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                         console.warn('구조체 "' + currentName + '": crlf 필드가 있으나 개행 인식 비활성화됨');
                     }
                     
-                    // 필드 정보 매핑 (KSC는 결과 화면에서 토글로 설정)
+                    // 필드 정보 매핑
+                    // 입력 인코딩 설정에 따라 기본값 결정
+                    const inputEncodingSelect = document.getElementById('input-encoding');
+                    const inputEncoding = inputEncodingSelect ? inputEncodingSelect.value : 'auto';
+                    
                     const fields = parsed.fields.map(function(field) {
+                        // 기본값: ASCII, 인코딩 감지 결과에 따라 파싱 시 변경됨
                         return {
                             name: field.name,
                             size: field.size,
-                            isKSC: false,  // 기본값: ASCII, 결과 화면에서 변경 가능
+                            isKSC: false,
                             encodingMode: null
                         };
                     });
@@ -6845,7 +6851,23 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 console.log('🔤 인코딩 수동 선택: ASCII');
             }
 
-            // 3. 데이터 전처리 및 파싱 분기
+            // 3. KSC-5601 감지 시 필드 기본값 적용
+            //    감지된 인코딩이 KSC-5601이면 모든 필드를 KSC 전각으로 기본 설정
+            //    (유저가 파싱 결과에서 필드별로 변경 가능)
+            if (encodingInfo.type === 'KSC5601') {
+                console.log('📌 KSC-5601 감지됨: 모든 필드를 KSC 전각으로 기본 설정합니다.');
+                structDefs.forEach(structDef => {
+                    structDef.fields.forEach(field => {
+                        // CRLF 필드는 제외
+                        if (field.name.toLowerCase() !== 'crlf') {
+                            field.isKSC = true;
+                            field.encodingMode = 'fullwidth';  // 기본: 전각 모드
+                        }
+                    });
+                });
+            }
+
+            // 4. 데이터 전처리 및 파싱 분기
             let result;
             if (recognizeCRLF) {
                 // === 라인 기반 파싱 ===
@@ -6855,9 +6877,12 @@ D123456789012345600000000000000001000\r\n  (39 bytes)</pre>
                 result = parseContinuous(dataText, structDefs, encodingInfo);
             }
 
-            // 4. 인코딩 정보를 결과에 추가
+            // 5. 인코딩 정보를 결과에 추가
             result.stats.encodingType = encodingInfo.type;
             result.stats.encodingInfo = encodingInfo.info;
+            
+            // structDefs도 결과에 포함 (필드별 인코딩 설정 정보 유지)
+            result.structDefs = structDefs;
 
             return result;
         }
